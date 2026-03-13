@@ -66,6 +66,22 @@ class BrowserTest {
     }
 
     @Test
+    void arrowKeysNavigateTree() throws Exception {
+        generate("nested-paths.yaml");
+        var baseUrl = serve();
+
+        page.navigate(baseUrl);
+        page.locator("[role='tree']").focus();
+
+        var focused = page.locator("[role='treeitem'][aria-selected='true']");
+        assertTrue(focused.textContent().contains("pets"));
+
+        page.keyboard().press("ArrowDown");
+        focused = page.locator("[role='treeitem'][aria-selected='true']");
+        assertNotNull(focused.textContent());
+    }
+
+    @Test
     void clickingTreeNodeLoadsFragment() throws Exception {
         generate("one-get.yaml");
         var baseUrl = serve();

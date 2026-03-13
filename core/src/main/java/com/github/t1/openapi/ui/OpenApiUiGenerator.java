@@ -37,12 +37,13 @@ public class OpenApiUiGenerator {
             root.add(segments, 0, pathItem);
         }
 
-        var list = renderNode(root, "");
+        var list = renderNode(root, "", true);
 
         var pageTitle = openApi.getInfo().getTitle();
-        var detail = div().id("detail");
+        var detail = div().id("detail").attr("tabindex", "0");
         var page = html(pageTitle)
                 .script("htmx.min.js")
+                .javaScriptCode(TREE_KEYBOARD_JS)
                 .body(section().content(container().content(list, detail)));
 
         Files.createDirectories(outputDir);
@@ -81,13 +82,24 @@ public class OpenApiUiGenerator {
         return List.of(stripped.split("/"));
     }
 
-    private Element renderNode(PathNode node, String pathPrefix) {
+    private boolean firstTreeItem = true;
+
+    private Element renderNode(PathNode node, String pathPrefix, boolean isRoot) {
         Element list = ul();
+        if (isRoot) {
+            list.attr("role", "tree").attr("tabindex", "0");
+        } else {
+            list.attr("role", "group");
+        }
         for (var entry : node.children.entrySet()) {
             var segment = entry.getKey();
             var child = entry.getValue();
             var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
-            Element item = li();
+            Element item = li().attr("role", "treeitem");
+            if (firstTreeItem) {
+                item.attr("aria-selected", "true");
+                firstTreeItem = false;
+            }
             item.content(span(segment));
             for (var opEntry : child.operations.entrySet()) {
                 var method = opEntry.getKey();
@@ -99,7 +111,7 @@ public class OpenApiUiGenerator {
                         .attr("hx-swap", "innerHTML"));
             }
             if (!child.children.isEmpty()) {
-                Element childList = renderNode(child, fullPath);
+                Element childList = renderNode(child, fullPath, false);
                 childList.style("display:none");
                 item.content(childList);
             }
@@ -107,6 +119,85 @@ public class OpenApiUiGenerator {
         }
         return list;
     }
+
+    private static final String TREE_KEYBOARD_JS = """
+            document.addEventListener('DOMContentLoaded', function() {
+                var tree = document.querySelector('[role="tree"]');
+                if (!tree) return;
+
+                function getVisibleItems() {
+                    return Array.from(tree.querySelectorAll('[role="treeitem"]')).filter(function(item) {
+                        var el = item;
+                        while (el && el !== tree) {
+                            if (el.style && el.style.display === 'none') return false;
+                            el = el.parentElement;
+                        }
+                        return true;
+                    });
+                }
+
+                tree.addEventListener('keydown', function(e) {
+                    var items = getVisibleItems();
+                    var current = tree.querySelector('[aria-selected="true"]');
+                    var idx = items.indexOf(current);
+
+                    switch (e.key) {
+                        case 'ArrowDown':
+                            e.preventDefault();
+                            if (idx < items.length - 1) selectItem(items[idx + 1]);
+                            break;
+                        case 'ArrowUp':
+                            e.preventDefault();
+                            if (idx > 0) selectItem(items[idx - 1]);
+                            break;
+                        case 'ArrowRight':
+                            e.preventDefault();
+                            var group = current.querySelector('[role="group"]');
+                            if (group) group.style.display = '';
+                            break;
+                        case 'ArrowLeft':
+                            e.preventDefault();
+                            var grp = current.querySelector('[role="group"]');
+                            if (grp && grp.style.display !== 'none') {
+                                grp.style.display = 'none';
+                            } else {
+                                var parentGroup = current.closest('[role="group"]');
+                                if (parentGroup) {
+                                    var parentItem = parentGroup.closest('[role="treeitem"]');
+                                    if (parentItem) selectItem(parentItem);
+                                }
+                            }
+                            break;
+                        case 'Enter':
+                            e.preventDefault();
+                            var hxEl = current.querySelector('[hx-get]') || current;
+                            if (hxEl.getAttribute('hx-get')) htmx.ajax('GET', hxEl.getAttribute('hx-get'), '#detail');
+                            break;
+                        case 'Escape':
+                            e.preventDefault();
+                            tree.focus();
+                            break;
+                    }
+                });
+
+                function selectItem(item) {
+                    tree.querySelectorAll('[aria-selected="true"]').forEach(function(el) {
+                        el.removeAttribute('aria-selected');
+                    });
+                    item.setAttribute('aria-selected', 'true');
+                }
+
+                var detail = document.getElementById('detail');
+                if (detail) {
+                    detail.addEventListener('keydown', function(e) {
+                        if (e.key === 'Escape') {
+                            e.preventDefault();
+                            document.querySelector('[role="tree"]').focus();
+                        }
+                    });
+                }
+            });
+            """;
 
     private static class PathNode {
         final Map<String, PathNode> children = new LinkedHashMap<>();
