@@ -95,6 +95,23 @@ class BrowserTest {
     }
 
     @Test
+    void arrowRightExpandsAndLeftCollapsesNode() throws Exception {
+        generate("nested-paths.yaml");
+        var baseUrl = serve();
+
+        page.navigate(baseUrl);
+        page.locator("[role='tree']").focus();
+
+        assertFalse(page.locator(":text('{petId}')").isVisible());
+
+        page.keyboard().press("ArrowRight");
+        assertTrue(page.locator(":text('{petId}')").isVisible());
+
+        page.keyboard().press("ArrowLeft");
+        assertFalse(page.locator(":text('{petId}')").isVisible());
+    }
+
+    @Test
     void clickingTreeNodeLoadsFragment() throws Exception {
         generate("one-get.yaml");
         var baseUrl = serve();
