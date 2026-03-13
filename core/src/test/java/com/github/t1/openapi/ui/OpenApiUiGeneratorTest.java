@@ -51,6 +51,18 @@ class OpenApiUiGeneratorTest {
     }
 
     @Test
+    void shouldGenerateParameterInputs() throws Exception {
+        var specPath = Path.of(getClass().getResource("/params.yaml").toURI());
+
+        new OpenApiUiGenerator(specPath, outputDir).generate();
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        assertTrue(fragment.contains("name=\"petId\""));
+        assertTrue(fragment.contains("name=\"fields\""));
+        assertTrue(fragment.contains("Comma-separated list of fields"));
+    }
+
+    @Test
     void shouldGenerateIndexWithOnePath() throws Exception {
         var specPath = Path.of(getClass().getResource("/one-get.yaml").toURI());
 

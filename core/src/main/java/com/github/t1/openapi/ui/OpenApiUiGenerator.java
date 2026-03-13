@@ -14,6 +14,9 @@ import java.util.Map;
 import static com.github.t1.bulmajava.columns.Column.column;
 import static com.github.t1.bulmajava.columns.Columns.columns;
 import static com.github.t1.bulmajava.elements.Title.title;
+import static com.github.t1.bulmajava.form.Field.field;
+import static com.github.t1.bulmajava.form.Input.input;
+import static com.github.t1.bulmajava.form.InputType.TEXT;
 import static com.github.t1.bulmajava.layout.Container.container;
 import static com.github.t1.bulmajava.layout.Section.section;
 import static com.github.t1.htmljava.Html.html;
@@ -78,6 +81,16 @@ public class OpenApiUiGenerator {
                         title(method.name() + " /" + fullPath),
                         p(summary)
                 );
+                if (operation.getParameters() != null) {
+                    for (var param : operation.getParameters()) {
+                        var inputField = field(param.getName())
+                                .content(input(TEXT).attr("name", param.getName()));
+                        if (param.getDescription() != null) {
+                            inputField.help(param.getDescription());
+                        }
+                        fragment.content(inputField);
+                    }
+                }
                 var fragmentDir = outputDir.resolve(fullPath);
                 Files.createDirectories(fragmentDir);
                 Files.writeString(fragmentDir.resolve(method.name() + ".html"), fragment.render());
