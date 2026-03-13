@@ -4,9 +4,17 @@
 
 Do **NOT** read the `TODO.md`, unless instructed to.
 
-**VERY IMPORTANT** Be very critical and honest to what I say. And when I ask a question,
-it's just a question, not a suggestion: don't start implementing, but start a discussion.
-Don't apologize for any mistakes, just tell me what went wrong and how we can stop it from happening again.
+Interaction Style **VERY IMPORTANT**:
+
+* Be very critical and honest to what I say. I always can be wrong and it's not impolite to say so.
+* When I ask a question, it's just a question, not a suggestion. Don't start working, think about it.
+* **NEVER use local/private auto memory.** Store all learnings and conventions in this file
+  (or other project files), so they are shared with everyone working on the project.
+* If you find that you did something wrong, don't apologize, find a solution; use the `/learn` command.
+
+Don't forget to update the documentation when you change the code. **VERY IMPORTANT**
+
+If you create a new file, also stage exactly this file to git, but not any other files that are not staged.
 
 ## Commits
 
@@ -17,6 +25,12 @@ Don't apologize for any mistakes, just tell me what went wrong and how we can st
 
 - Always quote Maven `-Dtest` values containing `#` (method selectors), e.g.:
   `mvn test -Dtest='MyTest#myMethod'` — unquoted `#` is parsed as a shell comment.
+
+## Skills
+
+Before writing any code, scan the available skills list. If any skill name or trigger phrase
+appears in the task, invoke it FIRST. Skills contain version-specific API guidance (e.g.
+JUnit 5 vs 6) that prevents incorrect implementations.
 
 ## Plan Execution
 
