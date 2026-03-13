@@ -40,7 +40,10 @@ public class OpenApiUiGenerator {
         var list = renderNode(root, "");
 
         var pageTitle = openApi.getInfo().getTitle();
-        var page = html(pageTitle).body(section().content(container().content(list)));
+        var detail = div().id("detail");
+        var page = html(pageTitle)
+                .script("htmx.min.js")
+                .body(section().content(container().content(list, detail)));
 
         Files.createDirectories(outputDir);
         Files.writeString(outputDir.resolve("index.html"), page.render());
@@ -90,7 +93,10 @@ public class OpenApiUiGenerator {
                 var method = opEntry.getKey();
                 var operation = opEntry.getValue();
                 var summary = operation.getSummary() != null ? operation.getSummary() : "";
-                item.content(span(" " + method + " — " + summary));
+                item.content(span(" " + method + " — " + summary)
+                        .attr("hx-get", fullPath + "/" + method.name() + ".html")
+                        .attr("hx-target", "#detail")
+                        .attr("hx-swap", "innerHTML"));
             }
             if (!child.children.isEmpty()) {
                 Element childList = renderNode(child, fullPath);

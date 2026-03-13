@@ -39,6 +39,18 @@ class OpenApiUiGeneratorTest {
     }
 
     @Test
+    void shouldIncludeHtmxAttributes() throws Exception {
+        var specPath = Path.of(getClass().getResource("/one-get.yaml").toURI());
+
+        new OpenApiUiGenerator(specPath, outputDir).generate();
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        assertTrue(indexHtml.contains("htmx.min.js"));
+        assertTrue(indexHtml.contains("hx-get=\"pets/GET.html\""));
+        assertTrue(indexHtml.contains("hx-target="));
+    }
+
+    @Test
     void shouldGenerateIndexWithOnePath() throws Exception {
         var specPath = Path.of(getClass().getResource("/one-get.yaml").toURI());
 
