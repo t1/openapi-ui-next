@@ -134,6 +134,34 @@ class BrowserTest {
     }
 
     @Test
+    void desktopLayoutIsSideBySide() throws Exception {
+        generate("one-get.yaml");
+        var baseUrl = serve();
+
+        page.setViewportSize(1280, 720);
+        page.navigate(baseUrl);
+
+        var treeBox = page.locator("[role='tree']").boundingBox();
+        var detailBox = page.locator("#detail").boundingBox();
+        assertTrue(treeBox.x < detailBox.x,
+                "Tree should be left of detail pane on desktop");
+    }
+
+    @Test
+    void mobileLayoutIsStacked() throws Exception {
+        generate("one-get.yaml");
+        var baseUrl = serve();
+
+        page.setViewportSize(375, 667);
+        page.navigate(baseUrl);
+
+        var treeBox = page.locator("[role='tree']").boundingBox();
+        var detailBox = page.locator("#detail").boundingBox();
+        assertTrue(treeBox.y < detailBox.y,
+                "Tree should be above detail pane on mobile");
+    }
+
+    @Test
     void clickingTreeNodeLoadsFragment() throws Exception {
         generate("one-get.yaml");
         var baseUrl = serve();

@@ -11,6 +11,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.github.t1.bulmajava.columns.Column.column;
+import static com.github.t1.bulmajava.columns.Columns.columns;
 import static com.github.t1.bulmajava.elements.Title.title;
 import static com.github.t1.bulmajava.layout.Container.container;
 import static com.github.t1.bulmajava.layout.Section.section;
@@ -41,10 +43,17 @@ public class OpenApiUiGenerator {
 
         var pageTitle = openApi.getInfo().getTitle();
         var detail = div().id("detail").attr("tabindex", "0");
+        var body = section().content(container().content(
+                columns().classes("is-desktop").content(
+                        column().classes("is-one-third").content(list),
+                        column().content(detail)
+                )
+        ));
         var page = html(pageTitle)
+                .stylesheet("https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css")
                 .script("htmx.min.js")
                 .javaScriptCode(TREE_KEYBOARD_JS)
-                .body(section().content(container().content(list, detail)));
+                .body(body);
 
         Files.createDirectories(outputDir);
         Files.writeString(outputDir.resolve("index.html"), page.render());
