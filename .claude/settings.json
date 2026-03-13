@@ -1,0 +1,8 @@
+{
+  "enabledPlugins": {
+    "tdder@t1": true,
+    "jdtls-lsp@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true
+  }
+}
