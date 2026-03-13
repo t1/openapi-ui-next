@@ -51,12 +51,14 @@
                         <goals><goal>run</goal></goals>
                         <configuration>
                             <target>
-                                <concat destfile="${project.build.directory}/openapi-ui" binary="true">
-                                    <header filtering="false">#!/bin/sh
+                                <echo file="${project.build.directory}/openapi-ui.header">#!/bin/sh
 exec java -jar "$0" "$@"
-</header>
+</echo>
+                                <concat destfile="${project.build.directory}/openapi-ui" binary="true">
+                                    <fileset file="${project.build.directory}/openapi-ui.header"/>
                                     <fileset file="${project.build.directory}/${project.build.finalName}.jar"/>
                                 </concat>
+                                <delete file="${project.build.directory}/openapi-ui.header"/>
                                 <chmod file="${project.build.directory}/openapi-ui" perm="755"/>
                             </target>
                         </configuration>
