@@ -6,11 +6,13 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import static com.github.t1.bulmajava.basic.Color.PRIMARY;
 import static com.github.t1.bulmajava.columns.Column.column;
@@ -67,7 +69,7 @@ public class OpenApiUiGenerator {
                 )
         ));
         var page = html(pageTitle)
-                .stylesheet("https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css")
+                .stylesheet("bulma.min.css")
                 .script("htmx.min.js")
                 .javaScriptCode(TREE_KEYBOARD_JS)
                 .body(body);
@@ -77,8 +79,20 @@ public class OpenApiUiGenerator {
 
         generateFragments(root, "");
 
-        try (var htmx = getClass().getResourceAsStream("/htmx.min.js")) {
-            Files.copy(htmx, outputDir.resolve("htmx.min.js"));
+        copyWebJarResource("bulma", "css/bulma.min.css", "bulma.min.css");
+        copyWebJarResource("htmx.org", "dist/htmx.min.js", "htmx.min.js");
+    }
+
+    private void copyWebJarResource(String artifactId, String resourcePath, String outputName) throws IOException {
+        var props = new Properties();
+        try (var pom = getClass().getResourceAsStream(
+                "/META-INF/maven/org.webjars.npm/" + artifactId + "/pom.properties")) {
+            props.load(pom);
+        }
+        var version = props.getProperty("version");
+        try (var resource = getClass().getResourceAsStream(
+                "/META-INF/resources/webjars/" + artifactId + "/" + version + "/" + resourcePath)) {
+            Files.copy(resource, outputDir.resolve(outputName));
         }
     }
 

@@ -48,7 +48,8 @@ class BrowserTest {
             var file = outputDir.resolve(uriPath.substring(1));
             if (Files.exists(file) && Files.isRegularFile(file)) {
                 var bytes = Files.readAllBytes(file);
-                var contentType = uriPath.endsWith(".js") ? "application/javascript" : "text/html";
+                var contentType = uriPath.endsWith(".js") ? "application/javascript"
+                        : uriPath.endsWith(".css") ? "text/css" : "text/html";
                 exchange.getResponseHeaders().set("Content-Type", contentType);
                 exchange.sendResponseHeaders(200, bytes.length);
                 exchange.getResponseBody().write(bytes);
