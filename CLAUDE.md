@@ -13,6 +13,11 @@ Don't apologize for any mistakes, just tell me what went wrong and how we can st
 - Keep commit messages short (single line, no body).
 - Never add a `Co-Authored-By` trailer.
 
+## Shell Commands
+
+- Always quote Maven `-Dtest` values containing `#` (method selectors), e.g.:
+  `mvn test -Dtest='MyTest#myMethod'` — unquoted `#` is parsed as a shell comment.
+
 ## Plan Execution
 
 When executing a plan: if a technology or dependency from the plan doesn't work as expected,
