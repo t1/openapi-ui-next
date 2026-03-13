@@ -1,5 +1,9 @@
 /.idea/
 
+.classpath
+.project
+**/.settings/org.eclipse.*
+
 target/
 
 .superpowers/
