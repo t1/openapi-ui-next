@@ -1,3 +1,7 @@
 /.idea/
-/target
+
+target/
+
 .superpowers/
+
+TODO.md
