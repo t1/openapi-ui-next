@@ -12,8 +12,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.github.t1.bulmajava.basic.Color.PRIMARY;
 import static com.github.t1.bulmajava.columns.Column.column;
 import static com.github.t1.bulmajava.columns.Columns.columns;
+import static com.github.t1.bulmajava.elements.Button.button;
 import static com.github.t1.bulmajava.elements.Title.title;
 import static com.github.t1.bulmajava.form.Field.field;
 import static com.github.t1.bulmajava.form.Input.input;
@@ -45,9 +47,20 @@ public class OpenApiUiGenerator {
 
         var list = renderNode(root, "", true);
 
+        var servers = openApi.getServers();
+        var baseUrl = (servers != null && !servers.isEmpty()) ? servers.get(0).getUrl() : "/";
+
+        var modeToggle = div().attr("data-mode", "try").attr("data-base-url", baseUrl)
+                .classes("buttons", "has-addons").content(
+                        button("Try").is(PRIMARY).classes("is-selected").attr("data-mode-btn", "try"),
+                        button("httpie").attr("data-mode-btn", "httpie"),
+                        button("curl").attr("data-mode-btn", "curl")
+                );
+
         var pageTitle = openApi.getInfo().getTitle();
         var detail = div().id("detail").attr("tabindex", "0");
         var body = section().content(container().content(
+                modeToggle,
                 columns().classes("is-desktop").content(
                         column().classes("is-one-third").content(list),
                         column().content(detail)
@@ -115,6 +128,9 @@ public class OpenApiUiGenerator {
                         }
                     }
                 }
+                fragment.content(button("Send").is(PRIMARY)
+                        .attr("data-path", "/" + fullPath)
+                        .attr("data-method", method.name()));
                 var fragmentDir = outputDir.resolve(fullPath);
                 Files.createDirectories(fragmentDir);
                 Files.writeString(fragmentDir.resolve(method.name() + ".html"), fragment.render());
@@ -239,6 +255,70 @@ public class OpenApiUiGenerator {
                         if (e.key === 'Escape') {
                             e.preventDefault();
                             document.querySelector('[role="tree"]').focus();
+                        }
+                    });
+                }
+
+                // Mode toggle
+                var modeContainer = document.querySelector('[data-mode]');
+                if (modeContainer) {
+                    modeContainer.querySelectorAll('[data-mode-btn]').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            modeContainer.setAttribute('data-mode', btn.getAttribute('data-mode-btn'));
+                            modeContainer.querySelectorAll('[data-mode-btn]').forEach(function(b) {
+                                b.classList.remove('is-selected', 'is-primary');
+                            });
+                            btn.classList.add('is-selected', 'is-primary');
+                        });
+                    });
+                }
+
+                // Send button handler (delegated from detail pane)
+                if (detail) {
+                    detail.addEventListener('click', function(e) {
+                        var sendBtn = e.target.closest('button[data-path]');
+                        if (!sendBtn) return;
+
+                        var pathTemplate = sendBtn.getAttribute('data-path');
+                        var method = sendBtn.getAttribute('data-method');
+                        var modeEl = document.querySelector('[data-mode]');
+                        var mode = modeEl ? modeEl.getAttribute('data-mode') : 'try';
+                        var baseUrl = modeEl ? (modeEl.getAttribute('data-base-url') || '') : '';
+
+                        // Collect input values
+                        var inputs = detail.querySelectorAll('input[name]');
+                        var url = baseUrl + pathTemplate;
+                        var queryParams = [];
+                        inputs.forEach(function(inp) {
+                            var name = inp.getAttribute('name');
+                            var val = inp.value;
+                            if (pathTemplate.includes('{' + name + '}')) {
+                                url = url.replace('{' + name + '}', encodeURIComponent(val));
+                            } else if (val) {
+                                queryParams.push(name + '=' + encodeURIComponent(val));
+                            }
+                        });
+                        if (queryParams.length > 0) url += '?' + queryParams.join('&');
+
+                        if (mode === 'curl') {
+                            navigator.clipboard.writeText('curl ' + url);
+                        } else if (mode === 'httpie') {
+                            navigator.clipboard.writeText('http ' + method + ' ' + url);
+                        } else if (mode === 'try') {
+                            fetch(url).then(function(resp) {
+                                var ct = resp.headers.get('Content-Type') || '';
+                                return resp.text().then(function(text) {
+                                    var pre = document.createElement('pre');
+                                    if (ct.includes('json')) {
+                                        try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
+                                    }
+                                    pre.textContent = text;
+                                    var existing = detail.querySelector('pre.response');
+                                    if (existing) existing.remove();
+                                    pre.className = 'response';
+                                    detail.appendChild(pre);
+                                });
+                            });
                         }
                     });
                 }

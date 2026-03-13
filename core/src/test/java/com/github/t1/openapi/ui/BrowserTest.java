@@ -7,6 +7,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.net.InetSocketAddress;
 import java.nio.file.*;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -171,5 +172,163 @@ class BrowserTest {
         page.waitForSelector("#detail :text('List pets')");
 
         assertTrue(page.locator("#detail").textContent().contains("List pets"));
+    }
+
+    @Test
+    void modeToggleHasThreeOptionsAndSwitches() throws Exception {
+        generate("one-get.yaml");
+        var baseUrl = serve();
+
+        page.navigate(baseUrl);
+
+        assertTrue(page.locator("button:text('Try')").isVisible());
+        assertTrue(page.locator("button:text('httpie')").isVisible());
+        assertTrue(page.locator("button:text('curl')").isVisible());
+
+        page.locator("button:text('curl')").click();
+        var mode = (String) page.evaluate(
+                "() => document.querySelector('[data-mode]').getAttribute('data-mode')");
+        assertEquals("curl", mode);
+    }
+
+    @Test
+    void curlModeCopiesCommand() throws Exception {
+        generate("params.yaml");
+
+        context.close();
+        context = browser.newContext(new Browser.NewContextOptions()
+                .setPermissions(List.of("clipboard-read", "clipboard-write")));
+        page = context.newPage();
+
+        var baseUrl = serve();
+        page.navigate(baseUrl);
+
+        page.locator("button:text('curl')").click();
+        page.locator("[hx-get='pets/{petId}/GET.html']").click();
+        page.waitForSelector("#detail input[name='petId']");
+        page.locator("#detail input[name='petId']").fill("42");
+        page.locator("#detail button:text('Send')").click();
+
+        var clipboard = (String) page.evaluate("() => navigator.clipboard.readText()");
+        assertTrue(clipboard.contains("curl"), "Expected curl command, got: " + clipboard);
+        assertTrue(clipboard.contains("https://api.example.com/pets/42"),
+                "Expected URL with petId=42, got: " + clipboard);
+    }
+
+    @Test
+    void httpieModeCopiesCommand() throws Exception {
+        generate("params.yaml");
+
+        context.close();
+        context = browser.newContext(new Browser.NewContextOptions()
+                .setPermissions(List.of("clipboard-read", "clipboard-write")));
+        page = context.newPage();
+
+        var baseUrl = serve();
+        page.navigate(baseUrl);
+
+        page.locator("button:text('httpie')").click();
+        page.locator("[hx-get='pets/{petId}/GET.html']").click();
+        page.waitForSelector("#detail input[name='petId']");
+        page.locator("#detail input[name='petId']").fill("42");
+        page.locator("#detail button:text('Send')").click();
+
+        var clipboard = (String) page.evaluate("() => navigator.clipboard.readText()");
+        assertTrue(clipboard.contains("http GET"), "Expected httpie command, got: " + clipboard);
+        assertTrue(clipboard.contains("https://api.example.com/pets/42"),
+                "Expected URL with petId=42, got: " + clipboard);
+    }
+
+    void mockEndpoint(String path, String contentType, String body) {
+        server.createContext(path, exchange -> {
+            exchange.getResponseHeaders().set("Content-Type", contentType);
+            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+            var bytes = body.getBytes();
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+    }
+
+    void overrideBaseUrl(String baseUrl) throws Exception {
+        var indexPath = outputDir.resolve("index.html");
+        var html = Files.readString(indexPath);
+        html = html.replace("https://api.example.com", baseUrl);
+        Files.writeString(indexPath, html);
+    }
+
+    @Test
+    void tryModeSendsRequestAndShowsPrettifiedJson() throws Exception {
+        generate("one-get.yaml");
+        var baseUrl = serve();
+        mockEndpoint("/pets", "application/json", "{\"id\":\"1\",\"name\":\"Fido\"}");
+        overrideBaseUrl(baseUrl);
+
+        page.navigate(baseUrl);
+        page.locator("[role='tree']").focus();
+        page.keyboard().press("Enter");
+        page.waitForSelector("#detail button:text('Send')");
+        page.locator("#detail button:text('Send')").click();
+
+        page.waitForSelector("#detail pre");
+        var responseText = page.locator("#detail pre").textContent();
+        assertTrue(responseText.contains("\"name\""), "Expected JSON with name field");
+        assertTrue(responseText.contains("Fido"), "Expected JSON with value Fido");
+        assertTrue(responseText.contains("\n"), "Expected prettified JSON with newlines");
+    }
+
+    @Test
+    void tryModeShowsHtmlResponseAsIs() throws Exception {
+        generate("one-get.yaml");
+        var baseUrl = serve();
+        mockEndpoint("/pets", "text/html", "<h1>Hello</h1><p>World</p>");
+        overrideBaseUrl(baseUrl);
+
+        page.navigate(baseUrl);
+        page.locator("[role='tree']").focus();
+        page.keyboard().press("Enter");
+        page.waitForSelector("#detail button:text('Send')");
+        page.locator("#detail button:text('Send')").click();
+
+        page.waitForSelector("#detail pre");
+        var responseText = page.locator("#detail pre").textContent();
+        assertTrue(responseText.contains("<h1>Hello</h1>"), "HTML should be shown as raw text");
+    }
+
+    @Test
+    void tryModeShowsXmlResponseAsIs() throws Exception {
+        generate("one-get.yaml");
+        var baseUrl = serve();
+        mockEndpoint("/pets", "application/xml", "<pets><pet><name>Fido</name></pet></pets>");
+        overrideBaseUrl(baseUrl);
+
+        page.navigate(baseUrl);
+        page.locator("[role='tree']").focus();
+        page.keyboard().press("Enter");
+        page.waitForSelector("#detail button:text('Send')");
+        page.locator("#detail button:text('Send')").click();
+
+        page.waitForSelector("#detail pre");
+        var responseText = page.locator("#detail pre").textContent();
+        assertTrue(responseText.contains("<pets>"), "XML should be shown as raw text");
+    }
+
+    @Test
+    void tryModeShowsYamlResponseAsIs() throws Exception {
+        generate("one-get.yaml");
+        var baseUrl = serve();
+        mockEndpoint("/pets", "application/yaml", "pets:\n  - name: Fido\n    id: 1");
+        overrideBaseUrl(baseUrl);
+
+        page.navigate(baseUrl);
+        page.locator("[role='tree']").focus();
+        page.keyboard().press("Enter");
+        page.waitForSelector("#detail button:text('Send')");
+        page.locator("#detail button:text('Send')").click();
+
+        page.waitForSelector("#detail pre");
+        var responseText = page.locator("#detail pre").textContent();
+        assertTrue(responseText.contains("pets:"), "YAML should be shown as raw text");
+        assertTrue(responseText.contains("Fido"), "YAML should contain data");
     }
 }
