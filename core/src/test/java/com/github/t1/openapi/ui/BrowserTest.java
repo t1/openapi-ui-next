@@ -46,7 +46,7 @@ class BrowserTest {
             var uriPath = exchange.getRequestURI().getPath();
             if (uriPath.equals("/")) uriPath = "/index.html";
             var file = outputDir.resolve(uriPath.substring(1));
-            if (Files.exists(file)) {
+            if (Files.exists(file) && Files.isRegularFile(file)) {
                 var bytes = Files.readAllBytes(file);
                 var contentType = uriPath.endsWith(".js") ? "application/javascript" : "text/html";
                 exchange.getResponseHeaders().set("Content-Type", contentType);
@@ -244,7 +244,7 @@ class BrowserTest {
     }
 
     void mockEndpoint(String path, String contentType, String body) {
-        server.createContext(path, exchange -> {
+        server.createContext("/api" + path, exchange -> {
             exchange.getResponseHeaders().set("Content-Type", contentType);
             exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
             var bytes = body.getBytes();
@@ -257,7 +257,7 @@ class BrowserTest {
     void overrideBaseUrl(String baseUrl) throws Exception {
         var indexPath = outputDir.resolve("index.html");
         var html = Files.readString(indexPath);
-        html = html.replace("https://api.example.com", baseUrl);
+        html = html.replace("https://api.example.com", baseUrl + "/api");
         Files.writeString(indexPath, html);
     }
 
@@ -271,11 +271,11 @@ class BrowserTest {
         page.navigate(baseUrl);
         page.locator("[role='tree']").focus();
         page.keyboard().press("Enter");
-        page.waitForSelector("#detail button:text('Send')");
+        page.waitForSelector("#detail :text('List pets')");
         page.locator("#detail button:text('Send')").click();
 
-        page.waitForSelector("#detail pre");
-        var responseText = page.locator("#detail pre").textContent();
+        page.waitForSelector("#detail pre.response");
+        var responseText = page.locator("#detail pre.response").textContent();
         assertTrue(responseText.contains("\"name\""), "Expected JSON with name field");
         assertTrue(responseText.contains("Fido"), "Expected JSON with value Fido");
         assertTrue(responseText.contains("\n"), "Expected prettified JSON with newlines");
@@ -291,11 +291,11 @@ class BrowserTest {
         page.navigate(baseUrl);
         page.locator("[role='tree']").focus();
         page.keyboard().press("Enter");
-        page.waitForSelector("#detail button:text('Send')");
+        page.waitForSelector("#detail :text('List pets')");
         page.locator("#detail button:text('Send')").click();
 
-        page.waitForSelector("#detail pre");
-        var responseText = page.locator("#detail pre").textContent();
+        page.waitForSelector("#detail pre.response");
+        var responseText = page.locator("#detail pre.response").textContent();
         assertTrue(responseText.contains("<h1>Hello</h1>"), "HTML should be shown as raw text");
     }
 
@@ -309,11 +309,11 @@ class BrowserTest {
         page.navigate(baseUrl);
         page.locator("[role='tree']").focus();
         page.keyboard().press("Enter");
-        page.waitForSelector("#detail button:text('Send')");
+        page.waitForSelector("#detail :text('List pets')");
         page.locator("#detail button:text('Send')").click();
 
-        page.waitForSelector("#detail pre");
-        var responseText = page.locator("#detail pre").textContent();
+        page.waitForSelector("#detail pre.response");
+        var responseText = page.locator("#detail pre.response").textContent();
         assertTrue(responseText.contains("<pets>"), "XML should be shown as raw text");
     }
 
@@ -327,11 +327,11 @@ class BrowserTest {
         page.navigate(baseUrl);
         page.locator("[role='tree']").focus();
         page.keyboard().press("Enter");
-        page.waitForSelector("#detail button:text('Send')");
+        page.waitForSelector("#detail :text('List pets')");
         page.locator("#detail button:text('Send')").click();
 
-        page.waitForSelector("#detail pre");
-        var responseText = page.locator("#detail pre").textContent();
+        page.waitForSelector("#detail pre.response");
+        var responseText = page.locator("#detail pre.response").textContent();
         assertTrue(responseText.contains("pets:"), "YAML should be shown as raw text");
         assertTrue(responseText.contains("Fido"), "YAML should contain data");
     }
