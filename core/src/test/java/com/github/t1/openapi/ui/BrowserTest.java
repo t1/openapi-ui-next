@@ -82,6 +82,19 @@ class BrowserTest {
     }
 
     @Test
+    void enterKeyLoadsFragment() throws Exception {
+        generate("one-get.yaml");
+        var baseUrl = serve();
+
+        page.navigate(baseUrl);
+        page.locator("[role='tree']").focus();
+        page.keyboard().press("Enter");
+        page.waitForSelector("#detail :text('List pets')");
+
+        assertTrue(page.locator("#detail").textContent().contains("List pets"));
+    }
+
+    @Test
     void clickingTreeNodeLoadsFragment() throws Exception {
         generate("one-get.yaml");
         var baseUrl = serve();
