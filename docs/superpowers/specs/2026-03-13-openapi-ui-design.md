@@ -138,3 +138,22 @@ TDD (red-green-refactor) using the tdder skills. Unfolding architecture — buil
 | CLI packaging | Fat jar with shell script header |
 | Development | TDD with tdder skills |
 | Testing | JUnit + Playwright |
+
+## Future (Post-MVP)
+
+### Next
+- POST, PUT, DELETE, PATCH methods — request body editor, content-type selection
+- Multiple server URLs — dropdown to select from `servers` array
+- Server variables — template variable substitution in server URLs
+
+### Later
+- Authentication — API key, Bearer token, Basic auth; persist across requests
+- Full schema rendering — `oneOf`/`allOf`/`anyOf`, nested objects, enums, examples
+- Request history — show recent requests and responses per endpoint
+- Search/filter — filter the path tree by keyword
+
+### Maybe
+- WebSocket support
+- Export as Postman/Insomnia collection
+- Embedded mode — generate a fragment that can be included in existing docs sites
+- Custom themes beyond auto light/dark
