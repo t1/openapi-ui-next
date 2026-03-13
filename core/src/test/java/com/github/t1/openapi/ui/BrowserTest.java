@@ -204,6 +204,8 @@ class BrowserTest {
         page.navigate(baseUrl);
 
         page.locator("button:text('curl')").click();
+        page.locator("[role='tree']").focus();
+        page.keyboard().press("ArrowRight"); // expand pets
         page.locator("[hx-get='pets/{petId}/GET.html']").click();
         page.waitForSelector("#detail input[name='petId']");
         page.locator("#detail input[name='petId']").fill("42");
@@ -228,6 +230,8 @@ class BrowserTest {
         page.navigate(baseUrl);
 
         page.locator("button:text('httpie')").click();
+        page.locator("[role='tree']").focus();
+        page.keyboard().press("ArrowRight"); // expand pets
         page.locator("[hx-get='pets/{petId}/GET.html']").click();
         page.waitForSelector("#detail input[name='petId']");
         page.locator("#detail input[name='petId']").fill("42");
