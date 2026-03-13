@@ -28,7 +28,7 @@
 - Create: `maven-plugin/pom.xml`
 - Create: `cli/pom.xml`
 
-- [ ] **Step 1: Create parent POM**
+- [x]**Step 1: Create parent POM**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -76,7 +76,7 @@
 </project>
 ```
 
-- [ ] **Step 2: Create core POM**
+- [x]**Step 2: Create core POM**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -114,7 +114,7 @@
 </project>
 ```
 
-- [ ] **Step 3: Create placeholder maven-plugin POM**
+- [x]**Step 3: Create placeholder maven-plugin POM**
 
 Use `jar` packaging for now. The `maven-plugin` packaging and plugin dependencies are added in Task 12 when the Mojo is implemented.
 
@@ -143,7 +143,7 @@ Use `jar` packaging for now. The `maven-plugin` packaging and plugin dependencie
 </project>
 ```
 
-- [ ] **Step 4: Create placeholder cli POM**
+- [x]**Step 4: Create placeholder cli POM**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -170,12 +170,12 @@ Use `jar` packaging for now. The `maven-plugin` packaging and plugin dependencie
 </project>
 ```
 
-- [ ] **Step 5: Verify build compiles**
+- [x]**Step 5: Verify build compiles**
 
 Run: `mvn compile`
 Expected: BUILD SUCCESS
 
-- [ ] **Step 6: Commit**
+- [x]**Step 6: Commit**
 
 ```bash
 git add pom.xml core/pom.xml maven-plugin/pom.xml cli/pom.xml
@@ -191,7 +191,7 @@ The simplest possible slice: parse a spec with one GET endpoint, generate an `in
 - Create: `core/src/test/java/com/github/t1/openapi/ui/OpenApiUiGeneratorTest.java`
 - Create: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`
 
-- [ ] **Step 1: Create test fixture — minimal OpenAPI spec**
+- [x]**Step 1: Create test fixture — minimal OpenAPI spec**
 
 Create `core/src/test/resources/one-get.yaml`:
 
@@ -212,7 +212,7 @@ paths:
           description: A list of pets
 ```
 
-- [ ] **Step 2: Write failing test — generator produces index.html containing the path**
+- [x]**Step 2: Write failing test — generator produces index.html containing the path**
 
 ```java
 package com.github.t1.openapi.ui;
@@ -241,12 +241,12 @@ class OpenApiUiGeneratorTest {
 }
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x]**Step 3: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest=OpenApiUiGeneratorTest`
 Expected: FAIL — `OpenApiUiGenerator` does not exist
 
-- [ ] **Step 4: Write minimal implementation**
+- [x]**Step 4: Write minimal implementation**
 
 Create `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`.
 
@@ -266,12 +266,12 @@ Key imports:
 - `import static com.github.t1.bulmajava.elements.Title.title;`
 - `import io.swagger.v3.parser.OpenAPIV3Parser;`
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x]**Step 5: Run test to verify it passes**
 
 Run: `mvn test -pl core -Dtest=OpenApiUiGeneratorTest`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x]**Step 6: Commit**
 
 ```bash
 git add core/
@@ -289,7 +289,7 @@ Paths should be grouped by segments. E.g. `/pets` and `/pets/{petId}` both appea
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/OpenApiUiGeneratorTest.java`
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`
 
-- [ ] **Step 1: Create test fixture with nested paths**
+- [x]**Step 1: Create test fixture with nested paths**
 
 Create `core/src/test/resources/nested-paths.yaml`:
 
@@ -323,7 +323,7 @@ paths:
           description: A pet
 ```
 
-- [ ] **Step 2: Write failing test — paths are nested hierarchically**
+- [x]**Step 2: Write failing test — paths are nested hierarchically**
 
 ```java
 @Test
@@ -344,12 +344,12 @@ void shouldGroupPathsBySegments() throws Exception {
 }
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x]**Step 3: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest=OpenApiUiGeneratorTest#shouldGroupPathsBySegments`
 Expected: FAIL — current implementation renders a flat list
 
-- [ ] **Step 4: Implement hierarchical path tree**
+- [x]**Step 4: Implement hierarchical path tree**
 
 Refactor the path rendering in `OpenApiUiGenerator`:
 
@@ -361,12 +361,12 @@ Refactor the path rendering in `OpenApiUiGenerator`:
 
 Whether to extract a separate `PathTreeNode` class: if the tree-building logic is more than ~15 lines, extract it. Otherwise keep it inline. Follow @tdder:unfolding-architecture.
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x]**Step 5: Run test to verify it passes**
 
 Run: `mvn test -pl core`
 Expected: PASS (both tests)
 
-- [ ] **Step 6: Commit**
+- [x]**Step 6: Commit**
 
 ```bash
 git add core/
@@ -382,7 +382,7 @@ Each GET operation gets its own HTML fragment file. The tree nodes use `hx-get` 
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/OpenApiUiGeneratorTest.java`
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`
 
-- [ ] **Step 1: Bundle HTMX**
+- [x]**Step 1: Bundle HTMX**
 
 Download htmx.min.js and place it at `core/src/main/resources/htmx.min.js`:
 
@@ -397,7 +397,7 @@ try (var htmx = getClass().getResourceAsStream("/htmx.min.js")) {
 }
 ```
 
-- [ ] **Step 2: Write failing test — fragment files are generated**
+- [x]**Step 2: Write failing test — fragment files are generated**
 
 ```java
 @Test
@@ -415,12 +415,12 @@ void shouldGenerateFragmentFiles() throws Exception {
 }
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x]**Step 3: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest=OpenApiUiGeneratorTest#shouldGenerateFragmentFiles`
 Expected: FAIL — fragment files don't exist
 
-- [ ] **Step 4: Implement fragment generation**
+- [x]**Step 4: Implement fragment generation**
 
 For each operation in the parsed spec, generate a fragment HTML file. Fragments are **not** full HTML documents — they are partial content that HTMX swaps into the detail pane.
 
@@ -438,19 +438,19 @@ Files.writeString(fragmentPath, fragment.render());
 
 The `pathToDir()` helper strips the leading `/` from the path (e.g., `/pets/{petId}` → `pets/{petId}`).
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x]**Step 5: Run tests to verify they pass**
 
 Run: `mvn test -pl core`
 Expected: PASS (all tests)
 
-- [ ] **Step 6: Commit**
+- [x]**Step 6: Commit**
 
 ```bash
 git add core/
 git commit -m "generate HTMX fragment files per operation"
 ```
 
-- [ ] **Step 7: Write failing test — index.html includes HTMX and hx-get attributes**
+- [x]**Step 7: Write failing test — index.html includes HTMX and hx-get attributes**
 
 ```java
 @Test
@@ -466,7 +466,7 @@ void shouldIncludeHtmxAttributes() throws Exception {
 }
 ```
 
-- [ ] **Step 8: Implement HTMX integration in index.html**
+- [x]**Step 8: Implement HTMX integration in index.html**
 
 1. Add `<script src="htmx.min.js"></script>` to the page via `html(title).script("htmx.min.js")`
 2. Add a detail pane div: `div().id("detail")` as the second column
@@ -477,12 +477,12 @@ void shouldIncludeHtmxAttributes() throws Exception {
 
 Use bulma-java's `.attr("hx-get", "...")` method to add custom attributes.
 
-- [ ] **Step 9: Run tests**
+- [x]**Step 9: Run tests**
 
 Run: `mvn test -pl core`
 Expected: PASS
 
-- [ ] **Step 10: Commit**
+- [x]**Step 10: Commit**
 
 ```bash
 git add core/
@@ -496,7 +496,7 @@ This is a verification/integration test for the end-to-end implemented in Tasks 
 **Files:**
 - Create: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 
-- [ ] **Step 1: Write Playwright test — clicking tree node loads fragment**
+- [x]**Step 1: Write Playwright test — clicking tree node loads fragment**
 
 ```java
 package com.github.t1.openapi.ui;
@@ -580,14 +580,14 @@ class BrowserTest {
 }
 ```
 
-- [ ] **Step 2: Run test**
+- [x]**Step 2: Run test**
 
 Run: `mvn test -pl core -Dtest=BrowserTest`
 Expected: PASS if Tasks 2-4 are complete. If FAIL, check that selectors match the actual DOM structure.
 
-- [ ] **Step 3: Fix any issues and get test green**
+- [x]**Step 3: Fix any issues and get test green**
 
-- [ ] **Step 4: Commit**
+- [x]**Step 4: Commit**
 
 ```bash
 git add core/
@@ -602,7 +602,7 @@ git commit -m "add Playwright test for HTMX fragment loading"
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`
 
-- [ ] **Step 1: Write failing Playwright test — arrow keys move focus**
+- [x]**Step 1: Write failing Playwright test — arrow keys move focus**
 
 ```java
 @Test
@@ -624,12 +624,12 @@ void arrowKeysNavigateTree() throws Exception {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x]**Step 2: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest=BrowserTest#arrowKeysNavigateTree`
 Expected: FAIL — no `role="tree"` attributes exist, no keyboard JS
 
-- [ ] **Step 3: Implement ARIA roles and keyboard navigation JS**
+- [x]**Step 3: Implement ARIA roles and keyboard navigation JS**
 
 Two parts:
 
@@ -714,19 +714,19 @@ Add CSS to highlight the selected item:
 [role="treeitem"][aria-selected="true"] > * { background-color: var(--bulma-primary-light, #ebfffc); }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x]**Step 4: Run test to verify it passes**
 
 Run: `mvn test -pl core -Dtest=BrowserTest#arrowKeysNavigateTree`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x]**Step 5: Commit**
 
 ```bash
 git add core/
 git commit -m "add arrow key navigation on path tree"
 ```
 
-- [ ] **Step 6: Write failing test — Enter loads fragment via keyboard**
+- [x]**Step 6: Write failing test — Enter loads fragment via keyboard**
 
 ```java
 @Test
@@ -743,19 +743,19 @@ void enterKeyLoadsFragment() throws Exception {
 }
 ```
 
-- [ ] **Step 7: Run test, make it pass**
+- [x]**Step 7: Run test, make it pass**
 
 Run: `mvn test -pl core -Dtest=BrowserTest#enterKeyLoadsFragment`
 Expected: PASS (Enter handler already implemented in Step 3)
 
-- [ ] **Step 8: Commit**
+- [x]**Step 8: Commit**
 
 ```bash
 git add core/
 git commit -m "Enter key loads HTMX fragment"
 ```
 
-- [ ] **Step 9: Write failing test — expand/collapse with arrow keys**
+- [x]**Step 9: Write failing test — expand/collapse with arrow keys**
 
 Tree nodes start collapsed (child `<ul role="group">` has `display:none`).
 
@@ -781,19 +781,19 @@ void arrowRightExpandsAndLeftCollapsesNode() throws Exception {
 }
 ```
 
-- [ ] **Step 10: Run test, make it pass**
+- [x]**Step 10: Run test, make it pass**
 
 Run: `mvn test -pl core -Dtest=BrowserTest#arrowRightExpandsAndLeftCollapsesNode`
 Expected: PASS if tree starts collapsed and ArrowRight/ArrowLeft toggle display. If FAIL, ensure the generated HTML renders child `[role="group"]` with `style="display:none"` by default.
 
-- [ ] **Step 11: Commit**
+- [x]**Step 11: Commit**
 
 ```bash
 git add core/
 git commit -m "arrow left/right expands and collapses tree nodes"
 ```
 
-- [ ] **Step 12: Write failing test — Tab moves to detail, Escape returns**
+- [x]**Step 12: Write failing test — Tab moves to detail, Escape returns**
 
 ```java
 @Test
@@ -819,13 +819,13 @@ void tabAndEscapeMoveFocus() throws Exception {
 }
 ```
 
-- [ ] **Step 13: Run test, make it pass**
+- [x]**Step 13: Run test, make it pass**
 
 The detail pane `<div id="detail">` needs `tabindex="0"` to be focusable. The Escape handler should call `document.querySelector('[role="tree"]').focus()`.
 
 Run: `mvn test -pl core -Dtest=BrowserTest#tabAndEscapeMoveFocus`
 
-- [ ] **Step 14: Commit**
+- [x]**Step 14: Commit**
 
 ```bash
 git add core/
@@ -840,7 +840,7 @@ git commit -m "Tab/Escape move focus between tree and detail pane"
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`
 
-- [ ] **Step 1: Write failing Playwright test — layout is side-by-side on desktop**
+- [x]**Step 1: Write failing Playwright test — layout is side-by-side on desktop**
 
 ```java
 @Test
@@ -858,11 +858,11 @@ void desktopLayoutIsSideBySide() throws Exception {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x]**Step 2: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest=BrowserTest#desktopLayoutIsSideBySide`
 
-- [ ] **Step 3: Implement two-column layout with Bulma columns**
+- [x]**Step 3: Implement two-column layout with Bulma columns**
 
 Wrap the tree and detail pane in Bulma columns. Use `columns()` with the tree in a narrower column (e.g., `is-one-third`) and detail in the rest. Bulma columns with `is-desktop` modifier stack on screens narrower than 1024px:
 
@@ -875,9 +875,9 @@ columns().attr("class", "columns is-desktop").content(
 
 The exact bulma-java API for column sizing may differ — check if there's a `ColumnSize` enum or use `.is(...)` modifiers.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x]**Step 4: Run test to verify it passes**
 
-- [ ] **Step 5: Write test — layout stacks on narrow viewport**
+- [x]**Step 5: Write test — layout stacks on narrow viewport**
 
 ```java
 @Test
@@ -895,11 +895,11 @@ void mobileLayoutIsStacked() throws Exception {
 }
 ```
 
-- [ ] **Step 6: Run test — should pass if Bulma responsive columns are correctly applied**
+- [x]**Step 6: Run test — should pass if Bulma responsive columns are correctly applied**
 
 If FAIL, verify the `is-desktop` class is on the columns container.
 
-- [ ] **Step 7: Commit**
+- [x]**Step 7: Commit**
 
 ```bash
 git add core/
@@ -916,7 +916,7 @@ git commit -m "responsive two-panel layout with Bulma columns"
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`
 
-- [ ] **Step 1: Create test fixture with parameters**
+- [x]**Step 1: Create test fixture with parameters**
 
 Create `core/src/test/resources/params.yaml`:
 
@@ -958,7 +958,7 @@ paths:
                     type: string
 ```
 
-- [ ] **Step 2: Write failing test — fragment contains input fields for parameters**
+- [x]**Step 2: Write failing test — fragment contains input fields for parameters**
 
 ```java
 @Test
@@ -977,11 +977,11 @@ void shouldGenerateParameterInputs() throws Exception {
 }
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x]**Step 3: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest=OpenApiUiGeneratorTest#shouldGenerateParameterInputs`
 
-- [ ] **Step 4: Implement parameter rendering in fragments**
+- [x]**Step 4: Implement parameter rendering in fragments**
 
 In the fragment generation code, iterate over `operation.getParameters()`. Each `io.swagger.v3.oas.models.parameters.Parameter` has:
 - `getName()` — parameter name (e.g., "petId")
@@ -1005,19 +1005,19 @@ for (var param : operation.getParameters()) {
 
 Group path parameters under a "Path Parameters" heading and query parameters under "Query Parameters".
 
-- [ ] **Step 5: Run tests**
+- [x]**Step 5: Run tests**
 
 Run: `mvn test -pl core`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x]**Step 6: Commit**
 
 ```bash
 git add core/
 git commit -m "render parameter input fields in operation fragments"
 ```
 
-- [ ] **Step 7: Write failing test — fragment shows response schema as JSON block**
+- [x]**Step 7: Write failing test — fragment shows response schema as JSON block**
 
 ```java
 @Test
@@ -1034,13 +1034,13 @@ void shouldRenderResponseSchema() throws Exception {
 }
 ```
 
-- [ ] **Step 8: Implement response schema rendering**
+- [x]**Step 8: Implement response schema rendering**
 
 Read the `200` response's content schema from `operation.getResponses().get("200").getContent().get("application/json").getSchema()`. Render the schema as a prettified JSON block in a `<pre><code>` element. Use Jackson or manual formatting to convert the schema object to readable JSON.
 
-- [ ] **Step 9: Run tests**
+- [x]**Step 9: Run tests**
 
-- [ ] **Step 10: Commit**
+- [x]**Step 10: Commit**
 
 ```bash
 git add core/
@@ -1055,7 +1055,7 @@ git commit -m "render response schema as JSON block in fragments"
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`
 
-- [ ] **Step 1: Write failing Playwright test — mode toggle exists and switches active mode**
+- [x]**Step 1: Write failing Playwright test — mode toggle exists and switches active mode**
 
 ```java
 @Test
@@ -1078,17 +1078,17 @@ void modeToggleHasThreeOptionsAndSwitches() throws Exception {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x]**Step 2: Run test to verify it fails**
 
-- [ ] **Step 3: Implement mode toggle in index.html**
+- [x]**Step 3: Implement mode toggle in index.html**
 
 Add a Bulma button group (`.buttons.has-addons`) at the top of the page with three buttons: Try (default/active), httpie, curl. Store the active mode in a `data-mode` attribute on a container div. JS click handler updates `data-mode` and toggles the `is-selected`/`is-primary` class on the active button.
 
 Also add a `<meta name="api-base-url" content="...">` tag with the first server URL (or `/` if no servers defined) so JS can read it.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x]**Step 4: Run test to verify it passes**
 
-- [ ] **Step 5: Commit**
+- [x]**Step 5: Commit**
 
 ```bash
 git add core/
@@ -1101,7 +1101,7 @@ git commit -m "add global Try/httpie/curl mode toggle"
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`
 
-- [ ] **Step 1: Write failing Playwright test — curl mode copies command to clipboard**
+- [x]**Step 1: Write failing Playwright test — curl mode copies command to clipboard**
 
 ```java
 @Test
@@ -1133,7 +1133,7 @@ void curlModeCopiesCommand() throws Exception {
 }
 ```
 
-- [ ] **Step 2: Write failing Playwright test — httpie mode copies command to clipboard**
+- [x]**Step 2: Write failing Playwright test — httpie mode copies command to clipboard**
 
 ```java
 @Test
@@ -1163,9 +1163,9 @@ void httpieModeCopiesCommand() throws Exception {
 }
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x]**Step 3: Run tests to verify they fail**
 
-- [ ] **Step 4: Implement URL construction and clipboard copy**
+- [x]**Step 4: Implement URL construction and clipboard copy**
 
 Add JS in the fragment (or in the main page's script) that:
 
@@ -1179,9 +1179,9 @@ Add JS in the fragment (or in the main page's script) that:
 
 The fragment's "Send" button should have `data-path="/pets/{petId}"` and `data-method="GET"` attributes so the JS knows which path template and method to use.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x]**Step 5: Run tests to verify they pass**
 
-- [ ] **Step 6: Commit**
+- [x]**Step 6: Commit**
 
 ```bash
 git add core/
@@ -1194,7 +1194,7 @@ git commit -m "copy as curl/httpie with parameter substitution"
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`
 
-- [ ] **Step 1: Add mock API endpoint capability to the test server**
+- [x]**Step 1: Add mock API endpoint capability to the test server**
 
 Extend the `serve()` method (or add a new helper) to also register mock API endpoints. Add a helper method:
 
@@ -1224,7 +1224,7 @@ void overrideBaseUrl(String baseUrl) throws Exception {
 }
 ```
 
-- [ ] **Step 2: Write failing Playwright test — Try mode sends request and shows prettified JSON**
+- [x]**Step 2: Write failing Playwright test — Try mode sends request and shows prettified JSON**
 
 ```java
 @Test
@@ -1251,9 +1251,9 @@ void tryModeSendsRequestAndShowsPrettifiedJson() throws Exception {
 }
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x]**Step 3: Run test to verify it fails**
 
-- [ ] **Step 4: Implement Try mode**
+- [x]**Step 4: Implement Try mode**
 
 In the "Send" button click handler, when mode is `try`:
 1. Construct the URL (same as curl/httpie)
@@ -1263,9 +1263,9 @@ In the "Send" button click handler, when mode is `try`:
 5. Otherwise: display raw text in `<pre>`
 6. Show HTTP status code above the response body
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x]**Step 5: Run test to verify it passes**
 
-- [ ] **Step 6: Write failing test — HTML response displayed as-is**
+- [x]**Step 6: Write failing test — HTML response displayed as-is**
 
 ```java
 @Test
@@ -1287,7 +1287,7 @@ void tryModeShowsHtmlResponseAsIs() throws Exception {
 }
 ```
 
-- [ ] **Step 7: Write failing test — XML response displayed as-is**
+- [x]**Step 7: Write failing test — XML response displayed as-is**
 
 ```java
 @Test
@@ -1309,7 +1309,7 @@ void tryModeShowsXmlResponseAsIs() throws Exception {
 }
 ```
 
-- [ ] **Step 8: Write failing test — YAML response displayed as-is**
+- [x]**Step 8: Write failing test — YAML response displayed as-is**
 
 ```java
 @Test
@@ -1332,16 +1332,16 @@ void tryModeShowsYamlResponseAsIs() throws Exception {
 }
 ```
 
-- [ ] **Step 9: Run all content-type tests, implement content-type detection**
+- [x]**Step 9: Run all content-type tests, implement content-type detection**
 
 The JS `fetch` handler checks `response.headers.get('Content-Type')`. If it contains `json`, prettify. Otherwise display as raw text. The HTML/XML/YAML tests should pass without special handling since they all fall into the "display as raw text" path.
 
-- [ ] **Step 10: Run all tests**
+- [x]**Step 10: Run all tests**
 
 Run: `mvn test -pl core`
 Expected: PASS
 
-- [ ] **Step 11: Commit**
+- [x]**Step 11: Commit**
 
 ```bash
 git add core/
@@ -1357,7 +1357,7 @@ git commit -m "Try mode sends requests and renders responses by content type"
 - Create: `maven-plugin/src/main/java/com/github/t1/openapi/ui/maven/GenerateMojo.java`
 - Create: `maven-plugin/src/test/java/com/github/t1/openapi/ui/maven/GenerateMojoTest.java`
 
-- [ ] **Step 1: Update maven-plugin POM**
+- [x]**Step 1: Update maven-plugin POM**
 
 Change packaging to `maven-plugin` and add required dependencies:
 
@@ -1385,7 +1385,7 @@ Change packaging to `maven-plugin` and add required dependencies:
 </dependencies>
 ```
 
-- [ ] **Step 2: Write failing test for the Mojo**
+- [x]**Step 2: Write failing test for the Mojo**
 
 ```java
 package com.github.t1.openapi.ui.maven;
@@ -1430,11 +1430,11 @@ class GenerateMojoTest {
 }
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x]**Step 3: Run test to verify it fails**
 
 Run: `mvn test -pl maven-plugin -Dtest=GenerateMojoTest`
 
-- [ ] **Step 4: Implement GenerateMojo**
+- [x]**Step 4: Implement GenerateMojo**
 
 ```java
 package com.github.t1.openapi.ui.maven;
@@ -1469,11 +1469,11 @@ public class GenerateMojo extends AbstractMojo {
 }
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x]**Step 5: Run test to verify it passes**
 
 Run: `mvn test -pl maven-plugin -Dtest=GenerateMojoTest`
 
-- [ ] **Step 6: Commit**
+- [x]**Step 6: Commit**
 
 ```bash
 git add maven-plugin/
@@ -1487,7 +1487,7 @@ git commit -m "add Maven plugin wrapping core generator"
 - Create: `cli/src/main/java/com/github/t1/openapi/ui/cli/Main.java`
 - Create: `cli/src/test/java/com/github/t1/openapi/ui/cli/MainTest.java`
 
-- [ ] **Step 1: Update cli POM with shade plugin and antrun for executable jar**
+- [x]**Step 1: Update cli POM with shade plugin and antrun for executable jar**
 
 The shade plugin must be declared **before** the antrun plugin so it runs first in the `package` phase (both bind to `package`, Maven runs them in declaration order).
 
@@ -1541,7 +1541,7 @@ exec java -jar "$0" "$@"
 </build>
 ```
 
-- [ ] **Step 2: Write failing test for Main**
+- [x]**Step 2: Write failing test for Main**
 
 ```java
 package com.github.t1.openapi.ui.cli;
@@ -1589,11 +1589,11 @@ class MainTest {
 }
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x]**Step 3: Run test to verify it fails**
 
 Run: `mvn test -pl cli -Dtest=MainTest`
 
-- [ ] **Step 4: Implement Main**
+- [x]**Step 4: Implement Main**
 
 ```java
 package com.github.t1.openapi.ui.cli;
@@ -1613,35 +1613,35 @@ public class Main {
 }
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x]**Step 5: Run test to verify it passes**
 
 Run: `mvn test -pl cli -Dtest=MainTest`
 
-- [ ] **Step 6: Commit**
+- [x]**Step 6: Commit**
 
 ```bash
 git add cli/
 git commit -m "add CLI with Main class"
 ```
 
-- [ ] **Step 7: Build and verify the executable jar**
+- [x]**Step 7: Build and verify the executable jar**
 
 Run: `mvn package -pl cli -am -DskipTests && ./cli/target/openapi-ui`
 Expected: prints usage error (`Usage: openapi-ui <spec-file> <output-dir>`)
 
-- [ ] **Step 8: Commit any build config fixes**
+- [x]**Step 8: Commit any build config fixes**
 
 ```bash
 git add cli/pom.xml
 git commit -m "make CLI a really executable jar with shell header"
 ```
 
-- [ ] **Step 9: Full build and test**
+- [x]**Step 9: Full build and test**
 
 Run: `mvn clean verify`
 Expected: BUILD SUCCESS, all tests pass
 
-- [ ] **Step 10: Commit any final fixes**
+- [x]**Step 10: Commit any final fixes**
 
 Only if needed. Stage specific files:
 

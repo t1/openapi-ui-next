@@ -37,3 +37,6 @@ JUnit 5 vs 6) that prevents incorrect implementations.
 When executing a plan: if a technology or dependency from the plan doesn't work as expected,
 STOP and discuss with the user. Do not substitute alternative libraries, frameworks, or architectural
 approaches. The plan's tech choices are constraints, not suggestions.
+
+When completing a step from a plan file (e.g. in `docs/superpowers/plans/`), tick its checkbox
+(`- [ ]` → `- [x]`) immediately.

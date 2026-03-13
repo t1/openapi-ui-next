@@ -18,6 +18,12 @@
             <artifactId>openapi-ui-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.32</version>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
     <build>

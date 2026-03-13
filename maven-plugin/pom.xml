@@ -13,6 +13,11 @@
     <artifactId>openapi-ui-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
 
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.github.t1</groupId>
