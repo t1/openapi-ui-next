@@ -112,6 +112,28 @@ class BrowserTest {
     }
 
     @Test
+    void tabAndEscapeMoveFocus() throws Exception {
+        generate("one-get.yaml");
+        var baseUrl = serve();
+
+        page.navigate(baseUrl);
+        page.locator("[role='tree']").focus();
+        page.keyboard().press("Enter");
+        page.waitForSelector("#detail :text('List pets')");
+
+        page.keyboard().press("Tab");
+        var focusInDetail = (Boolean) page.evaluate(
+                "() => document.activeElement.closest('#detail') !== null");
+        assertTrue(focusInDetail);
+
+        page.keyboard().press("Escape");
+        var treeHasFocus = (Boolean) page.evaluate(
+                "() => document.activeElement.closest('[role=\"tree\"]') !== null"
+                + " || document.activeElement === document.querySelector('[role=\"tree\"]')");
+        assertTrue(treeHasFocus);
+    }
+
+    @Test
     void clickingTreeNodeLoadsFragment() throws Exception {
         generate("one-get.yaml");
         var baseUrl = serve();
