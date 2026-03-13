@@ -2,6 +2,7 @@ package com.github.t1.openapi.ui;
 
 import com.github.t1.htmljava.Element;
 import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 
 import java.io.IOException;
@@ -89,6 +90,29 @@ public class OpenApiUiGenerator {
                             inputField.help(param.getDescription());
                         }
                         fragment.content(inputField);
+                    }
+                }
+                if (operation.getResponses() != null) {
+                    var response200 = operation.getResponses().get("200");
+                    if (response200 != null && response200.getContent() != null) {
+                        var jsonMedia = response200.getContent().get("application/json");
+                        if (jsonMedia != null && jsonMedia.getSchema() != null) {
+                            @SuppressWarnings("unchecked")
+                            var properties = (Map<String, Schema<?>>) jsonMedia.getSchema().getProperties();
+                            if (properties != null) {
+                                var sb = new StringBuilder();
+                                sb.append("{\n");
+                                var first = true;
+                                for (var propEntry : properties.entrySet()) {
+                                    if (!first) sb.append(",\n");
+                                    first = false;
+                                    sb.append("  \"").append(propEntry.getKey()).append("\": ")
+                                            .append(propEntry.getValue().getType());
+                                }
+                                sb.append("\n}");
+                                fragment.content(element("pre").content(code(sb.toString())));
+                            }
+                        }
                     }
                 }
                 var fragmentDir = outputDir.resolve(fullPath);
