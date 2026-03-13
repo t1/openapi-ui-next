@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.github.t1.bulmajava.elements.Title.title;
 import static com.github.t1.bulmajava.layout.Container.container;
 import static com.github.t1.bulmajava.layout.Section.section;
 import static com.github.t1.htmljava.Html.html;
@@ -36,13 +37,40 @@ public class OpenApiUiGenerator {
             root.add(segments, 0, pathItem);
         }
 
-        var list = renderNode(root);
+        var list = renderNode(root, "");
 
-        var title = openApi.getInfo().getTitle();
-        var page = html(title).body(section().content(container().content(list)));
+        var pageTitle = openApi.getInfo().getTitle();
+        var page = html(pageTitle).body(section().content(container().content(list)));
 
         Files.createDirectories(outputDir);
         Files.writeString(outputDir.resolve("index.html"), page.render());
+
+        generateFragments(root, "");
+
+        try (var htmx = getClass().getResourceAsStream("/htmx.min.js")) {
+            Files.copy(htmx, outputDir.resolve("htmx.min.js"));
+        }
+    }
+
+    private void generateFragments(PathNode node, String pathPrefix) throws IOException {
+        for (var entry : node.children.entrySet()) {
+            var segment = entry.getKey();
+            var child = entry.getValue();
+            var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
+            for (var opEntry : child.operations.entrySet()) {
+                var method = opEntry.getKey();
+                var operation = opEntry.getValue();
+                var summary = operation.getSummary() != null ? operation.getSummary() : "";
+                var fragment = div().content(
+                        title(method.name() + " /" + fullPath),
+                        p(summary)
+                );
+                var fragmentDir = outputDir.resolve(fullPath);
+                Files.createDirectories(fragmentDir);
+                Files.writeString(fragmentDir.resolve(method.name() + ".html"), fragment.render());
+            }
+            generateFragments(child, fullPath);
+        }
     }
 
     private List<String> splitSegments(String path) {
@@ -50,11 +78,12 @@ public class OpenApiUiGenerator {
         return List.of(stripped.split("/"));
     }
 
-    private Element renderNode(PathNode node) {
+    private Element renderNode(PathNode node, String pathPrefix) {
         Element list = ul();
         for (var entry : node.children.entrySet()) {
             var segment = entry.getKey();
             var child = entry.getValue();
+            var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
             Element item = li();
             item.content(span(segment));
             for (var opEntry : child.operations.entrySet()) {
@@ -64,7 +93,7 @@ public class OpenApiUiGenerator {
                 item.content(span(" " + method + " — " + summary));
             }
             if (!child.children.isEmpty()) {
-                Element childList = renderNode(child);
+                Element childList = renderNode(child, fullPath);
                 childList.style("display:none");
                 item.content(childList);
             }

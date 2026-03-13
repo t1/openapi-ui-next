@@ -25,6 +25,20 @@ class OpenApiUiGeneratorTest {
     }
 
     @Test
+    void shouldGenerateFragmentFiles() throws Exception {
+        var specPath = Path.of(getClass().getResource("/nested-paths.yaml").toURI());
+
+        new OpenApiUiGenerator(specPath, outputDir).generate();
+
+        assertTrue(Files.exists(outputDir.resolve("pets/GET.html")));
+        assertTrue(Files.exists(outputDir.resolve("pets/{petId}/GET.html")));
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        assertTrue(fragment.contains("List pets"));
+        assertTrue(fragment.contains("GET"));
+    }
+
+    @Test
     void shouldGenerateIndexWithOnePath() throws Exception {
         var specPath = Path.of(getClass().getResource("/one-get.yaml").toURI());
 
