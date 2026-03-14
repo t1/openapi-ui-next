@@ -325,7 +325,9 @@ public class OpenApiUiGenerator {
                                 var ct = resp.headers.get('Content-Type') || '';
                                 return resp.text().then(function(text) {
                                     var pre = document.createElement('pre');
-                                    if (ct.includes('json')) {
+                                    if (!resp.ok) {
+                                        text = resp.status + ' ' + resp.statusText + '\\n' + text;
+                                    } else if (ct.includes('json')) {
                                         try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
                                     }
                                     pre.textContent = text;
@@ -334,6 +336,13 @@ public class OpenApiUiGenerator {
                                     pre.className = 'response';
                                     detail.appendChild(pre);
                                 });
+                            }).catch(function(err) {
+                                var pre = document.createElement('pre');
+                                pre.textContent = 'Network error: ' + err.message;
+                                var existing = detail.querySelector('pre.response');
+                                if (existing) existing.remove();
+                                pre.className = 'response';
+                                detail.appendChild(pre);
                             });
                         }
                     });

@@ -104,6 +104,13 @@ class BrowserTest {
                 then(app.responseText()).contains("<pets>");
             }
 
+            @Test void tryModeShowsErrorForFailedFetch() {
+                app.mockEndpoint("/pets", "text/plain", "not found", 404);
+                navigateToListPetsAndSend();
+
+                then(app.responseText()).contains("404");
+            }
+
             @Test void tryModeShowsYamlResponseAsIs() {
                 app.mockEndpoint("/pets", "application/yaml", "pets:\n  - name: Fido\n    id: 1");
                 navigateToListPetsAndSend();

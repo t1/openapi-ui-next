@@ -111,6 +111,18 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         });
     }
 
+    void mockEndpoint(String path, String contentType, String body, int statusCode) {
+        try {server.removeContext("/api" + path);} catch (IllegalArgumentException ignored) {}
+        server.createContext("/api" + path, exchange -> {
+            exchange.getResponseHeaders().set("Content-Type", contentType);
+            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+            var bytes = body.getBytes();
+            exchange.sendResponseHeaders(statusCode, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+    }
+
     void mockRootEndpoint(String path, String contentType, String body) {
         try {server.removeContext(path);} catch (IllegalArgumentException ignored) {}
         server.createContext(path, exchange -> {
