@@ -415,20 +415,20 @@ git commit -m "replace hardcoded CSS colors with Bulma variables"
 
 ### Task 4: Final review
 
-- [ ] **Step 1: Verify no hardcoded HSL values remain**
+- [x] **Step 1: Verify no hardcoded HSL values remain**
 
 Search the CUSTOM_CSS for any remaining `hsl(` — there should be none.
 
-- [ ] **Step 2: Run full build**
+- [x] **Step 2: Run full build**
 
 Run: `mvn verify`
 
 Expected: All modules build and tests pass.
 
-- [ ] **Step 3: Review screenshots**
+- [x] **Step 3: Review screenshots**
 
 Review all screenshots in `core/target/screenshots/` for visual quality using the `frontend-design` skill.
 
-- [ ] **Step 4: Update docs if needed**
+- [x] **Step 4: Update docs if needed**
 
 Check if README or other docs reference the old CSS classes (e.g., `method-badge`). Update if found.
