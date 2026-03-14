@@ -18,6 +18,7 @@ class BrowserTest {
             app.waitForDetailContent("List pets");
 
             then(app.detailText()).contains("List pets");
+            app.screenshot("fragment-loaded");
         }
 
         @Test void tabAndEscapeMoveFocus() {
@@ -54,6 +55,7 @@ class BrowserTest {
 
             then(app.treeBoundingBox()[0]).as("Tree should be left of detail pane on desktop")
                     .isLessThan(app.detailBoundingBox()[0]);
+            app.screenshot("layout-desktop");
         }
 
         @Test void mobileLayoutIsStacked() {
@@ -62,6 +64,7 @@ class BrowserTest {
 
             then(app.treeBoundingBox()[1]).as("Tree should be above detail pane on mobile")
                     .isLessThan(app.detailBoundingBox()[1]);
+            app.screenshot("layout-mobile");
         }
 
         @Nested class InTryMode {
@@ -84,6 +87,7 @@ class BrowserTest {
                         .contains("\"name\"")
                         .contains("Fido")
                         .contains("\n");
+                app.screenshot("try-mode-json-response");
             }
 
             @Test void tryModeShowsHtmlResponseAsIs() {
@@ -121,6 +125,7 @@ class BrowserTest {
             app.clickTreeNode("pets/{petId}/GET.html");
             app.waitForInput("petId");
             app.fillInput("petId", "42");
+            app.screenshot("params-filled");
             app.clickSend();
 
             then(app.readClipboard())
@@ -160,6 +165,7 @@ class BrowserTest {
 
             app.pressKey("ArrowRight");
             then(app.isTextVisible("{petId}")).isTrue();
+            app.screenshot("tree-expanded");
 
             app.pressKey("ArrowLeft");
             then(app.isTextVisible("{petId}")).isFalse();

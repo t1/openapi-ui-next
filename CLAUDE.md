@@ -40,3 +40,9 @@ approaches. The plan's tech choices are constraints, not suggestions.
 
 When completing a step from a plan file (e.g. in `docs/superpowers/plans/`), tick its checkbox
 (`- [ ]` → `- [x]`) immediately.
+
+## UI Review
+
+After changing UI generation code (in `core`), run the tests (`mvn test -pl core`) and review
+the screenshots in `core/target/screenshots/` using the `frontend-design` plugin for design
+and UX quality. The screenshots are produced automatically by the Playwright browser tests.

@@ -10,6 +10,8 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+import com.microsoft.playwright.Page.ScreenshotOptions;
+
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URL;
@@ -170,6 +172,18 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     void setViewportSize(int width, int height) {page.setViewportSize(width, height);}
 
     void navigate(String url) {page.navigate(url);}
+
+    void screenshot(String name) {
+        var dir = Path.of("target/screenshots");
+        try {
+            Files.createDirectories(dir);
+        } catch (Exception e) {
+            throw new RuntimeException("could not create screenshots directory", e);
+        }
+        page.screenshot(new ScreenshotOptions()
+                .setPath(dir.resolve(name + ".png"))
+                .setFullPage(true));
+    }
 
     private static void deleteRecursively(Path path) {
         try (var walk = Files.walk(path)) {
