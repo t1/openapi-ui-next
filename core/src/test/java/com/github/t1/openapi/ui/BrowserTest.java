@@ -12,6 +12,10 @@ class BrowserTest {
     @Nested class GivenAppWithOneGet {
         @RegisterExtension static AppFixture app = context.launch("one-get.yaml");
 
+        @Test void shouldShowMethodBadge() {
+            then(app.hasMethodBadge("GET")).isTrue();
+        }
+
         @Test void shouldIncludeCustomStylesheet() {
             then(app.hasStylesheet("openapi-ui.css")).isTrue();
         }

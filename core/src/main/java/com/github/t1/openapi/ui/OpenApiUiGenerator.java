@@ -18,7 +18,6 @@ import static com.github.t1.bulmajava.basic.Color.PRIMARY;
 import static com.github.t1.bulmajava.columns.Column.column;
 import static com.github.t1.bulmajava.columns.Columns.columns;
 import static com.github.t1.bulmajava.elements.Button.button;
-import static com.github.t1.bulmajava.elements.Title.title;
 import static com.github.t1.bulmajava.form.Field.field;
 import static com.github.t1.bulmajava.form.Input.input;
 import static com.github.t1.bulmajava.form.InputType.TEXT;
@@ -107,8 +106,11 @@ public class OpenApiUiGenerator {
                 var method = opEntry.getKey();
                 var operation = opEntry.getValue();
                 var summary = operation.getSummary() != null ? operation.getSummary() : "";
+                var headingBadge = span(method.name()).classes("method-badge", "method-" + method.name().toLowerCase());
                 var fragment = div().content(
-                        title(method.name() + " /" + fullPath),
+                        div().classes("is-flex", "is-align-items-center", "mb-4").content(
+                                headingBadge,
+                                element("h2").classes("title", "is-3", "mb-0").content(" /" + fullPath)),
                         p(summary)
                 );
                 if (operation.getParameters() != null) {
@@ -183,8 +185,9 @@ public class OpenApiUiGenerator {
                 var method = opEntry.getKey();
                 var operation = opEntry.getValue();
                 var summary = operation.getSummary();
-                var label = summary != null ? " " + method + " — " + summary : " " + method;
-                item.content(span(label)
+                var badge = span(method.name()).classes("method-badge", "method-" + method.name().toLowerCase());
+                var labelText = summary != null ? " — " + summary : "";
+                item.content(span().content(badge).content(labelText)
                         .attr("hx-get", fullPath + "/" + method.name() + ".html")
                         .attr("hx-target", "#detail")
                         .attr("hx-swap", "innerHTML"));
@@ -215,6 +218,22 @@ public class OpenApiUiGenerator {
                 outline: 2px solid hsl(217, 71%, 53%);
                 outline-offset: 1px;
             }
+            .method-badge {
+                display: inline-block;
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-size: 0.75rem;
+                font-weight: 700;
+                color: white;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                vertical-align: middle;
+            }
+            .method-get { background-color: hsl(141, 53%, 53%); }
+            .method-post { background-color: hsl(217, 71%, 53%); }
+            .method-put { background-color: hsl(44, 100%, 48%); }
+            .method-delete { background-color: hsl(348, 86%, 61%); }
+            .method-patch { background-color: hsl(271, 100%, 71%); }
             """;
 
     private static final String TREE_KEYBOARD_JS = """
