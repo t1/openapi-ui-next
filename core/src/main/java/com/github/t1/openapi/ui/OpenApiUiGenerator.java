@@ -234,6 +234,10 @@ public class OpenApiUiGenerator {
             .method-put { background-color: hsl(44, 100%, 48%); }
             .method-delete { background-color: hsl(348, 86%, 61%); }
             .method-patch { background-color: hsl(271, 100%, 71%); }
+            .columns.is-desktop > .column.is-one-third {
+                border-right: 1px solid hsl(0, 0%, 92%);
+                padding-right: 1.5rem;
+            }
             """;
 
     private static final String TREE_KEYBOARD_JS = """
