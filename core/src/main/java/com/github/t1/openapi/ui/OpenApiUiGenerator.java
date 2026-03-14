@@ -302,7 +302,8 @@ public class OpenApiUiGenerator {
 
                         // Collect input values
                         var inputs = detail.querySelectorAll('input[name]');
-                        var url = baseUrl + pathTemplate;
+                        var url = baseUrl.startsWith('http') ? baseUrl + pathTemplate
+                                : new URL((baseUrl + pathTemplate).replace(/\\/+/g, '/'), window.location.origin).href;
                         var queryParams = [];
                         inputs.forEach(function(inp) {
                             var name = inp.getAttribute('name');

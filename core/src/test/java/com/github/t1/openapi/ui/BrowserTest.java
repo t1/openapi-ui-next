@@ -115,6 +115,21 @@ class BrowserTest {
         }
     }
 
+    @Nested class GivenAppWithRelativeBase {
+        @RegisterExtension static AppFixture app = context.launch("relative-base.yaml");
+
+        @Test void tryModeShouldResolveRelativeBaseUrl() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List items");
+            app.mockRootEndpoint("/items", "application/json", "{\"id\":\"1\"}");
+            app.clickSend();
+            app.waitForResponse();
+
+            then(app.responseText()).contains("\"id\"");
+        }
+    }
+
     @Nested class GivenAppWithNoSummary {
         @RegisterExtension static AppFixture app = context.launch("no-summary.yaml");
 
