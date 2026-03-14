@@ -69,9 +69,10 @@ public class OpenApiUiGenerator {
                 modeToggle
         );
         var body = section().content(container().content(
+                detailHeader,
                 columns().classes("is-desktop").content(
                         column().classes("is-one-third").content(list),
-                        column().classes("detail-column").content(detailHeader, detail)
+                        column().classes("detail-column").content(detail)
                 )
         ));
         var page = html(pageTitle)
@@ -186,7 +187,7 @@ public class OpenApiUiGenerator {
     private Element renderNode(PathNode node, String pathPrefix, boolean isRoot) {
         Element list = ul();
         if (isRoot) {
-            list.attr("role", "tree").attr("tabindex", "0");
+            list.attr("role", "tree").attr("tabindex", "0").attr("autofocus", "");
         } else {
             list.attr("role", "group");
         }
