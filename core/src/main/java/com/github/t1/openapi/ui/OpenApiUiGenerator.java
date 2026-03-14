@@ -180,8 +180,9 @@ public class OpenApiUiGenerator {
             for (var opEntry : child.operations.entrySet()) {
                 var method = opEntry.getKey();
                 var operation = opEntry.getValue();
-                var summary = operation.getSummary() != null ? operation.getSummary() : "";
-                item.content(span(" " + method + " — " + summary)
+                var summary = operation.getSummary();
+                var label = summary != null ? " " + method + " — " + summary : " " + method;
+                item.content(span(label)
                         .attr("hx-get", fullPath + "/" + method.name() + ".html")
                         .attr("hx-target", "#detail")
                         .attr("hx-swap", "innerHTML"));

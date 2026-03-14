@@ -115,6 +115,14 @@ class BrowserTest {
         }
     }
 
+    @Nested class GivenAppWithNoSummary {
+        @RegisterExtension static AppFixture app = context.launch("no-summary.yaml");
+
+        @Test void shouldNotShowEmDashWithoutSummary() {
+            then(app.selectedTreeItemText()).doesNotContain("—");
+        }
+    }
+
     @Nested class GivenAppWithParams {
         @RegisterExtension static AppFixture app = context.launch("params.yaml");
 
