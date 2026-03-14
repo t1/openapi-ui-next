@@ -9,7 +9,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 
 import java.io.File;
 
-@Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_RESOURCES)
+@Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_RESOURCES, threadSafe = true)
 public class GenerateMojo extends AbstractMojo {
     @Parameter(property = "openapi.specFile", required = true)
     File specFile;
