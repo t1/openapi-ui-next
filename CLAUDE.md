@@ -32,6 +32,11 @@ Before writing or editing **any** code — including one-line fixes — invoke t
 language/framework skill (e.g. `tdder:java` for `.java` files). No exception for "quick" edits.
 Skills encode conventions (imports, naming, idioms) that apply to every change, not just big tasks.
 
+## Workflow
+
+We work **trunk-based** — all commits go directly to `trunk`. Skip the
+`superpowers:finishing-a-development-branch` skill; it's for feature-branch workflows.
+
 ## Plan Execution
 
 When executing a plan: if a technology or dependency from the plan doesn't work as expected,

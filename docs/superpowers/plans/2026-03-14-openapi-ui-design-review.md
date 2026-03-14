@@ -25,9 +25,9 @@ The tree shows `pets GET —` with a dangling dash when an operation has no summ
 - Test: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 - Test resource: `core/src/test/resources/one-get.yaml` (verify it has a summary to confirm existing behavior)
 
-- [ ] **Step 1: Read the test spec `one-get.yaml`** to understand current test data
+- [x] **Step 1: Read the test spec `one-get.yaml`** to understand current test data
 
-- [ ] **Step 2: Write a failing test** in `BrowserTest.GivenAppWithOneGet`
+- [x] **Step 2: Write a failing test** in `BrowserTest.GivenAppWithOneGet`
 
 A test that verifies tree items without a summary don't show the em-dash. The existing
 `one-get.yaml` spec has a summary ("List pets"), so the tree shows `pets GET — List pets`.
@@ -62,12 +62,12 @@ Add test in `BrowserTest`:
 }
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest='BrowserTest$GivenAppWithNoSummary'`
 Expected: FAIL — tree item text currently contains `—` even when summary is empty.
 
-- [ ] **Step 4: Fix the generator**
+- [x] **Step 4: Fix the generator**
 
 In `OpenApiUiGenerator.java` line 183-184, change the tree item span to conditionally
 include the em-dash and summary:
@@ -85,12 +85,12 @@ var label = summary != null ? " " + method + " — " + summary : " " + method;
 item.content(span(label)
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `mvn test -pl core`
 Expected: ALL PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add core/src/test/resources/no-summary.yaml
@@ -108,7 +108,7 @@ git commit -m "fix dangling em-dash when operation has no summary"
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java` (the `TREE_KEYBOARD_JS` constant, line ~304)
 - Test: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 
-- [ ] **Step 1: Write a failing test**
+- [x] **Step 1: Write a failing test**
 
 The existing `InTryMode` tests already use `withBaseUrlOverride()` which replaces the spec's
 absolute URL with the test server URL. That masks the bug. Add a new test that uses a spec
@@ -178,12 +178,12 @@ void mockRootEndpoint(String path, String contentType, String body) {
 Update the test to use `app.mockRootEndpoint("/items", "application/json", "{\"id\":\"1\"}")`
 instead of `app.mockEndpoint(...)`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest='BrowserTest$GivenAppWithRelativeBase'`
 Expected: FAIL — fetch goes to wrong URL.
 
-- [ ] **Step 3: Fix the JavaScript**
+- [x] **Step 3: Fix the JavaScript**
 
 In `TREE_KEYBOARD_JS`, line ~304, change URL construction to resolve relative base URLs:
 
@@ -201,12 +201,12 @@ var url = baseUrl.startsWith('http') ? baseUrl + pathTemplate
 This uses `new URL()` to properly normalize the path (avoiding double slashes when baseUrl
 is `/` and pathTemplate is `/items`).
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `mvn test -pl core`
 Expected: ALL PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add core/src/test/resources/relative-base.yaml
@@ -224,7 +224,7 @@ Network errors and non-2xx responses fail silently.
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java` (TREE_KEYBOARD_JS, lines ~321-335)
 - Test: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 
-- [ ] **Step 1: Write a failing test for error responses**
+- [x] **Step 1: Write a failing test for error responses**
 
 Add test in `GivenAppWithOneGet.InTryMode`:
 ```java
@@ -252,12 +252,12 @@ void mockEndpoint(String path, String contentType, String body, int statusCode) 
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest='BrowserTest$GivenAppWithOneGet$InTryMode#tryModeShowsErrorForFailedFetch'`
 Expected: FAIL — no response pre element rendered for error responses.
 
-- [ ] **Step 3: Fix the JavaScript**
+- [x] **Step 3: Fix the JavaScript**
 
 In `TREE_KEYBOARD_JS`, replace the fetch block (lines ~321-335):
 
@@ -310,12 +310,12 @@ New code:
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `mvn test -pl core`
 Expected: ALL PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add core/src/test/java/com/github/t1/openapi/ui/AppFixture.java
@@ -334,7 +334,7 @@ In curl/httpie modes, clicking Send copies to clipboard with no visual indicatio
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java` (TREE_KEYBOARD_JS, lines ~317-319)
 - Test: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 
-- [ ] **Step 1: Write a failing test**
+- [x] **Step 1: Write a failing test**
 
 In `GivenAppWithParams`:
 ```java
@@ -356,12 +356,12 @@ Add `sendButtonText()` to `AppFixture`:
 String sendButtonText() {return page.locator("#detail button[data-path]").textContent();}
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest='BrowserTest$GivenAppWithParams#curlModeShowsCopiedFeedback'`
 Expected: FAIL — button still says "Send".
 
-- [ ] **Step 3: Fix the JavaScript**
+- [x] **Step 3: Fix the JavaScript**
 
 In `TREE_KEYBOARD_JS`, after the clipboard write calls (lines ~317-319), add feedback:
 
@@ -393,12 +393,12 @@ function showCopied(btn) {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `mvn test -pl core`
 Expected: ALL PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add core/src/test/java/com/github/t1/openapi/ui/AppFixture.java
@@ -427,7 +427,7 @@ void clickSend() {page.locator("#detail button[data-path]").click();}
 
 This must be done before the JS change.
 
-- [ ] **Step 1: Write a failing test**
+- [x] **Step 1: Write a failing test**
 
 In `GivenAppWithParams`:
 ```java
@@ -442,12 +442,12 @@ In `GivenAppWithParams`:
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest='BrowserTest$GivenAppWithParams#curlModeShowsCopyButtonLabel'`
 Expected: FAIL — button says "Send".
 
-- [ ] **Step 3: Fix the JavaScript**
+- [x] **Step 3: Fix the JavaScript**
 
 Two triggers need to update the button label:
 
@@ -475,12 +475,12 @@ document.body.addEventListener('htmx:afterSwap', function() {
 });
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `mvn test -pl core`
 Expected: ALL PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java
@@ -496,7 +496,7 @@ No feedback during fetch.
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java` (TREE_KEYBOARD_JS)
 - Test: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 
-- [ ] **Step 1: Write a failing test**
+- [x] **Step 1: Write a failing test**
 
 This is harder to test because the loading state is transient. Test that after a successful
 fetch, the button is re-enabled and shows "Send" (not stuck in "Sending..." state):
@@ -520,12 +520,12 @@ boolean isSendButtonEnabled() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it passes** (it should pass with current code as a baseline)
+- [x] **Step 2: Run test to verify it passes** (it should pass with current code as a baseline)
 
 Run: `mvn test -pl core -Dtest='BrowserTest$GivenAppWithOneGet$InTryMode#tryModeSendButtonRecoversAfterResponse'`
 Expected: PASS — this is a regression guard.
 
-- [ ] **Step 3: Add loading state to the JavaScript**
+- [x] **Step 3: Add loading state to the JavaScript**
 
 In `TREE_KEYBOARD_JS`, in the try mode block, wrap the fetch with loading state management:
 
@@ -547,12 +547,12 @@ sendBtn.disabled = false;
 sendBtn.textContent = 'Send';
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `mvn test -pl core`
 Expected: ALL PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add core/src/test/java/com/github/t1/openapi/ui/AppFixture.java
@@ -571,7 +571,7 @@ Add selected, hover, and focus styling for tree items.
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`
 - Test: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 
-- [ ] **Step 1: Write a failing test**
+- [x] **Step 1: Write a failing test**
 
 Verify the custom stylesheet is linked and the CSS file exists:
 
@@ -590,12 +590,12 @@ boolean hasStylesheet(String name) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest='BrowserTest$GivenAppWithOneGet#shouldIncludeCustomStylesheet'`
 Expected: FAIL — no custom stylesheet linked.
 
-- [ ] **Step 3: Add the custom stylesheet**
+- [x] **Step 3: Add the custom stylesheet**
 
 In `OpenApiUiGenerator.java`, add a new string constant:
 ```java
@@ -631,12 +631,12 @@ var page = html(pageTitle)
         .script("htmx.min.js")
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `mvn test -pl core`
 Expected: ALL PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add core/src/main/java/com/github/t1/openapi/ui/AppFixture.java
@@ -653,7 +653,7 @@ Color-coded method tags in the tree and detail heading.
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`
 - Test: `core/src/test/java/com/github/t1/openapi/ui/BrowserTest.java`
 
-- [ ] **Step 1: Write a failing test**
+- [x] **Step 1: Write a failing test**
 
 In `GivenAppWithOneGet`:
 ```java
@@ -669,12 +669,12 @@ boolean hasMethodBadge(String method) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest='BrowserTest$GivenAppWithOneGet#shouldShowMethodBadge'`
 Expected: FAIL — no elements with class `method-badge`.
 
-- [ ] **Step 3: Add method badges to the generator**
+- [x] **Step 3: Add method badges to the generator**
 
 In `renderNode()` (line ~184), change the tree item content from plain text to a badge span:
 
@@ -731,7 +731,7 @@ Add CSS for method badges to `CUSTOM_CSS`:
 .method-patch { background-color: hsl(271, 100%, 71%); }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `mvn test -pl core`
 Expected: ALL PASS. Existing tests that call `detailText()` check for text content like
@@ -739,13 +739,13 @@ Expected: ALL PASS. Existing tests that call `detailText()` check for text conte
 change (from `title()` to badge + `h2`) does not affect `textContent()` assertions since
 they match substrings.
 
-- [ ] **Step 5: Take screenshots and review**
+- [x] **Step 5: Take screenshots and review**
 
 Run: `mvn test -pl core`
 Then visually review `core/target/screenshots/` using the `frontend-design` plugin per
 CLAUDE.md instructions. Adjust colors/sizing if needed.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add core/src/main/java/com/github/t1/openapi/ui/AppFixture.java
@@ -761,7 +761,7 @@ Add a visual boundary between the tree and detail columns.
 **Files:**
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java` (CUSTOM_CSS)
 
-- [ ] **Step 1: Add CSS for the separator**
+- [x] **Step 1: Add CSS for the separator**
 
 No test needed — this is pure visual styling. Add to `CUSTOM_CSS`:
 ```css
@@ -771,12 +771,12 @@ No test needed — this is pure visual styling. Add to `CUSTOM_CSS`:
 }
 ```
 
-- [ ] **Step 2: Run tests to verify nothing broke**
+- [x] **Step 2: Run tests to verify nothing broke**
 
 Run: `mvn test -pl core`
 Expected: ALL PASS
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java
@@ -785,17 +785,17 @@ git commit -m "add visual separator between tree and detail panes"
 
 ### Task 10: Final screenshot review
 
-- [ ] **Step 1: Run all tests**
+- [x] **Step 1: Run all tests**
 
 Run: `mvn test -pl core`
 Expected: ALL PASS
 
-- [ ] **Step 2: Review screenshots**
+- [x] **Step 2: Review screenshots**
 
 Review all screenshots in `core/target/screenshots/` using the `frontend-design` plugin.
 Verify the combined visual result is cohesive and the design improvements work together.
 
-- [ ] **Step 3: Run full build**
+- [x] **Step 3: Run full build**
 
 Run: `mvn verify`
 Expected: ALL PASS including demo module.
