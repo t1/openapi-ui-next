@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-[//]: # (Read `README.md` before starting any task — it has project overview, architecture, and conventions.)
+Read `README.md` before starting any task — it has project overview, architecture, and conventions.
 
 Do **NOT** read the `TODO.md`, unless instructed to.
 
@@ -28,9 +28,9 @@ If you create a new file, also stage exactly this file to git, but not any other
 
 ## Skills
 
-Before writing any code, scan the available skills list. If any skill name or trigger phrase
-appears in the task, invoke it FIRST. Skills contain version-specific API guidance (e.g.
-JUnit 5 vs 6) that prevents incorrect implementations.
+Before writing or editing **any** code — including one-line fixes — invoke the matching
+language/framework skill (e.g. `tdder:java` for `.java` files). No exception for "quick" edits.
+Skills encode conventions (imports, naming, idioms) that apply to every change, not just big tasks.
 
 ## Plan Execution
 
