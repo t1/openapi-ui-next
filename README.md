@@ -18,6 +18,7 @@ Generates static, keyboard-navigable HTML UIs from OpenAPI specifications.
 | `core` | Generator library — parses specs and produces HTML + CSS + JS |
 | `cli` | Command-line tool — executable fat jar with shell header |
 | `maven-plugin` | Maven plugin — integrates generation into build pipelines |
+| `demo` | Quarkus petstore app — exercises the plugin end-to-end |
 
 ## Build
 
@@ -54,6 +55,17 @@ mvn -pl cli package
     </executions>
 </plugin>
 ```
+
+### Demo App
+
+A Quarkus petstore app that uses the Maven plugin to generate and serve the UI:
+
+```bash
+mvn package -pl demo -am
+java -jar demo/target/quarkus-app/quarkus-run.jar
+```
+
+Then open http://localhost:8080/openapi-ui/index.html.
 
 ## Tech Stack
 
