@@ -12,6 +12,10 @@ class BrowserTest {
     @Nested class GivenAppWithOneGet {
         @RegisterExtension static AppFixture app = context.launch("one-get.yaml");
 
+        @Test void shouldIncludeCustomStylesheet() {
+            then(app.hasStylesheet("openapi-ui.css")).isTrue();
+        }
+
         @Test void enterKeyLoadsFragment() {
             app.focusTree();
             app.pressKey("Enter");

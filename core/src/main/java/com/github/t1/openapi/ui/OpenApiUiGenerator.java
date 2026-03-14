@@ -70,12 +70,14 @@ public class OpenApiUiGenerator {
         ));
         var page = html(pageTitle)
                 .stylesheet("bulma.min.css")
+                .stylesheet("openapi-ui.css")
                 .script("htmx.min.js")
                 .javaScriptCode(TREE_KEYBOARD_JS)
                 .body(body);
 
         Files.createDirectories(outputDir);
         Files.writeString(outputDir.resolve("index.html"), page.render());
+        Files.writeString(outputDir.resolve("openapi-ui.css"), CUSTOM_CSS);
 
         generateFragments(root, "");
 
@@ -196,6 +198,24 @@ public class OpenApiUiGenerator {
         }
         return list;
     }
+
+    private static final String CUSTOM_CSS = """
+            [role="treeitem"] > span {
+                cursor: pointer;
+                padding: 2px 6px;
+                border-radius: 4px;
+            }
+            [role="treeitem"] > span:hover {
+                background-color: hsl(0, 0%, 96%);
+            }
+            [role="treeitem"][aria-selected="true"] > span:first-child {
+                background-color: hsl(217, 71%, 95%);
+            }
+            [role="tree"]:focus-visible [role="treeitem"][aria-selected="true"] > span:first-child {
+                outline: 2px solid hsl(217, 71%, 53%);
+                outline-offset: 1px;
+            }
+            """;
 
     private static final String TREE_KEYBOARD_JS = """
             document.addEventListener('DOMContentLoaded', function() {
