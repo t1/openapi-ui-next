@@ -6,7 +6,6 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -92,7 +91,7 @@ public class OpenApiUiGenerator {
         var version = props.getProperty("version");
         try (var resource = getClass().getResourceAsStream(
                 "/META-INF/resources/webjars/" + artifactId + "/" + version + "/" + resourcePath)) {
-            Files.copy(resource, outputDir.resolve(outputName));
+            Files.copy(resource, outputDir.resolve(outputName), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
