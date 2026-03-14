@@ -177,6 +177,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void clickSend() {page.locator("#detail button:text('Send')").click();}
 
+    String sendButtonText() {return page.locator("#detail button[data-path]").textContent();}
+
     void waitForResponse() {page.waitForSelector("#detail pre.response");}
 
     String responseText() {return page.locator("#detail pre.response").textContent();}

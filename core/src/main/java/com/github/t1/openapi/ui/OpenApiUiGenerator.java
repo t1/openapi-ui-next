@@ -288,6 +288,12 @@ public class OpenApiUiGenerator {
                     });
                 }
 
+                function showCopied(btn) {
+                    var original = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    setTimeout(function() { btn.textContent = original; }, 1500);
+                }
+
                 // Send button handler (delegated from detail pane)
                 if (detail) {
                     detail.addEventListener('click', function(e) {
@@ -318,8 +324,10 @@ public class OpenApiUiGenerator {
 
                         if (mode === 'curl') {
                             navigator.clipboard.writeText('curl ' + url);
+                            showCopied(sendBtn);
                         } else if (mode === 'httpie') {
                             navigator.clipboard.writeText('http ' + method + ' ' + url);
+                            showCopied(sendBtn);
                         } else if (mode === 'try') {
                             fetch(url).then(function(resp) {
                                 var ct = resp.headers.get('Content-Type') || '';
