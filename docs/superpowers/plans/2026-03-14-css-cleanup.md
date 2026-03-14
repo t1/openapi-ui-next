@@ -18,7 +18,7 @@
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/AppFixture.java`
 
-- [ ] **Step 1: Update imports in OpenApiUiGenerator**
+- [x] **Step 1: Update imports in OpenApiUiGenerator**
 
 Add to imports:
 
@@ -30,7 +30,7 @@ import static com.github.t1.bulmajava.elements.Tag.tag;
 
 Remove unused Color import if it was only `PRIMARY` (keep `PRIMARY` — it's used for buttons).
 
-- [ ] **Step 2: Add method-to-color mapping**
+- [x] **Step 2: Add method-to-color mapping**
 
 Add a helper method:
 
@@ -47,7 +47,7 @@ private static Color methodColor(PathItem.HttpMethod method) {
 }
 ```
 
-- [ ] **Step 3: Replace badge creation in renderNode (tree badges)**
+- [x] **Step 3: Replace badge creation in renderNode (tree badges)**
 
 In `renderNode()` (~line 197), replace:
 
@@ -61,7 +61,7 @@ with:
 var badge = tag(method.name()).is(methodColor(method));
 ```
 
-- [ ] **Step 4: Replace badge creation in generateFragments (detail badges)**
+- [x] **Step 4: Replace badge creation in generateFragments (detail badges)**
 
 In `generateFragments()` (~line 112), replace:
 
@@ -76,7 +76,7 @@ with:
 var headingBadge = tag(method.name()).is(methodColor(method), MEDIUM);
 ```
 
-- [ ] **Step 5: Update AppFixture.hasMethodBadge selector**
+- [x] **Step 5: Update AppFixture.hasMethodBadge selector**
 
 In `AppFixture.java` line 184-186, replace:
 
@@ -94,7 +94,7 @@ boolean hasMethodBadge(String method) {
 }
 ```
 
-- [ ] **Step 6: Delete method badge CSS**
+- [x] **Step 6: Delete method badge CSS**
 
 In `CUSTOM_CSS`, delete these lines (287-308):
 
@@ -109,13 +109,13 @@ In `CUSTOM_CSS`, delete these lines (287-308):
 .method-patch { ... }
 ```
 
-- [ ] **Step 7: Run tests**
+- [x] **Step 7: Run tests**
 
 Run: `mvn test -pl core`
 
 Expected: All tests pass. Review screenshots in `core/target/screenshots/`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java core/src/test/java/com/github/t1/openapi/ui/AppFixture.java

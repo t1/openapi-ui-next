@@ -1,5 +1,6 @@
 package com.github.t1.openapi.ui;
 
+import com.github.t1.bulmajava.basic.Color;
 import com.github.t1.htmljava.Element;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.Schema;
@@ -14,10 +15,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import static com.github.t1.bulmajava.basic.Color.PRIMARY;
+import static com.github.t1.bulmajava.basic.Color.*;
+import static com.github.t1.bulmajava.basic.Size.MEDIUM;
 import static com.github.t1.bulmajava.columns.Column.column;
 import static com.github.t1.bulmajava.columns.Columns.columns;
 import static com.github.t1.bulmajava.elements.Button.button;
+import static com.github.t1.bulmajava.elements.Tag.tag;
 import static com.github.t1.bulmajava.form.Field.field;
 import static com.github.t1.bulmajava.form.Input.input;
 import static com.github.t1.bulmajava.form.InputType.TEXT;
@@ -109,8 +112,7 @@ public class OpenApiUiGenerator {
                 var method = opEntry.getKey();
                 var operation = opEntry.getValue();
                 var summary = operation.getSummary() != null ? operation.getSummary() : "";
-                var headingBadge = span(method.name()).classes("method-badge", "detail-badge",
-                        "method-" + method.name().toLowerCase());
+                var headingBadge = tag(method.name()).is(methodColor(method), MEDIUM);
                 var fragment = div().content(
                         div().classes("is-flex", "is-align-items-center", "mb-5").style("gap:0.75rem").content(
                                 headingBadge,
@@ -167,6 +169,17 @@ public class OpenApiUiGenerator {
         return List.of(stripped.split("/"));
     }
 
+    private static Color methodColor(PathItem.HttpMethod method) {
+        return switch (method) {
+            case GET -> SUCCESS;
+            case POST -> LINK;
+            case PUT -> WARNING;
+            case DELETE -> DANGER;
+            case PATCH -> PRIMARY;
+            default -> INFO;
+        };
+    }
+
     private boolean firstTreeItem = true;
 
     private Element renderNode(PathNode node, String pathPrefix, boolean isRoot) {
@@ -194,7 +207,7 @@ public class OpenApiUiGenerator {
                 var method = opEntry.getKey();
                 var operation = opEntry.getValue();
                 var summary = operation.getSummary();
-                var badge = span(method.name()).classes("method-badge", "method-" + method.name().toLowerCase());
+                var badge = tag(method.name()).is(methodColor(method));
                 var labelText = summary != null ? " — " + summary : "";
                 item.content(span().classes("tree-op-label").content(badge).content(labelText)
                         .attr("hx-get", fullPath + "/" + method.name() + ".html")
@@ -283,29 +296,6 @@ public class OpenApiUiGenerator {
                     min-height: calc(100vh - 4rem);
                 }
             }
-            /* --- Method badges --- */
-            .method-badge {
-                display: inline-block;
-                padding: 2px 8px;
-                border-radius: 4px;
-                font-size: 0.7rem;
-                font-weight: 700;
-                color: white;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                vertical-align: middle;
-                font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
-            }
-            .method-badge.detail-badge {
-                font-size: 0.85rem;
-                padding: 4px 12px;
-                border-radius: 5px;
-            }
-            .method-get { background-color: hsl(141, 53%, 45%); }
-            .method-post { background-color: hsl(217, 71%, 50%); }
-            .method-put { background-color: hsl(38, 90%, 45%); }
-            .method-delete { background-color: hsl(348, 75%, 52%); }
-            .method-patch { background-color: hsl(271, 60%, 55%); }
             /* --- Detail pane --- */
             .detail-header {
                 display: flex;
