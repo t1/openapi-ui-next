@@ -129,13 +129,13 @@ git commit -m "replace method badges with Bulma Tag component"
 **Files:**
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java`
 
-- [ ] **Step 1: Add Box import**
+- [x] **Step 1: Add Box import**
 
 ```java
 import static com.github.t1.bulmajava.elements.Box.box;
 ```
 
-- [ ] **Step 2: Replace div with box in generate()**
+- [x] **Step 2: Replace div with box in generate()**
 
 In `generate()` (~line 62), replace:
 
@@ -149,7 +149,7 @@ with:
 var detail = box().id("detail").attr("tabindex", "0");
 ```
 
-- [ ] **Step 3: Delete #detail color/border/shadow CSS**
+- [x] **Step 3: Delete #detail color/border/shadow CSS**
 
 In `CUSTOM_CSS`, replace the `#detail` block (lines 327-332):
 
@@ -165,13 +165,13 @@ In `CUSTOM_CSS`, replace the `#detail` block (lines 327-332):
 
 with nothing — delete it entirely. The Bulma `.box` class provides background, border-radius, padding, shadow, and border with dark mode support.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `mvn test -pl core`
 
 Expected: All tests pass. The `#detail` CSS selectors in AppFixture still work because the id is preserved.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java

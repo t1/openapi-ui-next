@@ -19,6 +19,7 @@ import static com.github.t1.bulmajava.basic.Color.*;
 import static com.github.t1.bulmajava.basic.Size.MEDIUM;
 import static com.github.t1.bulmajava.columns.Column.column;
 import static com.github.t1.bulmajava.columns.Columns.columns;
+import static com.github.t1.bulmajava.elements.Box.box;
 import static com.github.t1.bulmajava.elements.Button.button;
 import static com.github.t1.bulmajava.elements.Tag.tag;
 import static com.github.t1.bulmajava.form.Field.field;
@@ -62,7 +63,7 @@ public class OpenApiUiGenerator {
                 );
 
         var pageTitle = openApi.getInfo().getTitle();
-        var detail = div().id("detail").attr("tabindex", "0");
+        var detail = box().id("detail").attr("tabindex", "0");
         var detailHeader = div().classes("detail-header").content(
                 element("h1").classes("title").content(pageTitle),
                 modeToggle
@@ -313,13 +314,6 @@ public class OpenApiUiGenerator {
             }
             .detail-column {
                 padding-left: 2rem;
-            }
-            #detail {
-                background-color: white;
-                border-radius: 8px;
-                padding: 1.5rem;
-                box-shadow: 0 1px 3px hsla(220, 20%, 20%, 0.06);
-                border: 1px solid hsl(220, 15%, 92%);
             }
             #detail .endpoint-path {
                 font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
