@@ -284,9 +284,20 @@ public class OpenApiUiGenerator {
                                 b.classList.remove('is-selected', 'is-primary');
                             });
                             btn.classList.add('is-selected', 'is-primary');
+                            var newMode = btn.getAttribute('data-mode-btn');
+                            var sendBtns = document.querySelectorAll('#detail button[data-path]');
+                            sendBtns.forEach(function(b) { b.textContent = newMode === 'try' ? 'Send' : 'Copy'; });
                         });
                     });
                 }
+
+                document.body.addEventListener('htmx:afterSwap', function() {
+                    var currentMode = modeContainer ? modeContainer.getAttribute('data-mode') : 'try';
+                    if (currentMode !== 'try') {
+                        var sendBtns = document.querySelectorAll('#detail button[data-path]');
+                        sendBtns.forEach(function(b) { b.textContent = 'Copy'; });
+                    }
+                });
 
                 function showCopied(btn) {
                     var original = btn.textContent;

@@ -163,6 +163,16 @@ class BrowserTest {
                     .contains("https://api.example.com/pets/42");
         }
 
+        @Test void curlModeShowsCopyButtonLabel() {
+            app.clickModeButton("curl");
+            app.focusTree();
+            app.pressKey("ArrowRight");
+            app.clickTreeNode("pets/{petId}/GET.html");
+            app.waitForInput("petId");
+
+            then(app.sendButtonText()).isEqualTo("Copy");
+        }
+
         @Test void curlModeShowsCopiedFeedback() {
             app.clickModeButton("curl");
             app.focusTree();
