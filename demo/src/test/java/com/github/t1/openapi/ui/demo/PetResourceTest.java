@@ -29,6 +29,16 @@ class PetResourceTest {
                 .body("status", is("available"));
     }
 
+    @Test void shouldFilterPetsByStatus() {
+        given()
+                .queryParam("status", "available")
+                .when().get("/pets")
+                .then()
+                .statusCode(200)
+                .body("$.size()", is(1))
+                .body("[0].name", is("Max"));
+    }
+
     @Test
     void shouldReturn404ForUnknownPet() {
         given()

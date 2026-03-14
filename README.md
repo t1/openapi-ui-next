@@ -81,10 +81,11 @@ Then open http://localhost:8080/openapi-ui/index.html.
 ```
 output/
 ├── index.html          # Path tree + layout + keyboard navigation
+├── openapi-ui.css
 ├── bulma.min.css
 ├── htmx.min.js
 └── pets/
     ├── GET.html         # Fragment for GET /pets
-    └── {petId}/
-        └── GET.html     # Fragment for GET /pets/{petId}
+    └── {id}/
+        └── GET.html     # Fragment for GET /pets/{id}
 ```
