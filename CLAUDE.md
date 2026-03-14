@@ -32,6 +32,14 @@ Before writing or editing **any** code — including one-line fixes — invoke t
 language/framework skill (e.g. `tdder:java` for `.java` files). No exception for "quick" edits.
 Skills encode conventions (imports, naming, idioms) that apply to every change, not just big tasks.
 
+## TDD
+
+All behavioral changes — no matter how small — **must** be test-first. Write a failing test,
+see it fail, then implement. No exceptions for "obvious" or "trivial" changes. If you catch
+yourself thinking "this is too simple for a test," that's exactly when you need one.
+
+Invoke `tdder:tdd` before any feature or bugfix work.
+
 ## Workflow
 
 We work **trunk-based** — all commits go directly to `trunk`. Skip the
