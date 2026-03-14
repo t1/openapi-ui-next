@@ -104,6 +104,14 @@ class BrowserTest {
                 then(app.responseText()).contains("<pets>");
             }
 
+            @Test void tryModeSendButtonRecoversAfterResponse() {
+                app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+                navigateToListPetsAndSend();
+
+                then(app.sendButtonText()).isEqualTo("Send");
+                then(app.isSendButtonEnabled()).isTrue();
+            }
+
             @Test void tryModeShowsErrorForFailedFetch() {
                 app.mockEndpoint("/pets", "text/plain", "not found", 404);
                 navigateToListPetsAndSend();

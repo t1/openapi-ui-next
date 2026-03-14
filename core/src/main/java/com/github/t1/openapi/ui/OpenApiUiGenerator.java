@@ -340,6 +340,8 @@ public class OpenApiUiGenerator {
                             navigator.clipboard.writeText('http ' + method + ' ' + url);
                             showCopied(sendBtn);
                         } else if (mode === 'try') {
+                            sendBtn.disabled = true;
+                            sendBtn.textContent = 'Sending...';
                             fetch(url).then(function(resp) {
                                 var ct = resp.headers.get('Content-Type') || '';
                                 return resp.text().then(function(text) {
@@ -354,6 +356,8 @@ public class OpenApiUiGenerator {
                                     if (existing) existing.remove();
                                     pre.className = 'response';
                                     detail.appendChild(pre);
+                                    sendBtn.disabled = false;
+                                    sendBtn.textContent = 'Send';
                                 });
                             }).catch(function(err) {
                                 var pre = document.createElement('pre');
@@ -362,6 +366,8 @@ public class OpenApiUiGenerator {
                                 if (existing) existing.remove();
                                 pre.className = 'response';
                                 detail.appendChild(pre);
+                                sendBtn.disabled = false;
+                                sendBtn.textContent = 'Send';
                             });
                         }
                     });

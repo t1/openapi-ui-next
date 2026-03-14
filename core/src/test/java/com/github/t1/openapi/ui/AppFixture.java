@@ -181,6 +181,11 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void waitForResponse() {page.waitForSelector("#detail pre.response");}
 
+    boolean isSendButtonEnabled() {
+        return (Boolean) page.evaluate(
+                "() => !document.querySelector('#detail button[data-path]').disabled");
+    }
+
     String responseText() {return page.locator("#detail pre.response").textContent();}
 
     boolean isFocusInDetail() {
