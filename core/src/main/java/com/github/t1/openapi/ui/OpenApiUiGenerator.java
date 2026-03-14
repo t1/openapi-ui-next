@@ -60,11 +60,14 @@ public class OpenApiUiGenerator {
 
         var pageTitle = openApi.getInfo().getTitle();
         var detail = div().id("detail").attr("tabindex", "0");
+        var detailHeader = div().classes("detail-header").content(
+                element("h1").classes("title").content(pageTitle),
+                modeToggle
+        );
         var body = section().content(container().content(
-                modeToggle,
                 columns().classes("is-desktop").content(
                         column().classes("is-one-third").content(list),
-                        column().content(detail)
+                        column().classes("detail-column").content(detailHeader, detail)
                 )
         ));
         var page = html(pageTitle)
@@ -106,12 +109,14 @@ public class OpenApiUiGenerator {
                 var method = opEntry.getKey();
                 var operation = opEntry.getValue();
                 var summary = operation.getSummary() != null ? operation.getSummary() : "";
-                var headingBadge = span(method.name()).classes("method-badge", "method-" + method.name().toLowerCase());
+                var headingBadge = span(method.name()).classes("method-badge", "detail-badge",
+                        "method-" + method.name().toLowerCase());
                 var fragment = div().content(
-                        div().classes("is-flex", "is-align-items-center", "mb-4").content(
+                        div().classes("is-flex", "is-align-items-center", "mb-5").style("gap:0.75rem").content(
                                 headingBadge,
-                                element("h2").classes("title", "is-3", "mb-0").content(" /" + fullPath)),
-                        p(summary)
+                                element("h2").classes("title", "is-4", "mb-0", "endpoint-path")
+                                        .content("/" + fullPath)),
+                        p(summary).classes("op-summary")
                 );
                 if (operation.getParameters() != null) {
                     for (var param : operation.getParameters()) {
@@ -180,22 +185,24 @@ public class OpenApiUiGenerator {
                 item.attr("aria-selected", "true");
                 firstTreeItem = false;
             }
-            item.content(span(segment));
+            if (!child.children.isEmpty()) {
+                item.attr("aria-expanded", "true");
+                item.content(span("\u25BC").classes("tree-toggle"));
+            }
+            item.content(span(segment).classes("tree-segment"));
             for (var opEntry : child.operations.entrySet()) {
                 var method = opEntry.getKey();
                 var operation = opEntry.getValue();
                 var summary = operation.getSummary();
                 var badge = span(method.name()).classes("method-badge", "method-" + method.name().toLowerCase());
                 var labelText = summary != null ? " — " + summary : "";
-                item.content(span().content(badge).content(labelText)
+                item.content(span().classes("tree-op-label").content(badge).content(labelText)
                         .attr("hx-get", fullPath + "/" + method.name() + ".html")
                         .attr("hx-target", "#detail")
                         .attr("hx-swap", "innerHTML"));
             }
             if (!child.children.isEmpty()) {
-                Element childList = renderNode(child, fullPath, false);
-                childList.style("display:none");
-                item.content(childList);
+                item.content(renderNode(child, fullPath, false));
             }
             list.content(item);
         }
@@ -203,40 +210,151 @@ public class OpenApiUiGenerator {
     }
 
     private static final String CUSTOM_CSS = """
+            body {
+                background-color: hsl(220, 15%, 97%);
+            }
+            .section {
+                padding-top: 1.5rem;
+                min-height: 100vh;
+            }
+            /* --- Tree panel --- */
+            [role="tree"] {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+            [role="group"] {
+                list-style: none;
+                margin: 0;
+                padding: 0 0 0 1.25rem;
+                border-left: 2px solid hsl(220, 15%, 87%);
+                margin-left: 0.5rem;
+            }
+            [role="treeitem"] {
+                padding: 4px 0;
+                line-height: 1.7;
+            }
             [role="treeitem"] > span {
                 cursor: pointer;
-                padding: 2px 6px;
+                padding: 3px 8px;
                 border-radius: 4px;
             }
             [role="treeitem"] > span:hover {
-                background-color: hsl(0, 0%, 96%);
+                background-color: hsl(220, 20%, 91%);
             }
             [role="treeitem"][aria-selected="true"] > span:first-child {
-                background-color: hsl(217, 71%, 95%);
+                background-color: hsl(217, 71%, 93%);
             }
             [role="tree"]:focus-visible [role="treeitem"][aria-selected="true"] > span:first-child {
                 outline: 2px solid hsl(217, 71%, 53%);
                 outline-offset: 1px;
             }
+            .tree-segment {
+                font-weight: 600;
+                color: hsl(220, 15%, 25%);
+                font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+                font-size: 0.9rem;
+            }
+            .tree-toggle {
+                display: inline-block;
+                cursor: pointer;
+                font-size: 0.65rem;
+                width: 1rem;
+                text-align: center;
+                transition: transform 0.15s ease;
+                user-select: none;
+                vertical-align: middle;
+                color: hsl(220, 10%, 55%);
+            }
+            [role="treeitem"][aria-expanded="false"] > .tree-toggle {
+                transform: rotate(-90deg);
+            }
+            .tree-op-label {
+                color: hsl(220, 10%, 45%);
+                font-size: 0.85rem;
+            }
+            .columns.is-desktop > .column.is-one-third {
+                background-color: hsl(220, 18%, 95%);
+                border-right: 1px solid hsl(220, 15%, 88%);
+                padding: 1.25rem 1.5rem;
+            }
+            @media screen and (min-width: 1024px) {
+                .columns.is-desktop > .column.is-one-third {
+                    min-height: calc(100vh - 4rem);
+                }
+            }
+            /* --- Method badges --- */
             .method-badge {
                 display: inline-block;
                 padding: 2px 8px;
                 border-radius: 4px;
-                font-size: 0.75rem;
+                font-size: 0.7rem;
                 font-weight: 700;
                 color: white;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
                 vertical-align: middle;
+                font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
             }
-            .method-get { background-color: hsl(141, 53%, 53%); }
-            .method-post { background-color: hsl(217, 71%, 53%); }
-            .method-put { background-color: hsl(44, 100%, 48%); }
-            .method-delete { background-color: hsl(348, 86%, 61%); }
-            .method-patch { background-color: hsl(271, 100%, 71%); }
-            .columns.is-desktop > .column.is-one-third {
-                border-right: 1px solid hsl(0, 0%, 92%);
-                padding-right: 1.5rem;
+            .method-badge.detail-badge {
+                font-size: 0.85rem;
+                padding: 4px 12px;
+                border-radius: 5px;
+            }
+            .method-get { background-color: hsl(141, 53%, 45%); }
+            .method-post { background-color: hsl(217, 71%, 50%); }
+            .method-put { background-color: hsl(38, 90%, 45%); }
+            .method-delete { background-color: hsl(348, 75%, 52%); }
+            .method-patch { background-color: hsl(271, 60%, 55%); }
+            /* --- Detail pane --- */
+            .detail-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 0.75rem;
+                margin-bottom: 1.25rem;
+                padding-bottom: 0.75rem;
+                border-bottom: 2px solid hsl(220, 15%, 90%);
+            }
+            .detail-header .title {
+                margin-bottom: 0;
+                color: hsl(220, 20%, 20%);
+            }
+            .detail-column {
+                padding-left: 2rem;
+            }
+            #detail {
+                background-color: white;
+                border-radius: 8px;
+                padding: 1.5rem;
+                box-shadow: 0 1px 3px hsla(220, 20%, 20%, 0.06);
+                border: 1px solid hsl(220, 15%, 92%);
+            }
+            #detail .endpoint-path {
+                font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+                font-weight: 500;
+                color: hsl(220, 15%, 30%);
+            }
+            #detail .op-summary {
+                color: hsl(220, 10%, 45%);
+                margin-bottom: 1.25rem;
+            }
+            #detail pre {
+                border: 1px solid hsl(220, 15%, 90%);
+                border-radius: 6px;
+                padding: 1rem 1.25rem;
+                background-color: hsl(220, 18%, 97%);
+                font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+                font-size: 0.875rem;
+                margin-top: 1rem;
+                margin-bottom: 1rem;
+            }
+            #detail .field {
+                margin-bottom: 1rem;
+            }
+            #detail button[data-path] {
+                margin-top: 0.75rem;
             }
             """;
 
@@ -245,16 +363,35 @@ public class OpenApiUiGenerator {
                 var tree = document.querySelector('[role="tree"]');
                 if (!tree) return;
 
+                function isGroupVisible(el) {
+                    while (el && el !== tree) {
+                        if (el.parentElement && el.parentElement.getAttribute('aria-expanded') === 'false') return false;
+                        el = el.parentElement;
+                    }
+                    return true;
+                }
+
                 function getVisibleItems() {
                     return Array.from(tree.querySelectorAll('[role="treeitem"]')).filter(function(item) {
-                        var el = item;
-                        while (el && el !== tree) {
-                            if (el.style && el.style.display === 'none') return false;
-                            el = el.parentElement;
-                        }
-                        return true;
+                        return isGroupVisible(item);
                     });
                 }
+
+                function toggleNode(item, expand) {
+                    var group = item.querySelector('[role="group"]');
+                    if (!group) return;
+                    item.setAttribute('aria-expanded', expand ? 'true' : 'false');
+                    group.style.display = expand ? '' : 'none';
+                }
+
+                tree.addEventListener('click', function(e) {
+                    var toggle = e.target.closest('.tree-toggle');
+                    if (!toggle) return;
+                    var item = toggle.closest('[role="treeitem"]');
+                    if (!item) return;
+                    var expanded = item.getAttribute('aria-expanded') === 'true';
+                    toggleNode(item, !expanded);
+                });
 
                 tree.addEventListener('keydown', function(e) {
                     var items = getVisibleItems();
@@ -272,14 +409,14 @@ public class OpenApiUiGenerator {
                             break;
                         case 'ArrowRight':
                             e.preventDefault();
-                            var group = current.querySelector('[role="group"]');
-                            if (group) group.style.display = '';
+                            if (current.getAttribute('aria-expanded') === 'false') {
+                                toggleNode(current, true);
+                            }
                             break;
                         case 'ArrowLeft':
                             e.preventDefault();
-                            var grp = current.querySelector('[role="group"]');
-                            if (grp && grp.style.display !== 'none') {
-                                grp.style.display = 'none';
+                            if (current.getAttribute('aria-expanded') === 'true') {
+                                toggleNode(current, false);
                             } else {
                                 var parentGroup = current.closest('[role="group"]');
                                 if (parentGroup) {
@@ -308,14 +445,12 @@ public class OpenApiUiGenerator {
                 }
 
                 var detail = document.getElementById('detail');
-                if (detail) {
-                    detail.addEventListener('keydown', function(e) {
-                        if (e.key === 'Escape') {
-                            e.preventDefault();
-                            document.querySelector('[role="tree"]').focus();
-                        }
-                    });
-                }
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && !e.target.closest('[role="tree"]')) {
+                        e.preventDefault();
+                        tree.focus();
+                    }
+                });
 
                 // Mode toggle
                 var modeContainer = document.querySelector('[data-mode]');
@@ -347,6 +482,10 @@ public class OpenApiUiGenerator {
                     btn.textContent = 'Copied!';
                     setTimeout(function() { btn.textContent = original; }, 1500);
                 }
+
+                // Auto-load the first operation
+                var firstHxEl = document.querySelector('[hx-get]');
+                if (firstHxEl) htmx.ajax('GET', firstHxEl.getAttribute('hx-get'), '#detail');
 
                 // Send button handler (delegated from detail pane)
                 if (detail) {

@@ -182,7 +182,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     void waitForResponse() {page.waitForSelector("#detail pre.response");}
 
     boolean hasMethodBadge(String method) {
-        return page.locator(".method-badge.method-" + method.toLowerCase()).isVisible();
+        return page.locator("[role='tree'] .method-badge.method-" + method.toLowerCase()).isVisible();
     }
 
     boolean hasStylesheet(String name) {

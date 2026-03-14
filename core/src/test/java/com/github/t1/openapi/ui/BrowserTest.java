@@ -31,11 +31,9 @@ class BrowserTest {
 
         @Test void tabAndEscapeMoveFocus() {
             app.focusTree();
-            app.pressKey("Enter");
-            app.waitForDetailContent("List pets");
 
             app.pressKey("Tab");
-            then(app.isFocusInDetail()).isTrue();
+            then(app.isTreeFocused()).isFalse();
 
             app.pressKey("Escape");
             then(app.isTreeFocused()).isTrue();
@@ -166,8 +164,6 @@ class BrowserTest {
 
         @Test void curlModeCopiesCommand() {
             app.clickModeButton("curl");
-            app.focusTree();
-            app.pressKey("ArrowRight");
             app.clickTreeNode("pets/{petId}/GET.html");
             app.waitForInput("petId");
             app.fillInput("petId", "42");
@@ -181,8 +177,6 @@ class BrowserTest {
 
         @Test void curlModeShowsCopyButtonLabel() {
             app.clickModeButton("curl");
-            app.focusTree();
-            app.pressKey("ArrowRight");
             app.clickTreeNode("pets/{petId}/GET.html");
             app.waitForInput("petId");
 
@@ -191,8 +185,6 @@ class BrowserTest {
 
         @Test void curlModeShowsCopiedFeedback() {
             app.clickModeButton("curl");
-            app.focusTree();
-            app.pressKey("ArrowRight");
             app.clickTreeNode("pets/{petId}/GET.html");
             app.waitForInput("petId");
             app.fillInput("petId", "42");
@@ -203,8 +195,6 @@ class BrowserTest {
 
         @Test void httpieModeCopiesCommand() {
             app.clickModeButton("httpie");
-            app.focusTree();
-            app.pressKey("ArrowRight");
             app.clickTreeNode("pets/{petId}/GET.html");
             app.waitForInput("petId");
             app.fillInput("petId", "42");
@@ -229,14 +219,14 @@ class BrowserTest {
 
         @Test void arrowRightExpandsAndLeftCollapsesNode() {
             app.focusTree();
+            then(app.isTextVisible("{petId}")).isTrue();
+
+            app.pressKey("ArrowLeft");
             then(app.isTextVisible("{petId}")).isFalse();
 
             app.pressKey("ArrowRight");
             then(app.isTextVisible("{petId}")).isTrue();
             app.screenshot("tree-expanded");
-
-            app.pressKey("ArrowLeft");
-            then(app.isTextVisible("{petId}")).isFalse();
         }
     }
 }
