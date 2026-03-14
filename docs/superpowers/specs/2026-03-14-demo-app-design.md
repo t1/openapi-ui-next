@@ -26,13 +26,13 @@ demo/
 
 ## Build Pipeline
 
-1. **`process-classes`**: `smallrye-openapi-maven-plugin` scans compiled JAX-RS classes
+1. **`process-classes`**: `smallrye-open-api-maven-plugin` scans compiled JAX-RS classes
    and generates `target/generated/openapi.yaml`
 2. **`prepare-package`**: `openapi-ui-maven-plugin` reads the spec, writes HTML to
    `target/classes/META-INF/resources/openapi-ui/`
 3. **`package`**: `quarkus-maven-plugin` packages the jar including the generated UI
 
-Using the standalone `smallrye-openapi-maven-plugin` (not Quarkus's built-in schema generation)
+Using the standalone `smallrye-open-api-maven-plugin` (not Quarkus's built-in schema generation)
 because Quarkus generates the schema during `quarkus:build` at `package` phase — too late
 for our plugin to consume at `prepare-package`.
 
@@ -86,11 +86,6 @@ public record Pet(long id, String name, String status) {}
 - `GET /pets` — list all pets
 - `GET /pets/{id}` — get pet by id (404 if not found)
 - In-memory `List<Pet>` with two seed entries
-
-**`application.properties`**:
-```properties
-quarkus.smallrye-openapi.store-schema-directory=target/generated
-```
 
 ## Growth Strategy
 
