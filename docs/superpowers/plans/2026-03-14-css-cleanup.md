@@ -185,7 +185,7 @@ git commit -m "replace detail pane div with Bulma Box component"
 **Files:**
 - Modify: `core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java` (CUSTOM_CSS constant)
 
-- [ ] **Step 1: Delete body background**
+- [x] **Step 1: Delete body background**
 
 Delete:
 
@@ -195,7 +195,7 @@ body {
 }
 ```
 
-- [ ] **Step 2: Replace sidebar colors**
+- [x] **Step 2: Replace sidebar colors**
 
 Replace:
 
@@ -217,7 +217,7 @@ with:
 }
 ```
 
-- [ ] **Step 3: Replace tree component colors**
+- [x] **Step 3: Replace tree component colors**
 
 Replace tree group border:
 
@@ -311,7 +311,7 @@ with:
 color: var(--bulma-text-weak);
 ```
 
-- [ ] **Step 4: Replace detail header colors**
+- [x] **Step 4: Replace detail header colors**
 
 Replace header border:
 
@@ -342,7 +342,7 @@ becomes:
 }
 ```
 
-- [ ] **Step 5: Replace detail content colors**
+- [x] **Step 5: Replace detail content colors**
 
 Replace endpoint path color:
 
@@ -398,13 +398,13 @@ with:
 }
 ```
 
-- [ ] **Step 6: Run tests**
+- [x] **Step 6: Run tests**
 
 Run: `mvn test -pl core`
 
 Expected: All tests pass. Review screenshots in `core/target/screenshots/` for visual correctness.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add core/src/main/java/com/github/t1/openapi/ui/OpenApiUiGenerator.java

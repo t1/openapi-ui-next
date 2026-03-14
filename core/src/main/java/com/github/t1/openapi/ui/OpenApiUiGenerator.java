@@ -224,9 +224,6 @@ public class OpenApiUiGenerator {
     }
 
     private static final String CUSTOM_CSS = """
-            body {
-                background-color: hsl(220, 15%, 97%);
-            }
             .section {
                 padding-top: 1.5rem;
                 min-height: 100vh;
@@ -241,7 +238,7 @@ public class OpenApiUiGenerator {
                 list-style: none;
                 margin: 0;
                 padding: 0 0 0 1.25rem;
-                border-left: 2px solid hsl(220, 15%, 87%);
+                border-left: 2px solid var(--bulma-border);
                 margin-left: 0.5rem;
             }
             [role="treeitem"] {
@@ -254,18 +251,18 @@ public class OpenApiUiGenerator {
                 border-radius: 4px;
             }
             [role="treeitem"] > span:hover {
-                background-color: hsl(220, 20%, 91%);
+                background-color: var(--bulma-scheme-main-ter);
             }
             [role="treeitem"][aria-selected="true"] > span:first-child {
-                background-color: hsl(217, 71%, 93%);
+                background-color: var(--bulma-link-light);
             }
             [role="tree"]:focus-visible [role="treeitem"][aria-selected="true"] > span:first-child {
-                outline: 2px solid hsl(217, 71%, 53%);
+                outline: 2px solid var(--bulma-link);
                 outline-offset: 1px;
             }
             .tree-segment {
                 font-weight: 600;
-                color: hsl(220, 15%, 25%);
+                color: var(--bulma-text-strong);
                 font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
                 font-size: 0.9rem;
             }
@@ -278,18 +275,18 @@ public class OpenApiUiGenerator {
                 transition: transform 0.15s ease;
                 user-select: none;
                 vertical-align: middle;
-                color: hsl(220, 10%, 55%);
+                color: var(--bulma-text-weak);
             }
             [role="treeitem"][aria-expanded="false"] > .tree-toggle {
                 transform: rotate(-90deg);
             }
             .tree-op-label {
-                color: hsl(220, 10%, 45%);
+                color: var(--bulma-text-weak);
                 font-size: 0.85rem;
             }
             .columns.is-desktop > .column.is-one-third {
-                background-color: hsl(220, 18%, 95%);
-                border-right: 1px solid hsl(220, 15%, 88%);
+                background-color: var(--bulma-scheme-main-bis);
+                border-right: 1px solid var(--bulma-border);
                 padding: 1.25rem 1.5rem;
             }
             @media screen and (min-width: 1024px) {
@@ -306,11 +303,10 @@ public class OpenApiUiGenerator {
                 gap: 0.75rem;
                 margin-bottom: 1.25rem;
                 padding-bottom: 0.75rem;
-                border-bottom: 2px solid hsl(220, 15%, 90%);
+                border-bottom: 2px solid var(--bulma-border);
             }
             .detail-header .title {
                 margin-bottom: 0;
-                color: hsl(220, 20%, 20%);
             }
             .detail-column {
                 padding-left: 2rem;
@@ -318,17 +314,17 @@ public class OpenApiUiGenerator {
             #detail .endpoint-path {
                 font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
                 font-weight: 500;
-                color: hsl(220, 15%, 30%);
+                color: var(--bulma-text-strong);
             }
             #detail .op-summary {
-                color: hsl(220, 10%, 45%);
+                color: var(--bulma-text-weak);
                 margin-bottom: 1.25rem;
             }
             #detail pre {
-                border: 1px solid hsl(220, 15%, 90%);
+                border: 1px solid var(--bulma-border);
                 border-radius: 6px;
                 padding: 1rem 1.25rem;
-                background-color: hsl(220, 18%, 97%);
+                background-color: var(--bulma-scheme-main-bis);
                 font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
                 font-size: 0.875rem;
                 margin-top: 1rem;
