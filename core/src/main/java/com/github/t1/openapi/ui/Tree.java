@@ -24,15 +24,16 @@ public class Tree extends AbstractElement<Tree> {
     public Tree item(String label) { return item(span(label)); }
 
     public Tree item(Renderable label) {
-        var item = li().attr("role", "treeitem").content(label);
+        var item = li().attr("role", "treeitem").content(span().classes("tree-label").content(label));
         markFirstItem(item);
         content(item);
         return this;
     }
 
     public Tree item(Renderable label, Consumer<Element> extra) {
-        var item = li().attr("role", "treeitem").content(label);
-        extra.accept(item);
+        var treeLabel = span().classes("tree-label").content(label);
+        extra.accept(treeLabel);
+        var item = li().attr("role", "treeitem").content(treeLabel);
         markFirstItem(item);
         content(item);
         return this;
@@ -60,16 +61,20 @@ public class Tree extends AbstractElement<Tree> {
         private final Element item;
         private final Tree subtree;
 
+        private final Element treeLabel;
+
         private Node(Renderable label) {
             item = li().attr("role", "treeitem").attr("aria-expanded", "true");
-            item.content(span("\u25BC").classes("tree-toggle"));
-            item.content(label);
+            treeLabel = span().classes("tree-label");
+            treeLabel.content(span("\u25BC").classes("tree-toggle"));
+            treeLabel.content(label);
+            item.content(treeLabel);
             subtree = new Tree("group");
         }
 
         /** Add content as a sibling on the node's {@code <li>} (before the subtree) */
         public Node content(Renderable content) {
-            item.content(content);
+            treeLabel.content(content);
             return this;
         }
 
@@ -117,11 +122,15 @@ public class Tree extends AbstractElement<Tree> {
             [role="treeitem"]:hover:not([aria-selected="true"]) {
                 background-color: var(--bulma-scheme-main-ter);
             }
-            [role="treeitem"][aria-selected="true"] {
-                background: linear-gradient(90deg, var(--bulma-link) 3px, var(--bulma-link-light) 3px);
-                padding-left: 12px;
+            .tree-label {
+                display: block;
             }
-            [role="tree"]:focus-visible [role="treeitem"][aria-selected="true"] {
+            [role="treeitem"][aria-selected="true"] > .tree-label {
+                background: linear-gradient(90deg, var(--bulma-link) 3px, color-mix(in srgb, var(--bulma-link) 8%, transparent) 3px);
+                padding-left: 12px;
+                border-radius: 4px;
+            }
+            [role="tree"]:focus-visible [role="treeitem"][aria-selected="true"] > .tree-label {
                 outline: 2px solid var(--bulma-link);
                 outline-offset: 1px;
             }

@@ -18,6 +18,7 @@ class TreeTest {
 
         then(html)
                 .contains("<li role=\"treeitem\"")
+                .contains("<span class=\"tree-label\">")
                 .contains("<span>hello</span>");
     }
 
@@ -38,6 +39,13 @@ class TreeTest {
                 .contains("<span>parent</span>")
                 .contains("role=\"group\"")
                 .contains("<span>child</span>");
+        // tree-label wraps toggle+label but not the subtree
+        int treeLabelPos = html.indexOf("tree-label");
+        int groupPos = html.indexOf("role=\"group\"");
+        then(treeLabelPos).as("node should have tree-label wrapper").isGreaterThan(-1);
+        // the closing </span> of tree-label must come before the group
+        int treeLabelEnd = html.indexOf("</span>", html.indexOf("tree-label"));
+        then(treeLabelEnd).as("tree-label should close before subtree").isLessThan(groupPos);
     }
 
     @Test void shouldRenderNodeWithSiblingContent() {
@@ -112,6 +120,13 @@ class TreeTest {
                 .contains(".tree-param")
                 .contains("transition")
                 .doesNotContain(".tree-op-label");
+    }
+
+    @Test void shouldStyleSelectionOnTreeLabelNotLi() {
+        var css = Tree.css();
+
+        then(css).contains(".tree-label");
+        then(css).doesNotContain("[role=\"treeitem\"][aria-selected=\"true\"] {");
     }
 
     @Test void shouldProvideJs() {
