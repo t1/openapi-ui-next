@@ -47,7 +47,7 @@ Invoke `tdder:tdd` before any feature or bugfix work.
 We work **trunk-based** — all commits go directly to `trunk`. Skip the
 `superpowers:finishing-a-development-branch` skill; it's for feature-branch workflows.
 
-## Plan Execution
+### Plan Execution
 
 When executing a plan: if a technology or dependency from the plan doesn't work as expected,
 STOP and discuss with the user. Do not substitute alternative libraries, frameworks, or architectural
@@ -56,7 +56,12 @@ approaches. The plan's tech choices are constraints, not suggestions.
 When completing a step from a plan file (e.g. in `docs/superpowers/plans/`), tick its checkbox
 (`- [ ]` → `- [x]`) immediately.
 
-## UI Review
+### Demo App
+
+The demo app should grow alongside the core, i.e. if we add a feature to the core, extend the app
+so that it shows that feature E2E.
+
+### UI Review
 
 After changing UI generation code (in `core`), run the tests (`mvn test -pl core`) and review
 the screenshots in `core/target/screenshots/` using the `frontend-design` plugin for design

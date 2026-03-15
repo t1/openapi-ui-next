@@ -84,8 +84,20 @@ output/
 ├── openapi-ui.css
 ├── bulma.min.css
 ├── htmx.min.js
+├── owners/
+│   ├── GET.html         # Fragment for GET /owners
+│   └── {id}/
+│       ├── GET.html     # Fragment for GET /owners/{id}
+│       └── pets/
+│           └── GET.html # Fragment for GET /owners/{ownerId}/pets
 └── pets/
     ├── GET.html         # Fragment for GET /pets
+    ├── POST.html        # Fragment for POST /pets
     └── {id}/
-        └── GET.html     # Fragment for GET /pets/{id}
+        ├── GET.html     # Fragment for GET /pets/{id}
+        ├── DELETE.html  # Fragment for DELETE /pets/{id}
+        └── visits/
+            ├── GET.html     # Fragment for GET /pets/{petId}/visits
+            └── {visitId}/
+                └── GET.html # Fragment for GET /pets/{petId}/visits/{visitId}
 ```
