@@ -1,7 +1,6 @@
 package com.github.t1.openapi.ui;
 
 import com.github.t1.bulmajava.basic.Color;
-import com.github.t1.htmljava.Element;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.OpenAPIV3Parser;
@@ -29,6 +28,7 @@ import static com.github.t1.bulmajava.layout.Container.container;
 import static com.github.t1.bulmajava.layout.Section.section;
 import static com.github.t1.htmljava.Html.html;
 import static com.github.t1.htmljava.HtmlBasics.*;
+import static com.github.t1.openapi.ui.Tree.tree;
 
 public class OpenApiUiGenerator {
     private final Path specFile;
@@ -50,7 +50,7 @@ public class OpenApiUiGenerator {
             root.add(segments, 0, pathItem);
         }
 
-        var list = renderNode(root, "", true);
+        var list = buildTree(root);
 
         var servers = openApi.getServers();
         var baseUrl = (servers != null && !servers.isEmpty()) ? servers.get(0).getUrl() : "/";
@@ -79,12 +79,13 @@ public class OpenApiUiGenerator {
                 .stylesheet("bulma.min.css")
                 .stylesheet("openapi-ui.css")
                 .script("htmx.min.js")
-                .javaScriptCode(TREE_KEYBOARD_JS)
+                .javaScriptCode(Tree.js())
+                .javaScriptCode(APP_JS)
                 .body(body);
 
         Files.createDirectories(outputDir);
         Files.writeString(outputDir.resolve("index.html"), page.render());
-        Files.writeString(outputDir.resolve("openapi-ui.css"), CUSTOM_CSS);
+        Files.writeString(outputDir.resolve("openapi-ui.css"), Tree.css() + APP_CSS);
 
         generateFragments(root, "");
 
@@ -102,6 +103,74 @@ public class OpenApiUiGenerator {
         try (var resource = getClass().getResourceAsStream(
                 "/META-INF/resources/webjars/" + artifactId + "/" + version + "/" + resourcePath)) {
             Files.copy(resource, outputDir.resolve(outputName), StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private Tree buildTree(PathNode root) {
+        var t = tree();
+        addNodes(t, root, "");
+        return t;
+    }
+
+    private void addNodes(Tree tree, PathNode node, String pathPrefix) {
+        for (var entry : node.children.entrySet()) {
+            var segment = entry.getKey();
+            var child = entry.getValue();
+            var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
+            if (!child.children.isEmpty()) {
+                tree.node(span(segment).classes("tree-segment"), sub -> {
+                    addOperationItems(sub, child, fullPath);
+                    addNodes(sub, child, fullPath);
+                });
+            } else {
+                tree.item(span(segment).classes("tree-segment"));
+                addOperationItems(tree, child, fullPath);
+            }
+        }
+    }
+
+    private void addNodes(Tree.Node node, PathNode pathNode, String pathPrefix) {
+        for (var entry : pathNode.children.entrySet()) {
+            var segment = entry.getKey();
+            var child = entry.getValue();
+            var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
+            if (!child.children.isEmpty()) {
+                node.node(span(segment).classes("tree-segment"), sub -> {
+                    addOperationItems(sub, child, fullPath);
+                    addNodes(sub, child, fullPath);
+                });
+            } else {
+                node.item(span(segment).classes("tree-segment"));
+                addOperationItems(node, child, fullPath);
+            }
+        }
+    }
+
+    private void addOperationItems(Tree tree, PathNode child, String fullPath) {
+        for (var opEntry : child.operations.entrySet()) {
+            var method = opEntry.getKey();
+            var operation = opEntry.getValue();
+            var summary = operation.getSummary();
+            var badge = tag(method.name()).is(methodColor(method));
+            var labelText = summary != null ? " — " + summary : "";
+            tree.item(span().classes("tree-op-label").content(badge).content(labelText)
+                    .attr("hx-get", fullPath + "/" + method.name() + ".html")
+                    .attr("hx-target", "#detail")
+                    .attr("hx-swap", "innerHTML"));
+        }
+    }
+
+    private void addOperationItems(Tree.Node node, PathNode child, String fullPath) {
+        for (var opEntry : child.operations.entrySet()) {
+            var method = opEntry.getKey();
+            var operation = opEntry.getValue();
+            var summary = operation.getSummary();
+            var badge = tag(method.name()).is(methodColor(method));
+            var labelText = summary != null ? " — " + summary : "";
+            node.content(span().classes("tree-op-label").content(badge).content(labelText)
+                    .attr("hx-get", fullPath + "/" + method.name() + ".html")
+                    .attr("hx-target", "#detail")
+                    .attr("hx-swap", "innerHTML"));
         }
     }
 
@@ -182,104 +251,10 @@ public class OpenApiUiGenerator {
         };
     }
 
-    private boolean firstTreeItem = true;
-
-    private Element renderNode(PathNode node, String pathPrefix, boolean isRoot) {
-        Element list = ul();
-        if (isRoot) {
-            list.attr("role", "tree").attr("tabindex", "0").attr("autofocus", "");
-        } else {
-            list.attr("role", "group");
-        }
-        for (var entry : node.children.entrySet()) {
-            var segment = entry.getKey();
-            var child = entry.getValue();
-            var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
-            Element item = li().attr("role", "treeitem");
-            if (firstTreeItem) {
-                item.attr("aria-selected", "true");
-                firstTreeItem = false;
-            }
-            if (!child.children.isEmpty()) {
-                item.attr("aria-expanded", "true");
-                item.content(span("\u25BC").classes("tree-toggle"));
-            }
-            item.content(span(segment).classes("tree-segment"));
-            for (var opEntry : child.operations.entrySet()) {
-                var method = opEntry.getKey();
-                var operation = opEntry.getValue();
-                var summary = operation.getSummary();
-                var badge = tag(method.name()).is(methodColor(method));
-                var labelText = summary != null ? " — " + summary : "";
-                item.content(span().classes("tree-op-label").content(badge).content(labelText)
-                        .attr("hx-get", fullPath + "/" + method.name() + ".html")
-                        .attr("hx-target", "#detail")
-                        .attr("hx-swap", "innerHTML"));
-            }
-            if (!child.children.isEmpty()) {
-                item.content(renderNode(child, fullPath, false));
-            }
-            list.content(item);
-        }
-        return list;
-    }
-
-    private static final String CUSTOM_CSS = """
+    private static final String APP_CSS = """
             .section {
                 padding-top: 1.5rem;
                 min-height: 100vh;
-            }
-            /* --- Tree panel --- */
-            [role="tree"] {
-                list-style: none;
-                margin: 0;
-                padding: 0;
-            }
-            [role="group"] {
-                list-style: none;
-                margin: 0;
-                padding: 0 0 0 1.25rem;
-                border-left: 2px solid var(--bulma-border);
-                margin-left: 0.5rem;
-            }
-            [role="treeitem"] {
-                padding: 4px 0;
-                line-height: 1.7;
-            }
-            [role="treeitem"] > span {
-                cursor: pointer;
-                padding: 3px 8px;
-                border-radius: 4px;
-            }
-            [role="treeitem"] > span:hover {
-                background-color: var(--bulma-scheme-main-ter);
-            }
-            [role="treeitem"][aria-selected="true"] > span:first-child {
-                background-color: var(--bulma-link-light);
-            }
-            [role="tree"]:focus-visible [role="treeitem"][aria-selected="true"] > span:first-child {
-                outline: 2px solid var(--bulma-link);
-                outline-offset: 1px;
-            }
-            .tree-segment {
-                font-weight: 600;
-                color: var(--bulma-text-strong);
-                font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
-                font-size: 0.9rem;
-            }
-            .tree-toggle {
-                display: inline-block;
-                cursor: pointer;
-                font-size: 0.65rem;
-                width: 1rem;
-                text-align: center;
-                transition: transform 0.15s ease;
-                user-select: none;
-                vertical-align: middle;
-                color: var(--bulma-text-weak);
-            }
-            [role="treeitem"][aria-expanded="false"] > .tree-toggle {
-                transform: rotate(-90deg);
             }
             .tree-op-label {
                 color: var(--bulma-text-weak);
@@ -339,99 +314,9 @@ public class OpenApiUiGenerator {
             }
             """;
 
-    private static final String TREE_KEYBOARD_JS = """
+    private static final String APP_JS = """
             document.addEventListener('DOMContentLoaded', function() {
-                var tree = document.querySelector('[role="tree"]');
-                if (!tree) return;
-
-                function isGroupVisible(el) {
-                    while (el && el !== tree) {
-                        if (el.parentElement && el.parentElement.getAttribute('aria-expanded') === 'false') return false;
-                        el = el.parentElement;
-                    }
-                    return true;
-                }
-
-                function getVisibleItems() {
-                    return Array.from(tree.querySelectorAll('[role="treeitem"]')).filter(function(item) {
-                        return isGroupVisible(item);
-                    });
-                }
-
-                function toggleNode(item, expand) {
-                    var group = item.querySelector('[role="group"]');
-                    if (!group) return;
-                    item.setAttribute('aria-expanded', expand ? 'true' : 'false');
-                    group.style.display = expand ? '' : 'none';
-                }
-
-                tree.addEventListener('click', function(e) {
-                    var toggle = e.target.closest('.tree-toggle');
-                    if (!toggle) return;
-                    var item = toggle.closest('[role="treeitem"]');
-                    if (!item) return;
-                    var expanded = item.getAttribute('aria-expanded') === 'true';
-                    toggleNode(item, !expanded);
-                });
-
-                tree.addEventListener('keydown', function(e) {
-                    var items = getVisibleItems();
-                    var current = tree.querySelector('[aria-selected="true"]');
-                    var idx = items.indexOf(current);
-
-                    switch (e.key) {
-                        case 'ArrowDown':
-                            e.preventDefault();
-                            if (idx < items.length - 1) selectItem(items[idx + 1]);
-                            break;
-                        case 'ArrowUp':
-                            e.preventDefault();
-                            if (idx > 0) selectItem(items[idx - 1]);
-                            break;
-                        case 'ArrowRight':
-                            e.preventDefault();
-                            if (current.getAttribute('aria-expanded') === 'false') {
-                                toggleNode(current, true);
-                            }
-                            break;
-                        case 'ArrowLeft':
-                            e.preventDefault();
-                            if (current.getAttribute('aria-expanded') === 'true') {
-                                toggleNode(current, false);
-                            } else {
-                                var parentGroup = current.closest('[role="group"]');
-                                if (parentGroup) {
-                                    var parentItem = parentGroup.closest('[role="treeitem"]');
-                                    if (parentItem) selectItem(parentItem);
-                                }
-                            }
-                            break;
-                        case 'Enter':
-                            e.preventDefault();
-                            var hxEl = current.querySelector('[hx-get]') || current;
-                            if (hxEl.getAttribute('hx-get')) htmx.ajax('GET', hxEl.getAttribute('hx-get'), '#detail');
-                            break;
-                        case 'Escape':
-                            e.preventDefault();
-                            tree.focus();
-                            break;
-                    }
-                });
-
-                function selectItem(item) {
-                    tree.querySelectorAll('[aria-selected="true"]').forEach(function(el) {
-                        el.removeAttribute('aria-selected');
-                    });
-                    item.setAttribute('aria-selected', 'true');
-                }
-
                 var detail = document.getElementById('detail');
-                document.addEventListener('keydown', function(e) {
-                    if (e.key === 'Escape' && !e.target.closest('[role="tree"]')) {
-                        e.preventDefault();
-                        tree.focus();
-                    }
-                });
 
                 // Mode toggle
                 var modeContainer = document.querySelector('[data-mode]');
