@@ -482,18 +482,19 @@ public class OpenApiUiGenerator {
 
                         // Collect input values
                         var inputs = detail.querySelectorAll('input[name]');
-                        var url = baseUrl.startsWith('http') ? baseUrl + pathTemplate
-                                : new URL((baseUrl + pathTemplate).replace(/\\/+/g, '/'), window.location.origin).href;
+                        var resolvedPath = pathTemplate;
                         var queryParams = [];
                         inputs.forEach(function(inp) {
                             var name = inp.getAttribute('name');
                             var val = inp.value;
                             if (pathTemplate.includes('{' + name + '}')) {
-                                url = url.replace('{' + name + '}', encodeURIComponent(val));
+                                resolvedPath = resolvedPath.replace('{' + name + '}', encodeURIComponent(val));
                             } else if (val) {
                                 queryParams.push(name + '=' + encodeURIComponent(val));
                             }
                         });
+                        var url = baseUrl.startsWith('http') ? baseUrl + resolvedPath
+                                : new URL((baseUrl + resolvedPath).replace(/\\/+/g, '/'), window.location.origin).href;
                         if (queryParams.length > 0) url += '?' + queryParams.join('&');
 
                         if (mode === 'curl') {

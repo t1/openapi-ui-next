@@ -149,6 +149,17 @@ class BrowserTest {
 
             then(app.responseText()).contains("\"id\"");
         }
+
+        @Test void tryModeSendsRequestWithPathParam() {
+            app.mockRootEndpoint("/items/42", "application/json", "{\"id\":\"42\",\"name\":\"Widget\"}");
+            app.clickTreeNode("items/{itemId}/GET.html");
+            app.waitForInput("itemId");
+            app.fillInput("itemId", "42");
+            app.clickSend();
+            app.waitForResponse();
+
+            then(app.responseText()).contains("Widget");
+        }
     }
 
     @Nested class GivenAppWithNoSummary {
@@ -161,6 +172,23 @@ class BrowserTest {
 
     @Nested class GivenAppWithParams {
         @RegisterExtension static AppFixture app = context.launch("params.yaml");
+
+        @Nested class InTryMode {
+            @RegisterExtension static AppFixture app =
+                    context.launch("params.yaml").withBaseUrlOverride();
+
+            @Test void tryModeSendsRequestWithPathParam() {
+                app.mockEndpoint("/pets/42", "application/json", "{\"id\":\"42\",\"name\":\"Fido\"}");
+                app.clickTreeNode("pets/{petId}/GET.html");
+                app.waitForInput("petId");
+                app.fillInput("petId", "42");
+                app.clickSend();
+                app.waitForResponse();
+
+                then(app.responseText()).contains("Fido");
+                app.screenshot("try-mode-path-param");
+            }
+        }
 
         @Test void curlModeCopiesCommand() {
             app.clickModeButton("curl");
