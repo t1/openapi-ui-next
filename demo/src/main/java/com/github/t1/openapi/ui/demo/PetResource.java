@@ -4,11 +4,15 @@ import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
+import jakarta.json.JsonObject;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,10 +41,38 @@ public class PetResource {
     }
 
     @POST @Operation(summary = "Add a new pet")
-    public Response create(Pet pet) {
+    public Response create(@RequestBody Pet pet) {
         var created = new Pet(nextId++, pet.name(), pet.status(), pet.ownerId());
         PETS.add(created);
         return Response.status(201).entity(created).build();
+    }
+
+    @PUT @Path("/{id}") @Operation(summary = "Update a pet")
+    public Pet update(@PathParam("id") long id, @RequestBody Pet pet) {
+        for (int i = 0; i < PETS.size(); i++) {
+            if (PETS.get(i).id() == id) {
+                var updated = new Pet(id, pet.name(), pet.status(), pet.ownerId());
+                PETS.set(i, updated);
+                return updated;
+            }
+        }
+        throw new NotFoundException();
+    }
+
+    @PATCH @Path("/{id}") @Operation(summary = "Partially update a pet")
+    public Pet patch(@PathParam("id") long id, @RequestBody JsonObject patch) {
+        for (int i = 0; i < PETS.size(); i++) {
+            var existing = PETS.get(i);
+            if (existing.id() == id) {
+                var updated = new Pet(id,
+                        patch.containsKey("name") ? patch.getString("name") : existing.name(),
+                        patch.containsKey("status") ? patch.getString("status") : existing.status(),
+                        patch.containsKey("ownerId") ? patch.getJsonNumber("ownerId").longValue() : existing.ownerId());
+                PETS.set(i, updated);
+                return updated;
+            }
+        }
+        throw new NotFoundException();
     }
 
     @DELETE @Path("/{id}") @Operation(summary = "Delete a pet")

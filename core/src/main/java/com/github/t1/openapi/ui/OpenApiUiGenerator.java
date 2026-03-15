@@ -17,7 +17,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import static com.github.t1.bulmajava.basic.Color.*;
+import static com.github.t1.bulmajava.basic.Color.DANGER;
+import static com.github.t1.bulmajava.basic.Color.INFO;
+import static com.github.t1.bulmajava.basic.Color.LINK;
+import static com.github.t1.bulmajava.basic.Color.PRIMARY;
+import static com.github.t1.bulmajava.basic.Color.SUCCESS;
+import static com.github.t1.bulmajava.basic.Color.WARNING;
 import static com.github.t1.bulmajava.basic.Size.MEDIUM;
 import static com.github.t1.bulmajava.columns.Column.column;
 import static com.github.t1.bulmajava.columns.Columns.columns;
@@ -30,7 +35,11 @@ import static com.github.t1.bulmajava.form.InputType.TEXT;
 import static com.github.t1.bulmajava.layout.Container.container;
 import static com.github.t1.bulmajava.layout.Section.section;
 import static com.github.t1.htmljava.Html.html;
-import static com.github.t1.htmljava.HtmlBasics.*;
+import static com.github.t1.htmljava.HtmlBasics.code;
+import static com.github.t1.htmljava.HtmlBasics.div;
+import static com.github.t1.htmljava.HtmlBasics.element;
+import static com.github.t1.htmljava.HtmlBasics.p;
+import static com.github.t1.htmljava.HtmlBasics.span;
 import static com.github.t1.openapi.ui.Tree.tree;
 
 public class OpenApiUiGenerator {
@@ -56,7 +65,7 @@ public class OpenApiUiGenerator {
         var list = buildTree(root);
 
         var servers = openApi.getServers();
-        var baseUrl = (servers != null && !servers.isEmpty()) ? servers.get(0).getUrl() : "/";
+        var baseUrl = (servers != null && !servers.isEmpty()) ? servers.getFirst().getUrl() : "/";
 
         var modeToggle = div().attr("data-mode", "try").attr("data-base-url", baseUrl)
                 .classes("buttons", "has-addons").content(
@@ -103,8 +112,9 @@ public class OpenApiUiGenerator {
             props.load(pom);
         }
         var version = props.getProperty("version");
-        try (var resource = getClass().getResourceAsStream(
-                "/META-INF/resources/webjars/" + artifactId + "/" + version + "/" + resourcePath)) {
+        var path = "/META-INF/resources/webjars/" + artifactId + "/" + version + "/" + resourcePath;
+        try (var resource = getClass().getResourceAsStream(path)) {
+            assert resource != null : "webjar resource not found: " + path;
             Files.copy(resource, outputDir.resolve(outputName), StandardCopyOption.REPLACE_EXISTING);
         }
     }
@@ -204,6 +214,21 @@ public class OpenApiUiGenerator {
                         fragment.content(inputField);
                     }
                 }
+                if (operation.getRequestBody() != null && operation.getRequestBody().getContent() != null) {
+                    var content = operation.getRequestBody().getContent();
+                    var jsonContent = content.get("application/json");
+                    if (jsonContent == null) jsonContent = content.get("*/*");
+                    if (jsonContent != null && jsonContent.getSchema() != null) {
+                        var skeleton = generateJsonSkeleton(jsonContent.getSchema());
+                        fragment.content(
+                                field("Request Body (application/json)").content(
+                                        element("textarea")
+                                                .attr("data-request-body", "true")
+                                                .classes("textarea", "is-family-code")
+                                                .attr("rows", "6")
+                                                .content(skeleton)));
+                    }
+                }
                 if (operation.getResponses() != null) {
                     var response200 = operation.getResponses().get("200");
                     if (response200 != null && response200.getContent() != null) {
@@ -241,6 +266,34 @@ public class OpenApiUiGenerator {
     private List<String> splitSegments(String path) {
         var stripped = path.startsWith("/") ? path.substring(1) : path;
         return List.of(stripped.split("/"));
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static String generateJsonSkeleton(Schema<?> schema) {
+        Map<String, Schema> properties = schema.getProperties();
+        if (properties == null) return "{}";
+        var sb = new StringBuilder("{\n");
+        var first = true;
+        for (var entry : properties.entrySet()) {
+            if (!first) sb.append(",\n");
+            first = false;
+            sb.append("  \"").append(entry.getKey()).append("\": ");
+            sb.append(defaultValue(entry.getValue().getType()));
+        }
+        sb.append("\n}");
+        return sb.toString();
+    }
+
+    private static String defaultValue(String type) {
+        if (type == null) return "null";
+        return switch (type) {
+            case "string" -> "\"\"";
+            case "integer", "number" -> "0";
+            case "boolean" -> "false";
+            case "array" -> "[]";
+            case "object" -> "{}";
+            default -> "null";
+        };
     }
 
     private static Color methodColor(PathItem.HttpMethod method) {
@@ -318,6 +371,11 @@ public class OpenApiUiGenerator {
             #detail .field {
                 margin-bottom: 1rem;
             }
+            #detail textarea[data-request-body] {
+                font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+                font-size: 0.875rem;
+                resize: vertical;
+            }
             #detail button[data-path] {
                 margin-top: 0.75rem;
             }
@@ -326,7 +384,7 @@ public class OpenApiUiGenerator {
     private static final String APP_JS = """
             document.addEventListener('DOMContentLoaded', function() {
                 var detail = document.getElementById('detail');
-
+            
                 // Mode toggle
                 var modeContainer = document.querySelector('[data-mode]');
                 if (modeContainer) {
@@ -343,7 +401,7 @@ public class OpenApiUiGenerator {
                         });
                     });
                 }
-
+            
                 document.body.addEventListener('htmx:afterSwap', function() {
                     var currentMode = modeContainer ? modeContainer.getAttribute('data-mode') : 'try';
                     if (currentMode !== 'try') {
@@ -351,29 +409,29 @@ public class OpenApiUiGenerator {
                         sendBtns.forEach(function(b) { b.textContent = 'Copy'; });
                     }
                 });
-
+            
                 function showCopied(btn) {
                     var original = btn.textContent;
                     btn.textContent = 'Copied!';
                     setTimeout(function() { btn.textContent = original; }, 1500);
                 }
-
+            
                 // Auto-load the first operation
                 var firstHxEl = document.querySelector('[hx-get]');
                 if (firstHxEl) htmx.ajax('GET', firstHxEl.getAttribute('hx-get'), '#detail');
-
+            
                 // Send button handler (delegated from detail pane)
                 if (detail) {
                     detail.addEventListener('click', function(e) {
                         var sendBtn = e.target.closest('button[data-path]');
                         if (!sendBtn) return;
-
+            
                         var pathTemplate = sendBtn.getAttribute('data-path');
                         var method = sendBtn.getAttribute('data-method');
                         var modeEl = document.querySelector('[data-mode]');
                         var mode = modeEl ? modeEl.getAttribute('data-mode') : 'try';
                         var baseUrl = modeEl ? (modeEl.getAttribute('data-base-url') || '') : '';
-
+            
                         // Collect input values
                         var inputs = detail.querySelectorAll('input[name]');
                         var resolvedPath = pathTemplate;
@@ -390,17 +448,31 @@ public class OpenApiUiGenerator {
                         var url = baseUrl.startsWith('http') ? baseUrl + resolvedPath
                                 : new URL((baseUrl + resolvedPath).replace(/\\/+/g, '/'), window.location.origin).href;
                         if (queryParams.length > 0) url += '?' + queryParams.join('&');
-
+            
+                        var bodyTextarea = detail.querySelector('textarea[data-request-body]');
+                        var bodyValue = bodyTextarea ? bodyTextarea.value : '';
+            
                         if (mode === 'curl') {
-                            navigator.clipboard.writeText('curl ' + url);
+                            var cmd = bodyValue
+                                    ? 'curl -X ' + method + " -H 'Content-Type: application/json' -d '" + bodyValue + "' " + url
+                                    : 'curl -X ' + method + ' ' + url;
+                            navigator.clipboard.writeText(cmd);
                             showCopied(sendBtn);
                         } else if (mode === 'httpie') {
-                            navigator.clipboard.writeText('http ' + method + ' ' + url);
+                            var cmd = bodyValue
+                                    ? "echo '" + bodyValue + "' | http " + method + ' ' + url + " Content-Type:application/json"
+                                    : 'http ' + method + ' ' + url;
+                            navigator.clipboard.writeText(cmd);
                             showCopied(sendBtn);
                         } else if (mode === 'try') {
                             sendBtn.disabled = true;
                             sendBtn.textContent = 'Sending...';
-                            fetch(url).then(function(resp) {
+                            var fetchOptions = { method: method };
+                            if (bodyValue) {
+                                fetchOptions.body = bodyValue;
+                                fetchOptions.headers = { 'Content-Type': 'application/json' };
+                            }
+                            fetch(url, fetchOptions).then(function(resp) {
                                 var ct = resp.headers.get('Content-Type') || '';
                                 return resp.text().then(function(text) {
                                     var pre = document.createElement('pre');
@@ -439,9 +511,7 @@ public class OpenApiUiGenerator {
 
         void add(List<String> segments, int index, PathItem pathItem) {
             if (index >= segments.size()) {
-                for (var opEntry : pathItem.readOperationsMap().entrySet()) {
-                    operations.put(opEntry.getKey(), opEntry.getValue());
-                }
+                operations.putAll(pathItem.readOperationsMap());
                 return;
             }
             var segment = segments.get(index);

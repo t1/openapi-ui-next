@@ -1,0 +1,14 @@
+openapi: 3.0.3
+info:
+  title: Test API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    post:
+      summary: Add a pet
+      operationId: addPet
+      responses:
+        '201':
+          description: Pet created

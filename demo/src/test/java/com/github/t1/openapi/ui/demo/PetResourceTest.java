@@ -56,6 +56,60 @@ class PetResourceTest {
                 .body("id", notNullValue());
     }
 
+    @Test void shouldUpdatePet() {
+        var id = given()
+                .contentType(APPLICATION_JSON)
+                .body("{\"name\":\"Temp\",\"status\":\"available\",\"ownerId\":1}")
+                .when().post("/pets")
+                .then().statusCode(201)
+                .extract().path("id");
+
+        given()
+                .contentType(APPLICATION_JSON)
+                .body("{\"name\":\"Updated\",\"status\":\"available\",\"ownerId\":2}")
+                .when().put("/pets/" + id)
+                .then()
+                .statusCode(200)
+                .body("name", is("Updated"))
+                .body("status", is("available"));
+    }
+
+    @Test void shouldReturn404ForPutUnknownPet() {
+        given()
+                .contentType(APPLICATION_JSON)
+                .body("{\"name\":\"X\",\"status\":\"available\",\"ownerId\":1}")
+                .when().put("/pets/999")
+                .then()
+                .statusCode(404);
+    }
+
+    @Test void shouldPatchPet() {
+        var id = given()
+                .contentType(APPLICATION_JSON)
+                .body("{\"name\":\"Temp\",\"status\":\"available\",\"ownerId\":1}")
+                .when().post("/pets")
+                .then().statusCode(201)
+                .extract().path("id");
+
+        given()
+                .contentType(APPLICATION_JSON)
+                .body("{\"name\":\"Patched\"}")
+                .when().patch("/pets/" + id)
+                .then()
+                .statusCode(200)
+                .body("name", is("Patched"))
+                .body("status", is("available"));
+    }
+
+    @Test void shouldReturn404ForPatchUnknownPet() {
+        given()
+                .contentType(APPLICATION_JSON)
+                .body("{\"name\":\"X\"}")
+                .when().patch("/pets/999")
+                .then()
+                .statusCode(404);
+    }
+
     @Test void shouldDeletePet() {
         // create a pet to delete, to avoid affecting other tests
         var id = given()

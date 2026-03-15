@@ -3,14 +3,13 @@ package com.github.t1.openapi.ui;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Page.ScreenshotOptions;
 import com.sun.net.httpserver.HttpServer;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-
-import com.microsoft.playwright.Page.ScreenshotOptions;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -111,6 +110,23 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         });
     }
 
+    void mockEndpoint(String path, String expectedMethod, String contentType, String body) {
+        try {server.removeContext("/api" + path);} catch (IllegalArgumentException ignored) {}
+        server.createContext("/api" + path, exchange -> {
+            if (!exchange.getRequestMethod().equalsIgnoreCase(expectedMethod)) {
+                exchange.sendResponseHeaders(405, 0);
+                exchange.close();
+                return;
+            }
+            exchange.getResponseHeaders().set("Content-Type", contentType);
+            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+            var bytes = body.getBytes();
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+    }
+
     void mockEndpoint(String path, String contentType, String body, int statusCode) {
         try {server.removeContext("/api" + path);} catch (IllegalArgumentException ignored) {}
         server.createContext("/api" + path, exchange -> {
@@ -118,6 +134,31 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
             exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
             var bytes = body.getBytes();
             exchange.sendResponseHeaders(statusCode, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+    }
+
+    void mockEndpointWithBodyEcho(String path, String expectedMethod) {
+        try {server.removeContext("/api" + path);} catch (IllegalArgumentException ignored) {}
+        server.createContext("/api" + path, exchange -> {
+            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
+            exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                exchange.close();
+                return;
+            }
+            if (!exchange.getRequestMethod().equalsIgnoreCase(expectedMethod)) {
+                exchange.sendResponseHeaders(405, 0);
+                exchange.close();
+                return;
+            }
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            var requestBody = new String(exchange.getRequestBody().readAllBytes());
+            var bytes = requestBody.getBytes();
+            exchange.sendResponseHeaders(200, bytes.length);
             exchange.getResponseBody().write(bytes);
             exchange.close();
         });
@@ -173,6 +214,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void fillInput(String name, String value) {page.locator("#detail input[name='" + name + "']").fill(value);}
 
+    void fillRequestBody(String body) {page.locator("#detail textarea[data-request-body]").fill(body);}
+
     void waitForInput(String name) {page.waitForSelector("#detail input[name='" + name + "']");}
 
     void clickSend() {page.locator("#detail button[data-path]").click();}
@@ -196,10 +239,6 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     String responseText() {return page.locator("#detail pre.response").textContent();}
-
-    boolean isFocusInDetail() {
-        return (Boolean) page.evaluate("() => document.activeElement.closest('#detail') !== null");
-    }
 
     boolean isTreeFocused() {
         return (Boolean) page.evaluate(

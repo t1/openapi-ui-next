@@ -199,7 +199,7 @@ class BrowserTest {
             app.clickSend();
 
             then(app.readClipboard())
-                    .contains("curl")
+                    .contains("curl -X GET")
                     .contains("https://api.example.com/pets/42");
         }
 
@@ -221,6 +221,16 @@ class BrowserTest {
             then(app.sendButtonText()).isEqualTo("Copied!");
         }
 
+        @Test void curlModeIncludesMethod() {
+            app.clickModeButton("curl");
+            app.clickTreeNode("pets/{petId}/GET.html");
+            app.waitForInput("petId");
+            app.fillInput("petId", "42");
+            app.clickSend();
+
+            then(app.readClipboard()).startsWith("curl -X GET");
+        }
+
         @Test void httpieModeCopiesCommand() {
             app.clickModeButton("httpie");
             app.clickTreeNode("pets/{petId}/GET.html");
@@ -231,6 +241,62 @@ class BrowserTest {
             then(app.readClipboard())
                     .contains("http GET")
                     .contains("https://api.example.com/pets/42");
+        }
+    }
+
+    @Nested class GivenAppWithPostEndpoint {
+        @RegisterExtension static AppFixture app =
+                context.launch("post-endpoint.yaml").withBaseUrlOverride();
+
+        @Test void tryModeSendsPostRequest() {
+            app.mockEndpoint("/pets", "POST", "application/json", "{\"id\":1}");
+            app.clickTreeNode("pets/POST.html");
+            app.waitForDetailContent("Add a pet");
+            app.clickSend();
+            app.waitForResponse();
+
+            then(app.responseText()).contains("\"id\"");
+        }
+    }
+
+    @Nested class GivenAppWithRequestBody {
+        @RegisterExtension static AppFixture app =
+                context.launch("request-body.yaml").withBaseUrlOverride();
+
+        @Test void tryModeSendsRequestBody() {
+            app.mockEndpointWithBodyEcho("/pets", "POST");
+            app.clickTreeNode("pets/POST.html");
+            app.waitForDetailContent("Add a pet");
+            app.fillRequestBody("{\"name\": \"Fido\", \"age\": 3}");
+            app.clickSend();
+            app.waitForResponse();
+
+            then(app.responseText()).contains("Fido");
+        }
+
+        @Test void curlModeIncludesRequestBody() {
+            app.clickModeButton("curl");
+            app.clickTreeNode("pets/POST.html");
+            app.waitForDetailContent("Add a pet");
+            app.fillRequestBody("{\"name\": \"Fido\"}");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .contains("curl -X POST")
+                    .contains("-H 'Content-Type: application/json'")
+                    .contains("-d '{\"name\": \"Fido\"}'");
+        }
+
+        @Test void httpieModeIncludesRequestBody() {
+            app.clickModeButton("httpie");
+            app.clickTreeNode("pets/POST.html");
+            app.waitForDetailContent("Add a pet");
+            app.fillRequestBody("{\"name\": \"Fido\"}");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .contains("http POST")
+                    .contains("echo '{\"name\": \"Fido\"}'");
         }
     }
 
