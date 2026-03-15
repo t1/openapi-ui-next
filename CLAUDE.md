@@ -20,6 +20,8 @@ If you create a new file, also stage exactly this file to git, but not any other
 
 - Keep commit messages short (single line, no body).
 - Never add a `Co-Authored-By` trailer.
+- Squash related commits into one before finishing a task (e.g. a plan's worth of work
+  becomes a single commit).
 
 ## Shell Commands
 

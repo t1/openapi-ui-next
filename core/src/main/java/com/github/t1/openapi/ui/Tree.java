@@ -30,6 +30,14 @@ public class Tree extends AbstractElement<Tree> {
         return this;
     }
 
+    public Tree item(Renderable label, Consumer<Element> extra) {
+        var item = li().attr("role", "treeitem").content(label);
+        extra.accept(item);
+        markFirstItem(item);
+        content(item);
+        return this;
+    }
+
     public Tree node(String label, Consumer<Node> children) { return node(span(label), children); }
 
     public Tree node(Renderable label, Consumer<Node> children) {
@@ -69,6 +77,8 @@ public class Tree extends AbstractElement<Tree> {
 
         public Node item(Renderable label) { subtree.item(label); return this; }
 
+        public Node item(Renderable label, Consumer<Element> extra) { subtree.item(label, extra); return this; }
+
         public Node node(String label, Consumer<Node> children) { subtree.node(label, children); return this; }
 
         public Node node(Renderable label, Consumer<Node> children) { subtree.node(label, children); return this; }
@@ -97,29 +107,36 @@ public class Tree extends AbstractElement<Tree> {
                 margin-left: 0.5rem;
             }
             [role="treeitem"] {
-                padding: 4px 0;
+                padding: 6px 8px;
+                margin: 1px 0;
                 line-height: 1.7;
-            }
-            [role="treeitem"] > span {
-                cursor: pointer;
-                padding: 3px 8px;
                 border-radius: 4px;
+                cursor: pointer;
+                transition: background 0.15s;
             }
-            [role="treeitem"] > span:hover {
+            [role="treeitem"]:hover:not([aria-selected="true"]) {
                 background-color: var(--bulma-scheme-main-ter);
             }
-            [role="treeitem"][aria-selected="true"] > span:first-child {
-                background-color: var(--bulma-link-light);
+            [role="treeitem"][aria-selected="true"] {
+                background: linear-gradient(90deg, var(--bulma-link) 3px, var(--bulma-link-light) 3px);
+                padding-left: 12px;
             }
-            [role="tree"]:focus-visible [role="treeitem"][aria-selected="true"] > span:first-child {
+            [role="tree"]:focus-visible [role="treeitem"][aria-selected="true"] {
                 outline: 2px solid var(--bulma-link);
                 outline-offset: 1px;
             }
             .tree-segment {
-                font-weight: 600;
+                font-weight: 700;
                 color: var(--bulma-text-strong);
                 font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
                 font-size: 0.9rem;
+            }
+            .tree-param {
+                font-weight: 600;
+                color: #7c5cbf;
+                font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+                font-size: 0.85rem;
+                font-style: italic;
             }
             .tree-toggle {
                 display: inline-block;

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.assertj.core.api.BDDAssertions.then;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OpenApiUiGeneratorTest {
@@ -72,6 +73,33 @@ class OpenApiUiGeneratorTest {
         assertTrue(fragment.contains("id"));
         assertTrue(fragment.contains("name"));
         assertTrue(fragment.contains("string"));
+    }
+
+    @Test void shouldHideSummaryOnNonSelectedItems() throws Exception {
+        var specPath = Path.of(getClass().getResource("/nested-paths.yaml").toURI());
+        new OpenApiUiGenerator(specPath, outputDir).generate();
+
+        var css = Files.readString(outputDir.resolve("openapi-ui.css"));
+
+        then(css).contains(".tree-op-summary");
+    }
+
+    @Test void shouldWrapSummaryInSpan() throws Exception {
+        var specPath = Path.of(getClass().getResource("/nested-paths.yaml").toURI());
+        new OpenApiUiGenerator(specPath, outputDir).generate();
+
+        var html = Files.readString(outputDir.resolve("index.html"));
+
+        then(html).contains("class=\"tree-op-summary\"");
+    }
+
+    @Test void shouldUseParamClassForPathParameters() throws Exception {
+        var specPath = Path.of(getClass().getResource("/nested-paths.yaml").toURI());
+        new OpenApiUiGenerator(specPath, outputDir).generate();
+
+        var html = Files.readString(outputDir.resolve("index.html"));
+
+        then(html).contains("class=\"tree-param\"");
     }
 
     @Test

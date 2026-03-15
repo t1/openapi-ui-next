@@ -1,7 +1,10 @@
 package com.github.t1.openapi.ui;
 
 import com.github.t1.bulmajava.basic.Color;
+import com.github.t1.htmljava.Element;
+import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 
@@ -118,13 +121,13 @@ public class OpenApiUiGenerator {
             var child = entry.getValue();
             var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
             if (!child.children.isEmpty()) {
-                tree.node(span(segment).classes("tree-segment"), sub -> {
-                    addOperationItems(sub, child, fullPath);
+                tree.node(span(segment).classes(segmentClass(segment)), sub -> {
+                    addNodeOperations(sub, child, fullPath);
                     addNodes(sub, child, fullPath);
                 });
             } else {
-                tree.item(span(segment).classes("tree-segment"));
-                addOperationItems(tree, child, fullPath);
+                tree.item(span(segment).classes(segmentClass(segment)), item ->
+                        addLeafOperations(item, child, fullPath));
             }
         }
     }
@@ -135,43 +138,43 @@ public class OpenApiUiGenerator {
             var child = entry.getValue();
             var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
             if (!child.children.isEmpty()) {
-                node.node(span(segment).classes("tree-segment"), sub -> {
-                    addOperationItems(sub, child, fullPath);
+                node.node(span(segment).classes(segmentClass(segment)), sub -> {
+                    addNodeOperations(sub, child, fullPath);
                     addNodes(sub, child, fullPath);
                 });
             } else {
-                node.item(span(segment).classes("tree-segment"));
-                addOperationItems(node, child, fullPath);
+                node.item(span(segment).classes(segmentClass(segment)), item ->
+                        addLeafOperations(item, child, fullPath));
             }
         }
     }
 
-    private void addOperationItems(Tree tree, PathNode child, String fullPath) {
+    private static String segmentClass(String segment) {
+        return segment.startsWith("{") && segment.endsWith("}") ? "tree-param" : "tree-segment";
+    }
+
+    private void addNodeOperations(Tree.Node node, PathNode child, String fullPath) {
         for (var opEntry : child.operations.entrySet()) {
-            var method = opEntry.getKey();
-            var operation = opEntry.getValue();
-            var summary = operation.getSummary();
-            var badge = tag(method.name()).is(methodColor(method));
-            var labelText = summary != null ? " — " + summary : "";
-            tree.item(span().classes("tree-op-label").content(badge).content(labelText)
-                    .attr("hx-get", fullPath + "/" + method.name() + ".html")
-                    .attr("hx-target", "#detail")
-                    .attr("hx-swap", "innerHTML"));
+            node.content(operationLabel(opEntry.getKey(), opEntry.getValue(), fullPath));
         }
     }
 
-    private void addOperationItems(Tree.Node node, PathNode child, String fullPath) {
+    private void addLeafOperations(Element item, PathNode child, String fullPath) {
         for (var opEntry : child.operations.entrySet()) {
-            var method = opEntry.getKey();
-            var operation = opEntry.getValue();
-            var summary = operation.getSummary();
-            var badge = tag(method.name()).is(methodColor(method));
-            var labelText = summary != null ? " — " + summary : "";
-            node.content(span().classes("tree-op-label").content(badge).content(labelText)
-                    .attr("hx-get", fullPath + "/" + method.name() + ".html")
-                    .attr("hx-target", "#detail")
-                    .attr("hx-swap", "innerHTML"));
+            item.content(operationLabel(opEntry.getKey(), opEntry.getValue(), fullPath));
         }
+    }
+
+    private Element operationLabel(HttpMethod method, Operation operation, String fullPath) {
+        var badge = tag(method.name()).is(methodColor(method));
+        var label = span().classes("tree-op-label").content(badge);
+        if (operation.getSummary() != null) {
+            label.content(span(" — " + operation.getSummary()).classes("tree-op-summary"));
+        }
+        return label
+                .attr("hx-get", fullPath + "/" + method.name() + ".html")
+                .attr("hx-target", "#detail")
+                .attr("hx-swap", "innerHTML");
     }
 
     private void generateFragments(PathNode node, String pathPrefix) throws IOException {
@@ -259,6 +262,12 @@ public class OpenApiUiGenerator {
             .tree-op-label {
                 color: var(--bulma-text-weak);
                 font-size: 0.85rem;
+            }
+            .tree-op-summary {
+                display: none;
+            }
+            [aria-selected="true"] > .tree-op-label > .tree-op-summary {
+                display: inline;
             }
             .columns.is-desktop > .column.is-one-third {
                 background-color: var(--bulma-scheme-main-bis);

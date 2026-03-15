@@ -74,11 +74,43 @@ class TreeTest {
         then(lastIndex).as("only one item should be selected").isEqualTo(firstIndex);
     }
 
+    @Test void shouldRenderNodeChildItemWithExtraContent() {
+        var html = tree().node("parent", node -> {
+            node.item(span("seg").classes("tree-segment"), item -> {
+                item.content(span("badge").classes("op"));
+            });
+        }).render();
+
+        then(html)
+                .contains("<span class=\"tree-segment\">seg</span>")
+                .contains("<span class=\"op\">badge</span>");
+        // badge must be inside the group (subtree), not on the parent <li>
+        int badgePos = html.indexOf("class=\"op\"");
+        int groupPos = html.indexOf("role=\"group\"");
+        then(badgePos).as("badge should be inside the subtree group").isGreaterThan(groupPos);
+    }
+
+    @Test void shouldRenderItemWithExtraContent() {
+        var html = tree().item(span("seg").classes("tree-segment"), item -> {
+            item.content(span("badge").classes("op"));
+        }).render();
+
+        then(html)
+                .contains("<li role=\"treeitem\"")
+                .contains("<span class=\"tree-segment\">seg</span>")
+                .contains("<span class=\"op\">badge</span>");
+        int segPos = html.indexOf("tree-segment");
+        int badgePos = html.indexOf("class=\"op\"");
+        then(segPos).as("segment and badge should be in same <li>").isLessThan(badgePos);
+    }
+
     @Test void shouldProvideCss() {
         then(Tree.css())
                 .contains("[role=\"tree\"]")
                 .contains(".tree-toggle")
                 .contains(".tree-segment")
+                .contains(".tree-param")
+                .contains("transition")
                 .doesNotContain(".tree-op-label");
     }
 
