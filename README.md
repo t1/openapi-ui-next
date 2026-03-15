@@ -5,8 +5,12 @@ Generates static, keyboard-navigable HTML UIs from OpenAPI specifications.
 ## Features
 
 - Parses OpenAPI 3.0/3.1 specs into interactive static HTML
-- Hierarchical, keyboard-navigable path tree
+- Hierarchical, keyboard-navigable path tree with method tag addons
+- Method tabs in detail pane — switching between operations on the same path
+- Enriched method fragments: description, deprecated badge, tags, external docs
 - Three interaction modes: Try (fetch), curl, httpie
+- Three-level keyboard navigation: tree → method tabs → content fields
+- Boundary bump animation at navigation limits
 - Responsive layout (desktop: side-by-side; mobile: stacked)
 - Parameter inputs (path and query)
 - Response rendering with content-type awareness (JSON prettification, HTML/XML/YAML)
@@ -85,19 +89,26 @@ output/
 ├── bulma.min.css
 ├── htmx.min.js
 ├── owners/
+│   ├── index.html       # Path fragment: tab bar + first method
 │   ├── GET.html         # Fragment for GET /owners
 │   └── {id}/
+│       ├── index.html
 │       ├── GET.html     # Fragment for GET /owners/{id}
 │       └── pets/
+│           ├── index.html
 │           └── GET.html # Fragment for GET /owners/{ownerId}/pets
 └── pets/
+    ├── index.html       # Path fragment: tab bar + first method
     ├── GET.html         # Fragment for GET /pets
     ├── POST.html        # Fragment for POST /pets
     └── {id}/
+        ├── index.html
         ├── GET.html     # Fragment for GET /pets/{id}
         ├── DELETE.html  # Fragment for DELETE /pets/{id}
         └── visits/
+            ├── index.html
             ├── GET.html     # Fragment for GET /pets/{petId}/visits
             └── {visitId}/
+                ├── index.html
                 └── GET.html # Fragment for GET /pets/{petId}/visits/{visitId}
 ```

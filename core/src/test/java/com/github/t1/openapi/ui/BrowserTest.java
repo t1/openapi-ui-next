@@ -40,7 +40,7 @@ class BrowserTest {
         }
 
         @Test void clickingTreeNodeLoadsFragment() {
-            app.clickTreeNode("pets/GET.html");
+            app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("List pets");
 
             then(app.detailText()).contains("List pets");
@@ -136,6 +136,102 @@ class BrowserTest {
         }
     }
 
+    @Nested class GivenMultiMethodApp {
+        @RegisterExtension static AppFixture app = context.launch("multi-method.yaml");
+
+        @Test void shouldSwitchMethodTabOnClick() {
+            app.waitForDetailContent("List pets");
+            then(app.detailText()).contains("List pets");
+
+            app.clickMethodTab(2);
+            app.waitForDetailContent("Create a pet");
+
+            then(app.detailText()).contains("Create a pet");
+        }
+
+        @Test void shouldEnterTabsOnArrowRight() {
+            app.focusTree();
+            app.pressKey("ArrowRight"); // expanded node → enter tabs
+            then(app.isTabFocused()).isTrue();
+        }
+
+        @Test void shouldSwitchTabsWithArrowKeys() {
+            app.focusTree();
+            app.pressKey("ArrowRight"); // enter tabs on first tab (GET)
+            app.pressKey("ArrowRight"); // switch to POST tab
+            app.waitForDetailContent("Create a pet");
+            then(app.isTabActive(2)).isTrue();
+
+            app.pressKey("ArrowLeft"); // back to GET
+            app.waitForDetailContent("List pets");
+            then(app.isTabActive(1)).isTrue();
+        }
+
+        @Test void shouldReturnToTreeOnArrowLeftFromFirstTab() {
+            app.focusTree();
+            app.pressKey("ArrowRight"); // enter tabs
+            app.pressKey("ArrowLeft"); // first tab → back to tree
+            then(app.isTreeFocused()).isTrue();
+        }
+
+        @Test void shouldEnterCurrentTabOnEnter() {
+            app.focusTree();
+            app.pressKey("ArrowRight"); // enter tabs, first tab (GET)
+            app.pressKey("ArrowRight"); // switch to POST
+            app.pressKey("Escape"); // back to tree
+            app.pressKey("Enter"); // should re-enter on POST (current tab)
+            then(app.isTabFocused()).isTrue();
+            then(app.isTabActive(2)).isTrue();
+        }
+
+        @Test void shouldNavigateFromTabsToFields() {
+            app.focusTree();
+            app.pressKey("ArrowDown"); // select {petId}
+            app.waitForInput("petId");
+            app.pressKey("ArrowRight"); // enter tabs
+            app.pressKey("ArrowDown"); // enter fields
+            then(app.activeElementTag()).isEqualTo("INPUT");
+        }
+
+        @Test void shouldReturnToTabsOnArrowUpFromFirstField() {
+            app.focusTree();
+            app.pressKey("ArrowDown"); // select {petId}
+            app.waitForInput("petId");
+            app.pressKey("ArrowRight"); // enter tabs
+            app.pressKey("ArrowDown"); // enter fields
+            app.pressKey("ArrowUp"); // back to tabs
+            then(app.isTabFocused()).isTrue();
+        }
+
+        @Test void shouldBumpOnTreeBoundary() {
+            app.focusTree();
+            app.pressKey("ArrowUp"); // already first item → bump
+            then(app.selectedItemHasBumpClass()).isTrue();
+        }
+
+        @Test void shouldEscapeFromFieldsToTree() {
+            app.focusTree();
+            app.pressKey("ArrowDown"); // select {petId}
+            app.waitForDetailContent("Get pet by ID");
+            app.pressKey("ArrowRight"); // enter tabs
+            app.pressKey("ArrowDown"); // enter fields
+            app.pressKey("Escape"); // back to tree
+            then(app.isTreeFocused()).isTrue();
+        }
+
+        @Test void shouldMoveActiveClassOnTabSwitch() {
+            app.waitForDetailContent("List pets");
+            then(app.isTabActive(1)).isTrue();
+            then(app.isTabActive(2)).isFalse();
+
+            app.clickMethodTab(2);
+            app.waitForDetailContent("Create a pet");
+
+            then(app.isTabActive(1)).isFalse();
+            then(app.isTabActive(2)).isTrue();
+        }
+    }
+
     @Nested class GivenAppWithRelativeBase {
         @RegisterExtension static AppFixture app = context.launch("relative-base.yaml");
 
@@ -152,7 +248,7 @@ class BrowserTest {
 
         @Test void tryModeSendsRequestWithPathParam() {
             app.mockRootEndpoint("/items/42", "application/json", "{\"id\":\"42\",\"name\":\"Widget\"}");
-            app.clickTreeNode("items/{itemId}/GET.html");
+            app.clickTreeNode("items/{itemId}/index.html");
             app.waitForInput("itemId");
             app.fillInput("itemId", "42");
             app.clickSend();
@@ -179,7 +275,7 @@ class BrowserTest {
 
             @Test void tryModeSendsRequestWithPathParam() {
                 app.mockEndpoint("/pets/42", "application/json", "{\"id\":\"42\",\"name\":\"Fido\"}");
-                app.clickTreeNode("pets/{petId}/GET.html");
+                app.clickTreeNode("pets/{petId}/index.html");
                 app.waitForInput("petId");
                 app.fillInput("petId", "42");
                 app.clickSend();
@@ -192,7 +288,7 @@ class BrowserTest {
 
         @Test void curlModeCopiesCommand() {
             app.clickModeButton("curl");
-            app.clickTreeNode("pets/{petId}/GET.html");
+            app.clickTreeNode("pets/{petId}/index.html");
             app.waitForInput("petId");
             app.fillInput("petId", "42");
             app.screenshot("params-filled");
@@ -205,7 +301,7 @@ class BrowserTest {
 
         @Test void curlModeShowsCopyButtonLabel() {
             app.clickModeButton("curl");
-            app.clickTreeNode("pets/{petId}/GET.html");
+            app.clickTreeNode("pets/{petId}/index.html");
             app.waitForInput("petId");
 
             then(app.sendButtonText()).isEqualTo("Copy");
@@ -213,7 +309,7 @@ class BrowserTest {
 
         @Test void curlModeShowsCopiedFeedback() {
             app.clickModeButton("curl");
-            app.clickTreeNode("pets/{petId}/GET.html");
+            app.clickTreeNode("pets/{petId}/index.html");
             app.waitForInput("petId");
             app.fillInput("petId", "42");
             app.clickSend();
@@ -223,7 +319,7 @@ class BrowserTest {
 
         @Test void curlModeIncludesMethod() {
             app.clickModeButton("curl");
-            app.clickTreeNode("pets/{petId}/GET.html");
+            app.clickTreeNode("pets/{petId}/index.html");
             app.waitForInput("petId");
             app.fillInput("petId", "42");
             app.clickSend();
@@ -233,7 +329,7 @@ class BrowserTest {
 
         @Test void httpieModeCopiesCommand() {
             app.clickModeButton("httpie");
-            app.clickTreeNode("pets/{petId}/GET.html");
+            app.clickTreeNode("pets/{petId}/index.html");
             app.waitForInput("petId");
             app.fillInput("petId", "42");
             app.clickSend();
@@ -250,7 +346,7 @@ class BrowserTest {
 
         @Test void tryModeSendsPostRequest() {
             app.mockEndpoint("/pets", "POST", "application/json", "{\"id\":1}");
-            app.clickTreeNode("pets/POST.html");
+            app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");
             app.clickSend();
             app.waitForResponse();
@@ -265,7 +361,7 @@ class BrowserTest {
 
         @Test void tryModeSendsRequestBody() {
             app.mockEndpointWithBodyEcho("/pets", "POST");
-            app.clickTreeNode("pets/POST.html");
+            app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");
             app.fillRequestBody("{\"name\": \"Fido\", \"age\": 3}");
             app.clickSend();
@@ -276,7 +372,7 @@ class BrowserTest {
 
         @Test void curlModeIncludesRequestBody() {
             app.clickModeButton("curl");
-            app.clickTreeNode("pets/POST.html");
+            app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");
             app.fillRequestBody("{\"name\": \"Fido\"}");
             app.clickSend();
@@ -289,7 +385,7 @@ class BrowserTest {
 
         @Test void httpieModeIncludesRequestBody() {
             app.clickModeButton("httpie");
-            app.clickTreeNode("pets/POST.html");
+            app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");
             app.fillRequestBody("{\"name\": \"Fido\"}");
             app.clickSend();

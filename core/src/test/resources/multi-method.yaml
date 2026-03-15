@@ -1,0 +1,50 @@
+openapi: 3.0.3
+info:
+  title: Multi Method API
+  version: "1.0"
+paths:
+  /pets:
+    get:
+      summary: List pets
+      description: Returns all pets from the system.
+      tags:
+        - pets
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create a pet
+      description: Adds a new pet to the store.
+      tags:
+        - pets
+      responses:
+        "201":
+          description: Created
+  /pets/{petId}:
+    get:
+      summary: Get pet by ID
+      description: Returns a single pet.
+      deprecated: true
+      externalDocs:
+        url: https://example.com/docs/pets
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+    delete:
+      summary: Delete a pet
+      description: Permanently removes a pet.
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted

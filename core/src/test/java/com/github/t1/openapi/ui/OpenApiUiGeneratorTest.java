@@ -46,7 +46,7 @@ class OpenApiUiGeneratorTest {
 
         var indexHtml = Files.readString(outputDir.resolve("index.html"));
         then(indexHtml).contains("htmx.min.js");
-        then(indexHtml).contains("hx-get=\"pets/GET.html\"");
+        then(indexHtml).contains("hx-get=\"pets/index.html\"");
         then(indexHtml).contains("hx-target=");
     }
 
@@ -68,23 +68,7 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("string");
     }
 
-    @Test void shouldHideSummaryOnNonSelectedItems() throws Exception {
-        generate("/nested-paths.yaml");
-
-        var css = Files.readString(outputDir.resolve("openapi-ui.css"));
-
-        then(css).contains(".tree-op-summary");
-    }
-
-    @Test void shouldWrapSummaryInSpan() throws Exception {
-        generate("/nested-paths.yaml");
-
-        var html = Files.readString(outputDir.resolve("index.html"));
-
-        then(html).contains("class=\"tree-op-summary\"");
-    }
-
-    @Test void shouldUseParamClassForPathParameters() throws Exception {
+@Test void shouldUseParamClassForPathParameters() throws Exception {
         generate("/nested-paths.yaml");
 
         var html = Files.readString(outputDir.resolve("index.html"));
@@ -107,6 +91,70 @@ class OpenApiUiGeneratorTest {
 
         var css = Files.readString(outputDir.resolve("openapi-ui.css"));
         then(css).contains("data-request-body");
+    }
+
+    @Test void shouldRenderMethodTagAddons() throws Exception {
+        generate("/multi-method.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        // Method addons in tree, not operation labels
+        then(indexHtml).contains("class=\"method-addon");
+        then(indexHtml).doesNotContain("class=\"tree-op-summary\"");
+        then(indexHtml).doesNotContain("class=\"tree-op-label\"");
+    }
+
+    @Test void shouldGeneratePathFragmentWithTabs() throws Exception {
+        generate("/multi-method.yaml");
+
+        var pathFragment = Files.readString(outputDir.resolve("pets/index.html"));
+        then(pathFragment).contains("class=\"tabs\"");
+        then(pathFragment).contains("hx-get=\"pets/GET.html\"");
+        then(pathFragment).contains("hx-get=\"pets/POST.html\"");
+        then(pathFragment).contains("id=\"method-content\"");
+        then(pathFragment).contains("List pets");
+    }
+
+    @Test void shouldStillGenerateMethodFragments() throws Exception {
+        generate("/multi-method.yaml");
+
+        then(outputDir.resolve("pets/GET.html")).exists();
+        then(outputDir.resolve("pets/POST.html")).exists();
+        then(outputDir.resolve("pets/{petId}/GET.html")).exists();
+        then(outputDir.resolve("pets/{petId}/DELETE.html")).exists();
+        then(outputDir.resolve("pets/index.html")).exists();
+        then(outputDir.resolve("pets/{petId}/index.html")).exists();
+    }
+
+    @Test void shouldRenderDescription() throws Exception {
+        generate("/multi-method.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("Returns all pets from the system.");
+        then(fragment).contains("op-description");
+    }
+
+    @Test void shouldRenderDeprecatedBadge() throws Exception {
+        generate("/multi-method.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).contains("DEPRECATED");
+        then(fragment).contains("deprecated-badge");
+    }
+
+    @Test void shouldRenderTags() throws Exception {
+        generate("/multi-method.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("op-tag");
+        then(fragment).contains("pets");
+    }
+
+    @Test void shouldRenderExternalDocs() throws Exception {
+        generate("/multi-method.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).contains("external-docs");
+        then(fragment).contains("https://example.com/docs/pets");
     }
 
     @Test void shouldGenerateIndexWithOnePath() throws Exception {

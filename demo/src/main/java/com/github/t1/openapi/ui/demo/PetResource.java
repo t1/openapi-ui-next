@@ -13,11 +13,13 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Path("/pets")
+@Tag(name = "pets")
 public class PetResource {
     static final List<Pet> PETS = new ArrayList<>(List.of(
             new Pet(1, "Max", "available", 1),
@@ -27,13 +29,13 @@ public class PetResource {
 
     private static long nextId = 4;
 
-    @GET @Operation(summary = "List all pets")
+    @GET @Operation(summary = "List all pets", description = "Returns all pets from the system. Supports filtering by status.")
     public List<Pet> list(@QueryParam("status") String status) {
         if (status == null) return PETS;
         return PETS.stream().filter(p -> p.status().equals(status)).toList();
     }
 
-    @GET @Path("/{id}") @Operation(summary = "Get a pet by ID")
+    @GET @Path("/{id}") @Operation(summary = "Get a pet by ID", description = "Returns a single pet by its unique identifier.")
     public Pet get(@PathParam("id") long id) {
         return PETS.stream()
                 .filter(p -> p.id() == id).findFirst()
@@ -47,7 +49,8 @@ public class PetResource {
         return Response.status(201).entity(created).build();
     }
 
-    @PUT @Path("/{id}") @Operation(summary = "Update a pet")
+    @PUT @Path("/{id}") @Operation(summary = "Update a pet", deprecated = true)
+    @Deprecated
     public Pet update(@PathParam("id") long id, @RequestBody Pet pet) {
         for (int i = 0; i < PETS.size(); i++) {
             if (PETS.get(i).id() == id) {

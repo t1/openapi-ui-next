@@ -155,6 +155,13 @@ public class Tree extends AbstractElement<Tree> {
             """;
 
     private static final String JS = """
+            function bump(el, dir) {
+                var cls = dir === 'h' ? 'bump-h' : 'bump-v';
+                el.classList.remove(cls);
+                void el.offsetWidth;
+                el.classList.add(cls);
+                setTimeout(function() { el.classList.remove(cls); }, 250);
+            }
             document.addEventListener('DOMContentLoaded', function() {
                 var tree = document.querySelector('[role="tree"]');
                 if (!tree) return;
@@ -198,15 +205,20 @@ public class Tree extends AbstractElement<Tree> {
                         case 'ArrowDown':
                             e.preventDefault();
                             if (idx < items.length - 1) selectItem(items[idx + 1]);
+                            else bump(current, 'v');
                             break;
                         case 'ArrowUp':
                             e.preventDefault();
                             if (idx > 0) selectItem(items[idx - 1]);
+                            else bump(current, 'v');
                             break;
                         case 'ArrowRight':
                             e.preventDefault();
                             if (current.getAttribute('aria-expanded') === 'false') {
                                 toggleNode(current, true);
+                            } else {
+                                var firstTabLink = document.querySelector('.tabs li:first-child a');
+                                if (firstTabLink) firstTabLink.focus();
                             }
                             break;
                         case 'ArrowLeft':
@@ -222,9 +234,15 @@ public class Tree extends AbstractElement<Tree> {
                             }
                             break;
                         case 'Enter':
+                        case 'Tab':
                             e.preventDefault();
-                            var hxEl = current.querySelector('[hx-get]') || current;
-                            if (hxEl.getAttribute('hx-get')) htmx.ajax('GET', hxEl.getAttribute('hx-get'), '#detail');
+                            var activeTabLink = document.querySelector('.tabs .is-active a');
+                            if (activeTabLink) {
+                                activeTabLink.focus();
+                            } else {
+                                var hxEl = current.querySelector('[hx-get]') || current;
+                                if (hxEl.getAttribute('hx-get')) htmx.ajax('GET', hxEl.getAttribute('hx-get'), '#detail');
+                            }
                             break;
                         case 'Escape':
                             e.preventDefault();
@@ -238,6 +256,8 @@ public class Tree extends AbstractElement<Tree> {
                         el.removeAttribute('aria-selected');
                     });
                     item.setAttribute('aria-selected', 'true');
+                    var hxEl = item.querySelector('[hx-get]') || item;
+                    if (hxEl.getAttribute('hx-get')) htmx.ajax('GET', hxEl.getAttribute('hx-get'), '#detail');
                 }
 
                 document.addEventListener('keydown', function(e) {

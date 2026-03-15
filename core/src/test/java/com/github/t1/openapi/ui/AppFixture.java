@@ -224,8 +224,15 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void waitForResponse() {page.waitForSelector("#detail pre.response");}
 
+    void clickMethodTab(int index) {page.locator(".tabs li:nth-child(" + index + ") a").click();}
+
+    boolean isTabActive(int index) {
+        var cls = page.locator(".tabs li:nth-child(" + index + ")").getAttribute("class");
+        return cls != null && cls.contains("is-active");
+    }
+
     boolean hasMethodBadge(String method) {
-        return page.locator("[role='tree'] .tag:text('" + method + "')").isVisible();
+        return page.locator("[role='tree'] .method-addon:text('" + method + "')").isVisible();
     }
 
     boolean hasStylesheet(String name) {
@@ -246,7 +253,18 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 + " || document.activeElement === document.querySelector('[role=\"tree\"]')");
     }
 
-    String readClipboard() {return (String) page.evaluate("() => navigator.clipboard.readText()");}
+    boolean selectedItemHasBumpClass() {
+        var cls = page.locator("[aria-selected='true']").getAttribute("class");
+        return cls != null && cls.contains("bump");
+    }
+
+    boolean isTabFocused() {
+        return (Boolean) page.evaluate("() => document.activeElement.closest('.tabs') !== null");
+    }
+
+    String activeElementTag() {return (String) page.evaluate("() => document.activeElement.tagName");}
+
+String readClipboard() {return (String) page.evaluate("() => navigator.clipboard.readText()");}
 
     void setViewportSize(int width, int height) {page.setViewportSize(width, height);}
 

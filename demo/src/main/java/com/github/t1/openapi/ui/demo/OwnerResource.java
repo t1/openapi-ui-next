@@ -5,11 +5,13 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Path("/owners")
+@Tag(name = "owners")
 public class OwnerResource {
     static final List<Owner> OWNERS = new ArrayList<>(List.of(
             new Owner(1, "Alice", "alice@example.com"),
