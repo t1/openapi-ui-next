@@ -98,7 +98,7 @@ class OpenApiUiGeneratorTest {
 
         var indexHtml = Files.readString(outputDir.resolve("index.html"));
         // Method addons in tree, not operation labels
-        then(indexHtml).contains("class=\"method-addon");
+        then(indexHtml).contains("class=\"tag is-");
         then(indexHtml).doesNotContain("class=\"tree-op-summary\"");
         then(indexHtml).doesNotContain("class=\"tree-op-label\"");
     }
@@ -155,6 +155,13 @@ class OpenApiUiGeneratorTest {
         var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
         then(fragment).contains("external-docs");
         then(fragment).contains("https://example.com/docs/pets");
+    }
+
+    @Test void methodAddonsAreGrouped() throws Exception {
+        generate("/nested-paths.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("tags has-addons");
     }
 
     @Test void shouldGenerateIndexWithOnePath() throws Exception {

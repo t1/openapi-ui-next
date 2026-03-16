@@ -112,7 +112,7 @@ public class Tree extends AbstractElement<Tree> {
                 margin-left: 0.5rem;
             }
             [role="treeitem"] {
-                padding: 6px 8px;
+                padding: 6px 0 6px 8px;
                 margin: 1px 0;
                 line-height: 1.7;
                 border-radius: 4px;
@@ -123,16 +123,25 @@ public class Tree extends AbstractElement<Tree> {
                 background-color: var(--bulma-scheme-main-ter);
             }
             .tree-label {
-                display: block;
+                display: flex;
+                align-items: center;
+                width: 100%;
+                padding: 4px 4px 4px 12px;
+            }
+            .tree-label > span:not(.tree-toggle) {
+                display: flex;
+                align-items: center;
+                flex: 1;
             }
             [role="treeitem"][aria-selected="true"] > .tree-label {
-                background: linear-gradient(90deg, var(--bulma-link) 3px, color-mix(in srgb, var(--bulma-link) 8%, transparent) 3px);
-                padding-left: 12px;
+                background: linear-gradient(90deg, var(--bulma-link) 3px, color-mix(in srgb, var(--bulma-link) 14%, transparent) 3px);
                 border-radius: 4px;
             }
+            [role="tree"]:focus-visible {
+                outline: none;
+            }
             [role="tree"]:focus-visible [role="treeitem"][aria-selected="true"] > .tree-label {
-                outline: 2px solid var(--bulma-link);
-                outline-offset: 1px;
+                box-shadow: inset 0 0 0 2px var(--bulma-link);
             }
             .tree-segment {
                 font-weight: 700;
@@ -141,11 +150,10 @@ public class Tree extends AbstractElement<Tree> {
                 font-size: 0.9rem;
             }
             .tree-param {
-                font-weight: 600;
-                color: #7c5cbf;
+                font-weight: 400;
+                color: var(--bulma-text-weak);
                 font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
                 font-size: 0.85rem;
-                font-style: italic;
             }
             .tree-toggle {
                 display: inline-block;

@@ -16,6 +16,15 @@ class BrowserTest {
             then(app.hasMethodBadge("GET")).isTrue();
         }
 
+        @Test void methodAddonsAreRightAligned() {
+            then(app.areMethodAddonsRightAligned()).isTrue();
+        }
+
+        @Test void treeIsInBoxAndDetailIsNot() {
+            then(app.isTreeInBox()).isTrue();
+            then(app.isDetailInBox()).isFalse();
+        }
+
         @Test void shouldIncludeCustomStylesheet() {
             then(app.hasStylesheet("openapi-ui.css")).isTrue();
         }
@@ -27,6 +36,11 @@ class BrowserTest {
 
             then(app.detailText()).contains("List pets");
             app.screenshot("fragment-loaded");
+        }
+
+        @Test void focusedTreeScreenshot() {
+            app.focusTree();
+            app.screenshot("focus-tree");
         }
 
         @Test void tabAndEscapeMoveFocus() {
@@ -46,8 +60,13 @@ class BrowserTest {
             then(app.detailText()).contains("List pets");
         }
 
+        @Test void modeToggleIsSegmentedControl() {
+            then(app.hasSegmentedControl()).isTrue();
+            then(app.isSegmentActive("try")).isTrue();
+        }
+
         @Test void modeToggleHasThreeOptionsAndSwitches() {
-            then(app.isModeButtonVisible("Try")).isTrue();
+            then(app.isModeButtonVisible("try")).isTrue();
             then(app.isModeButtonVisible("httpie")).isTrue();
             then(app.isModeButtonVisible("curl")).isTrue();
 
@@ -153,6 +172,7 @@ class BrowserTest {
             app.focusTree();
             app.pressKey("ArrowRight"); // expanded node → enter tabs
             then(app.isTabFocused()).isTrue();
+            app.screenshot("focus-tab");
         }
 
         @Test void shouldSwitchTabsWithArrowKeys() {
@@ -191,6 +211,7 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // enter tabs
             app.pressKey("ArrowDown"); // enter fields
             then(app.activeElementTag()).isEqualTo("INPUT");
+            app.screenshot("focus-field");
         }
 
         @Test void shouldReturnToTabsOnArrowUpFromFirstField() {

@@ -34,6 +34,10 @@ Before writing or editing **any** code — including one-line fixes — invoke t
 language/framework skill (e.g. `tdder:java` for `.java` files). No exception for "quick" edits.
 Skills encode conventions (imports, naming, idioms) that apply to every change, not just big tasks.
 
+**Never look into library source code** (e.g. bulma-java JARs) when a skill covers that library.
+The skill is the authoritative reference. If the skill is missing something, report it so the
+skill can be updated — don't work around it by reading source.
+
 ## TDD
 
 All behavioral changes — no matter how small — **must** be test-first. Write a failing test,
@@ -61,8 +65,21 @@ When completing a step from a plan file (e.g. in `docs/superpowers/plans/`), tic
 The demo app should grow alongside the core, i.e. if we add a feature to the core, extend the app
 so that it shows that feature E2E.
 
+### Brainstorm Visual Companion
+
+Start the brainstorm server for visual mockups during design discussions:
+
+```bash
+/Users/rdohna/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.0/lib/brainstorm-server/start-server.sh --project-dir /Users/rdohna/workspace/t1/openapi-ui-next
+```
+
 ### UI Review
 
 After changing UI generation code (in `core`), run the tests (`mvn test -pl core`) and review
 the screenshots in `core/target/screenshots/` using the `frontend-design` plugin for design
 and UX quality. The screenshots are produced automatically by the Playwright browser tests.
+
+**VERY IMPORTANT**: Always visually confirm that CSS/layout changes actually achieved their goal
+by carefully inspecting the screenshots. Don't assume a change worked just because tests pass —
+tests verify behavior, not visual correctness. Look at the specific pixels/spacing/alignment
+that was supposed to change and verify it matches the intent.

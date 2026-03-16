@@ -4,6 +4,7 @@ import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.ScreenshotOptions;
+import com.microsoft.playwright.options.ColorScheme;
 import com.sun.net.httpserver.HttpServer;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -204,9 +205,17 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return new double[]{box.x, box.y, box.width, box.height};
     }
 
-    boolean isModeButtonVisible(String mode) {return page.locator("button:text('" + mode + "')").isVisible();}
+    boolean isModeButtonVisible(String mode) {return page.locator("[data-mode-btn='" + mode.toLowerCase() + "']").isVisible();}
 
-    void clickModeButton(String mode) {page.locator("button:text('" + mode + "')").click();}
+    void clickModeButton(String mode) {page.locator("[data-mode-btn='" + mode.toLowerCase() + "']").click();}
+
+    boolean hasSegmentedControl() {
+        return page.locator(".segmented-control").count() == 1;
+    }
+
+    boolean isSegmentActive(String mode) {
+        return page.locator(".segmented-control [data-mode-btn='" + mode + "'].is-active").count() == 1;
+    }
 
     String currentMode() {
         return (String) page.evaluate("() => document.querySelector('[data-mode]').getAttribute('data-mode')");
@@ -232,7 +241,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     boolean hasMethodBadge(String method) {
-        return page.locator("[role='tree'] .method-addon:text('" + method + "')").isVisible();
+        return page.locator("[role='tree'] .tag:text('" + method + "')").isVisible();
     }
 
     boolean hasStylesheet(String name) {
@@ -258,6 +267,25 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return cls != null && cls.contains("bump");
     }
 
+    boolean isTreeInBox() {
+        return page.locator(".box [role='tree']").count() == 1;
+    }
+
+    boolean isDetailInBox() {
+        return page.locator(".box#detail").count() == 1;
+    }
+
+    boolean areMethodAddonsRightAligned() {
+        var label = page.locator(".tree-label:has(.tags.has-addons)").first();
+        var labelBox = label.boundingBox();
+        var group = label.locator(".tags.has-addons").first();
+        var groupBox = group.boundingBox();
+        if (labelBox == null || groupBox == null) return false;
+        var labelRight = labelBox.x + labelBox.width;
+        var groupRight = groupBox.x + groupBox.width;
+        return Math.abs(labelRight - groupRight) < 20;
+    }
+
     boolean isTabFocused() {
         return (Boolean) page.evaluate("() => document.activeElement.closest('.tabs') !== null");
     }
@@ -280,6 +308,11 @@ String readClipboard() {return (String) page.evaluate("() => navigator.clipboard
         page.screenshot(new ScreenshotOptions()
                 .setPath(dir.resolve(name + ".png"))
                 .setFullPage(true));
+        page.emulateMedia(new Page.EmulateMediaOptions().setColorScheme(ColorScheme.DARK));
+        page.screenshot(new ScreenshotOptions()
+                .setPath(dir.resolve(name + "-dark.png"))
+                .setFullPage(true));
+        page.emulateMedia(new Page.EmulateMediaOptions().setColorScheme(ColorScheme.LIGHT));
     }
 
     private static void deleteRecursively(Path path) {

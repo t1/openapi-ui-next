@@ -129,6 +129,13 @@ class TreeTest {
         then(css).doesNotContain("[role=\"treeitem\"][aria-selected=\"true\"] {");
     }
 
+    @Test void treeParamCssHasNoItalic() {
+        then(Tree.css())
+                .contains(".tree-param")
+                .doesNotContain("italic")
+                .doesNotContain("#7c5cbf");
+    }
+
     @Test void shouldProvideJs() {
         then(Tree.js())
                 .contains("role=\"tree\"")

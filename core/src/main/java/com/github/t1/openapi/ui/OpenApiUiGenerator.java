@@ -28,6 +28,7 @@ import static com.github.t1.bulmajava.columns.Columns.columns;
 import static com.github.t1.bulmajava.elements.Box.box;
 import static com.github.t1.bulmajava.elements.Button.button;
 import static com.github.t1.bulmajava.elements.Tag.tag;
+import static com.github.t1.bulmajava.elements.Tag.tagsAddon;
 import static com.github.t1.bulmajava.form.Field.field;
 import static com.github.t1.bulmajava.form.Input.input;
 import static com.github.t1.bulmajava.form.InputType.TEXT;
@@ -67,14 +68,14 @@ public class OpenApiUiGenerator {
         var baseUrl = (servers != null && !servers.isEmpty()) ? servers.getFirst().getUrl() : "/";
 
         var modeToggle = div().attr("data-mode", "try").attr("data-base-url", baseUrl)
-                .classes("buttons", "has-addons").content(
-                        button("Try").is(PRIMARY).classes("is-selected").attr("data-mode-btn", "try"),
-                        button("httpie").attr("data-mode-btn", "httpie"),
-                        button("curl").attr("data-mode-btn", "curl")
+                .classes("segmented-control").content(
+                        span("try").classes("is-active").attr("data-mode-btn", "try"),
+                        span("httpie").attr("data-mode-btn", "httpie"),
+                        span("curl").attr("data-mode-btn", "curl")
                 );
 
         var pageTitle = openApi.getInfo().getTitle();
-        var detail = box().id("detail").attr("tabindex", "0");
+        var detail = div().id("detail").attr("tabindex", "0");
         var detailHeader = div().classes("detail-header").content(
                 element("h1").classes("title").content(pageTitle),
                 modeToggle
@@ -82,7 +83,7 @@ public class OpenApiUiGenerator {
         var body = section().content(container().content(
                 detailHeader,
                 columns().classes("is-desktop").content(
-                        column().classes("is-one-third").content(list),
+                        column().classes("is-one-third").content(box().content(list)),
                         column().classes("detail-column").content(detail)
                 )
         ));
@@ -130,8 +131,12 @@ public class OpenApiUiGenerator {
             var child = entry.getValue();
             var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
             var label = span().content(span(segment).classes(segmentClass(segment)));
-            for (var method : child.operations.keySet()) {
-                label.content(methodAddon(method));
+            if (!child.operations.isEmpty()) {
+                var group = tagsAddon();
+                for (var method : child.operations.keySet()) {
+                    group.content(tag(method.name()).is(methodColor(method)));
+                }
+                label.content(group);
             }
             if (!child.children.isEmpty()) {
                 if (!child.operations.isEmpty()) {
@@ -158,8 +163,12 @@ public class OpenApiUiGenerator {
             var child = entry.getValue();
             var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
             var label = span().content(span(segment).classes(segmentClass(segment)));
-            for (var method : child.operations.keySet()) {
-                label.content(methodAddon(method));
+            if (!child.operations.isEmpty()) {
+                var group = tagsAddon();
+                for (var method : child.operations.keySet()) {
+                    group.content(tag(method.name()).is(methodColor(method)));
+                }
+                label.content(group);
             }
             if (!child.children.isEmpty()) {
                 if (!child.operations.isEmpty()) {
@@ -182,10 +191,6 @@ public class OpenApiUiGenerator {
 
     private static String segmentClass(String segment) {
         return segment.startsWith("{") && segment.endsWith("}") ? "tree-param" : "tree-segment";
-    }
-
-    private static Element methodAddon(HttpMethod method) {
-        return span(method.name()).classes("method-addon", "method-" + method.name().toLowerCase());
     }
 
     private void generateFragments(PathNode node, String pathPrefix) throws IOException {
@@ -365,30 +370,37 @@ public class OpenApiUiGenerator {
                 padding-top: 1.5rem;
                 min-height: 100vh;
             }
-            .method-addon {
-                font-size: 0.65rem;
-                padding: 1px 5px;
-                border-radius: 3px;
-                color: white;
-                font-weight: 600;
-                margin-left: 3px;
-                opacity: 0.85;
-                vertical-align: middle;
+            .tags.has-addons {
+                margin-left: auto;
+                margin-right: 4px;
+                margin-bottom: 0;
             }
-            .method-get { background: var(--bulma-success); }
-            .method-post { background: var(--bulma-link); }
-            .method-put { background: var(--bulma-warning); color: var(--bulma-text-strong); }
-            .method-delete { background: var(--bulma-danger); }
-            .method-patch { background: var(--bulma-primary); }
+            .tags.has-addons .tag {
+                font-size: 0.65rem;
+                padding: 2px 6px;
+                height: auto;
+                margin-bottom: 0;
+            }
             .columns.is-desktop > .column.is-one-third {
                 background-color: var(--bulma-scheme-main-bis);
-                border-right: 1px solid var(--bulma-border);
-                padding: 1.25rem 1.5rem;
+                padding: 1.25rem;
+                display: flex;
+                flex-direction: column;
+            }
+            .columns.is-desktop > .column.is-one-third > .box {
+                flex: 1;
             }
             @media screen and (min-width: 1024px) {
                 .columns.is-desktop > .column.is-one-third {
                     min-height: calc(100vh - 4rem);
                 }
+                .detail-column {
+                    min-height: calc(100vh - 4rem);
+                }
+            }
+            .tabs a:focus-visible {
+                outline: none;
+                box-shadow: inset 0 0 0 2px var(--bulma-link);
             }
             /* --- Detail pane --- */
             .detail-header {
@@ -406,6 +418,7 @@ public class OpenApiUiGenerator {
             }
             .detail-column {
                 padding-left: 2rem;
+                background-color: var(--bulma-scheme-main-bis);
             }
             #detail .endpoint-path {
                 font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
@@ -432,7 +445,7 @@ public class OpenApiUiGenerator {
                 border: 1px solid var(--bulma-border);
                 border-radius: 6px;
                 padding: 1rem 1.25rem;
-                background-color: var(--bulma-scheme-main-bis);
+                background-color: var(--bulma-scheme-main);
                 font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
                 font-size: 0.875rem;
                 margin-top: 1rem;
@@ -461,6 +474,28 @@ public class OpenApiUiGenerator {
             }
             .bump-v { animation: bump-vertical 0.2s ease; }
             .bump-h { animation: bump-horizontal 0.2s ease; }
+            .segmented-control {
+                display: inline-flex;
+                gap: 1px;
+                background: var(--bulma-scheme-main-ter);
+                border-radius: 6px;
+                padding: 2px;
+            }
+            .segmented-control > span {
+                padding: 5px 14px;
+                font-size: 0.75rem;
+                color: var(--bulma-text-weak);
+                border-radius: 5px;
+                cursor: pointer;
+                transition: all 0.15s;
+                user-select: none;
+            }
+            .segmented-control > span.is-active {
+                background: var(--bulma-scheme-main);
+                color: var(--bulma-text-strong);
+                font-weight: 500;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+            }
             """;
 
     private static final String APP_JS = """
@@ -474,9 +509,9 @@ public class OpenApiUiGenerator {
                         btn.addEventListener('click', function() {
                             modeContainer.setAttribute('data-mode', btn.getAttribute('data-mode-btn'));
                             modeContainer.querySelectorAll('[data-mode-btn]').forEach(function(b) {
-                                b.classList.remove('is-selected', 'is-primary');
+                                b.classList.remove('is-active');
                             });
-                            btn.classList.add('is-selected', 'is-primary');
+                            btn.classList.add('is-active');
                             var newMode = btn.getAttribute('data-mode-btn');
                             var sendBtns = document.querySelectorAll('#detail button[data-path]');
                             sendBtns.forEach(function(b) { b.textContent = newMode === 'try' ? 'Send' : 'Copy'; });
