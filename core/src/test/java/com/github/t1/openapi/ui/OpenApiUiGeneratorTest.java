@@ -86,6 +86,14 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("&quot;active&quot;: false");
     }
 
+    @Test void shouldResolveRefSchemaInRequestBody() throws Exception {
+        generate("/request-body-ref.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/POST.html"));
+        then(fragment).contains("&quot;name&quot;: &quot;&quot;");
+        then(fragment).contains("&quot;age&quot;: 0");
+    }
+
     @Test void shouldIncludeRequestBodyStyles() throws Exception {
         generate("/request-body.yaml");
 

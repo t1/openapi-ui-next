@@ -6,6 +6,7 @@ import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.core.models.ParseOptions;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -51,7 +52,9 @@ public class OpenApiUiGenerator {
     }
 
     public void generate() throws IOException {
-        var openApi = new OpenAPIV3Parser().read(specFile.toString());
+        var parseOptions = new ParseOptions();
+        parseOptions.setResolveFully(true);
+        var openApi = new OpenAPIV3Parser().read(specFile.toString(), null, parseOptions);
 
         var root = new PathNode();
         for (var pathEntry : openApi.getPaths().entrySet()) {

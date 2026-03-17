@@ -1,0 +1,29 @@
+openapi: 3.0.3
+info:
+  title: Test API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    post:
+      summary: Add a pet
+      operationId: addPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
+      responses:
+        '201':
+          description: Pet created
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          type: integer
