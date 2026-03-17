@@ -22,6 +22,7 @@ If you create a new file, also stage exactly this file to git, but not any other
 - Never add a `Co-Authored-By` trailer.
 - Squash related commits into one before finishing a task (e.g. a plan's worth of work
   becomes a single commit).
+- Before committing a core change, verify the demo app exercises the new feature.
 
 ## Shell Commands
 
