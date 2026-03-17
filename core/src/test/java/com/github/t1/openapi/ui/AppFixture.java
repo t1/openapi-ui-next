@@ -225,6 +225,16 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void fillRequestBody(String body) {page.locator("#detail textarea[data-request-body]").fill(body);}
 
+    void focusRequestBody() {page.locator("#detail textarea[data-request-body]").focus();}
+
+    void setCursorAtStart() {
+        page.evaluate("() => { var el = document.activeElement; el.setSelectionRange(0, 0); }");
+    }
+
+    void setCursorAtEnd() {
+        page.evaluate("() => { var el = document.activeElement; el.setSelectionRange(el.value.length, el.value.length); }");
+    }
+
     void waitForInput(String name) {page.waitForSelector("#detail input[name='" + name + "']");}
 
     void clickSend() {page.locator("#detail button[data-path]").click();}

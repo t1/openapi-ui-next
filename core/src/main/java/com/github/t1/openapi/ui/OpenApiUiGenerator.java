@@ -698,6 +698,18 @@ public class OpenApiUiGenerator {
                     var idx = focusables.indexOf(document.activeElement);
                     if (idx < 0) return;
 
+                    var el = document.activeElement;
+                    if (el.tagName === 'TEXTAREA' && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+                        var val = el.value;
+                        var pos = el.selectionStart;
+                        if (e.key === 'ArrowDown') {
+                            var atLastLine = val.indexOf('\\n', pos) < 0;
+                            if (!atLastLine) return;
+                        } else {
+                            var atFirstLine = val.lastIndexOf('\\n', pos - 1) < 0;
+                            if (!atFirstLine) return;
+                        }
+                    }
                     var handled = true;
                     if (e.key === 'ArrowDown') {
                         if (idx < focusables.length - 1) focusables[idx + 1].focus();

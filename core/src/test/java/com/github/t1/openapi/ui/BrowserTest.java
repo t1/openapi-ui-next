@@ -414,6 +414,39 @@ class BrowserTest {
         @RegisterExtension static AppFixture app =
                 context.launch("request-body.yaml").withBaseUrlOverride();
 
+        @Test void shouldKeepFocusInTextareaOnArrowDownWhenNotAtLastLine() {
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+            app.focusRequestBody();
+            app.setCursorAtStart();
+
+            app.pressKey("ArrowDown");
+
+            then(app.activeElementTag()).isEqualTo("TEXTAREA");
+        }
+
+        @Test void shouldMoveOutOfTextareaOnArrowDownAtLastLine() {
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+            app.focusRequestBody();
+            app.setCursorAtEnd();
+
+            app.pressKey("ArrowDown");
+
+            then(app.activeElementSelector()).contains("button").contains("data-path");
+        }
+
+        @Test void shouldMoveOutOfTextareaOnArrowUpAtFirstLine() {
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+            app.focusRequestBody();
+            app.setCursorAtStart();
+
+            app.pressKey("ArrowUp");
+
+            then(app.isTabFocused()).isTrue();
+        }
+
         @Test void tryModeSendsRequestBody() {
             app.mockEndpointWithBodyEcho("/pets", "POST");
             app.clickTreeNode("pets/index.html");
