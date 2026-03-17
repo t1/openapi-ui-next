@@ -83,3 +83,8 @@ and UX quality. The screenshots are produced automatically by the Playwright bro
 by carefully inspecting the screenshots. Don't assume a change worked just because tests pass —
 tests verify behavior, not visual correctness. Look at the specific pixels/spacing/alignment
 that was supposed to change and verify it matches the intent.
+
+**VERY IMPORTANT**: Never claim interactive behavior (keyboard navigation, click handlers, focus
+management, expand/collapse) works without a browser test that exercises the exact interaction.
+Screenshots are static and cannot validate dynamic behavior. Write the test *before* claiming
+success — if you can't test it, you can't know it works.

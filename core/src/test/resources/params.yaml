@@ -8,6 +8,7 @@ paths:
   /pets/{petId}:
     get:
       summary: Get a pet
+      description: Returns a single pet by its unique identifier. The response includes all available fields by default, but you can use the fields parameter to request only specific attributes. This is useful for reducing payload size when you only need a subset of the pet data. The pet object contains the pet's name, species, breed, date of birth, vaccination records, and current owner information.
       operationId: getPet
       parameters:
         - name: petId

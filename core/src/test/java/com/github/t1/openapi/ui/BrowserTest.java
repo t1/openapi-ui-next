@@ -175,6 +175,30 @@ class BrowserTest {
             app.screenshot("focus-tab");
         }
 
+        @Test void shouldNavigateFromChevronWithArrowKeys() {
+            app.waitForDetailContent("List pets");
+            app.focusDescriptionToggle();
+            then(app.activeElementSelector()).contains("desc-toggle");
+
+            app.pressKey("ArrowDown");
+            then(app.activeElementSelector()).contains("button").contains("data-path");
+
+            app.focusDescriptionToggle();
+            app.pressKey("ArrowUp");
+            then(app.isTabFocused()).isTrue();
+        }
+
+        @Test void shouldExpandAndCollapseDescription() {
+            app.waitForDetailContent("List pets");
+            then(app.isDescriptionClamped()).isTrue();
+
+            app.clickDescriptionToggle();
+            then(app.isDescriptionExpanded()).isTrue();
+
+            app.clickDescriptionToggle();
+            then(app.isDescriptionClamped()).isTrue();
+        }
+
         @Test void shouldSwitchTabsWithArrowKeys() {
             app.focusTree();
             app.pressKey("ArrowRight"); // enter tabs on first tab (GET)
@@ -289,6 +313,16 @@ class BrowserTest {
 
     @Nested class GivenAppWithParams {
         @RegisterExtension static AppFixture app = context.launch("params.yaml");
+
+        @Test void shouldNavigateArrowDownFromChevronToField() {
+            app.waitForDetailContent("Get a pet");
+            app.focusDescriptionToggle();
+            then(app.activeElementSelector()).contains("desc-toggle");
+
+            app.pressKey("ArrowDown");
+            then(app.activeElementSelector()).contains("input")
+                    .doesNotContain("data-path");
+        }
 
         @Nested class InTryMode {
             @RegisterExtension static AppFixture app =

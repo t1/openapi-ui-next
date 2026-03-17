@@ -38,7 +38,6 @@ import static com.github.t1.htmljava.Html.html;
 import static com.github.t1.htmljava.HtmlBasics.code;
 import static com.github.t1.htmljava.HtmlBasics.div;
 import static com.github.t1.htmljava.HtmlBasics.element;
-import static com.github.t1.htmljava.HtmlBasics.p;
 import static com.github.t1.htmljava.HtmlBasics.span;
 import static com.github.t1.openapi.ui.Tree.tree;
 
@@ -241,25 +240,34 @@ public class OpenApiUiGenerator {
     private static Element buildMethodFragmentContent(HttpMethod method, io.swagger.v3.oas.models.Operation operation, String fullPath) {
         var summary = operation.getSummary() != null ? operation.getSummary() : "";
         var headingBadge = tag(method.name()).is(methodColor(method), MEDIUM);
-        var fragment = div().content(
-                div().classes("is-flex", "is-align-items-center", "mb-5").style("gap:0.75rem").content(
-                        headingBadge,
-                        element("h2").classes("title", "is-4", "mb-0", "endpoint-path")
-                                .content("/" + fullPath)),
-                p(summary).classes("op-summary")
-        );
-        if (operation.getDescription() != null) {
-            fragment.content(p(operation.getDescription()).classes("op-description"));
-        }
-        if (Boolean.TRUE.equals(operation.getDeprecated())) {
-            fragment.content(span("DEPRECATED").classes("tag", "is-warning", "deprecated-badge"));
-        }
+        var headerRow = div().classes("is-flex", "is-align-items-center", "mb-5").style("gap:0.75rem").content(
+                headingBadge,
+                element("h2").classes("title", "is-4", "mb-0", "endpoint-path")
+                        .content("/" + fullPath));
         if (operation.getTags() != null && !operation.getTags().isEmpty()) {
-            var tagsRow = div().classes("tags");
+            var tagsRow = div().classes("tags").style("margin-left:auto");
             for (var t : operation.getTags()) {
                 tagsRow.content(span(t).classes("tag", "op-tag"));
             }
-            fragment.content(tagsRow);
+            headerRow.content(tagsRow);
+        }
+        var descriptionSpan = span().classes("op-description").content(
+                element("strong").content(summary));
+        if (operation.getDescription() != null) {
+            descriptionSpan.content(" — " + operation.getDescription());
+        }
+        var descriptionWrapper = div().classes("op-description-wrapper").content(
+                descriptionSpan,
+                element("button").classes("desc-toggle")
+                        .attr("tabindex", "0")
+                        .attr("aria-label", "Expand description")
+                        .content(span("▸")));
+        var fragment = div().content(
+                headerRow,
+                descriptionWrapper
+        );
+        if (Boolean.TRUE.equals(operation.getDeprecated())) {
+            fragment.content(span("DEPRECATED").classes("tag", "is-warning", "deprecated-badge"));
         }
         if (operation.getExternalDocs() != null) {
             fragment.content(div().classes("external-docs").content(
@@ -425,14 +433,48 @@ public class OpenApiUiGenerator {
                 font-weight: 500;
                 color: var(--bulma-text-strong);
             }
-            #detail .op-summary {
-                color: var(--bulma-text-weak);
-                margin-bottom: 1.25rem;
+            .op-description-wrapper {
+                position: relative;
+                margin-bottom: 1rem;
             }
             #detail .op-description {
-                color: var(--bulma-text);
-                margin-bottom: 1rem;
+                color: var(--bulma-text-weak);
                 line-height: 1.6;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 3;
+                overflow: hidden;
+            }
+            #detail .op-description-wrapper.is-expanded .op-description {
+                display: inline;
+                overflow: visible;
+            }
+            .desc-toggle {
+                border: none;
+                background: linear-gradient(90deg, transparent, var(--bulma-scheme-main-bis) 30%);
+                cursor: pointer;
+                padding: 0 0 0 1.5rem;
+                color: var(--bulma-text-weak);
+                font-size: 0.85rem;
+                line-height: 1.6;
+                display: none;
+                position: absolute;
+                right: 0;
+                bottom: 0;
+            }
+            .desc-toggle:focus-visible {
+                outline: 2px solid var(--bulma-link);
+                outline-offset: 2px;
+                border-radius: 2px;
+            }
+            .op-description-wrapper.is-clamped .desc-toggle {
+                display: inline;
+            }
+            .op-description-wrapper.is-expanded .desc-toggle {
+                display: inline;
+                position: static;
+                background: none;
+                padding: 0 0 0 0.25rem;
             }
             .deprecated-badge {
                 font-weight: 600;
@@ -529,12 +571,32 @@ public class OpenApiUiGenerator {
                     }
                 });
 
+                function initDescriptionToggle() {
+                    document.querySelectorAll('.op-description-wrapper').forEach(function(wrapper) {
+                        var desc = wrapper.querySelector('.op-description');
+                        var toggle = wrapper.querySelector('.desc-toggle');
+                        if (!desc || !toggle) return;
+                        if (desc.scrollHeight > desc.clientHeight) {
+                            wrapper.classList.add('is-clamped');
+                        } else {
+                            wrapper.classList.remove('is-clamped');
+                        }
+                        toggle.onclick = function() {
+                            var expanded = wrapper.classList.toggle('is-expanded');
+                            wrapper.classList.toggle('is-clamped', !expanded);
+                            toggle.querySelector('span').textContent = expanded ? '▾' : '▸';
+                            toggle.setAttribute('aria-label', expanded ? 'Collapse description' : 'Expand description');
+                        };
+                    });
+                }
+
                 document.body.addEventListener('htmx:afterSwap', function() {
                     var currentMode = modeContainer ? modeContainer.getAttribute('data-mode') : 'try';
                     if (currentMode !== 'try') {
                         var sendBtns = document.querySelectorAll('#detail button[data-path]');
                         sendBtns.forEach(function(b) { b.textContent = 'Copy'; });
                     }
+                    initDescriptionToggle();
                 });
             
                 function showCopied(btn) {
@@ -547,7 +609,7 @@ public class OpenApiUiGenerator {
                 document.addEventListener('keydown', function(e) {
                     var focused = document.activeElement;
                     if (!focused || !focused.closest || !focused.closest('.tabs')) return;
-                    if (['ArrowRight','ArrowLeft','ArrowDown','ArrowUp','Enter','Tab','Escape'].indexOf(e.key) < 0) return;
+                    if (['ArrowRight','ArrowLeft','ArrowDown','ArrowUp','Enter','Escape'].indexOf(e.key) < 0) return;
                     e.preventDefault();
                     e.stopImmediatePropagation();
                     function activateTab(li) {
@@ -571,12 +633,25 @@ public class OpenApiUiGenerator {
                         } else {
                             document.querySelector('[role="tree"]').focus();
                         }
-                    } else if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === 'Tab') {
+                    } else if (e.key === 'ArrowDown' || e.key === 'Enter') {
                         var firstInput = document.querySelector('#method-content input, #method-content textarea, #method-content button[data-path]');
                         if (firstInput) firstInput.focus();
                     } else if (e.key === 'Escape') {
                         document.querySelector('[role="tree"]').focus();
                     }
+                }, true);
+
+                // Description toggle arrow key navigation
+                document.addEventListener('keydown', function(e) {
+                    if (!document.activeElement.classList.contains('desc-toggle')) return;
+                    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    var all = Array.from(document.querySelectorAll('[tabindex], a, button, input, textarea, select'));
+                    all = all.filter(function(el) { return el.tabIndex >= 0 && el.offsetParent !== null; });
+                    var idx = all.indexOf(document.activeElement);
+                    var next = e.key === 'ArrowDown' ? all[idx + 1] : all[idx - 1];
+                    if (next) next.focus();
                 }, true);
 
                 // Field navigation within method content

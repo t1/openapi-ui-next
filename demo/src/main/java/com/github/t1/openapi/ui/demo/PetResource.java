@@ -29,7 +29,12 @@ public class PetResource {
 
     private static long nextId = 4;
 
-    @GET @Operation(summary = "List all pets", description = "Returns all pets from the system. Supports filtering by status.")
+    @GET @Operation(summary = "List all pets", description = "Returns all pets from the system. "
+            + "Supports filtering by status via the optional query parameter. "
+            + "Results are sorted by ID in ascending order. "
+            + "The response includes each pet's name, species, status, and owner information. "
+            + "Pagination is not yet supported; all matching records are returned in a single response. "
+            + "For large datasets, consider using the status filter to reduce the result set.")
     public List<Pet> list(@QueryParam("status") String status) {
         if (status == null) return PETS;
         return PETS.stream().filter(p -> p.status().equals(status)).toList();

@@ -6,7 +6,7 @@ paths:
   /pets:
     get:
       summary: List pets
-      description: Returns all pets from the system.
+      description: Returns all pets from the system. Supports filtering by status via the optional query parameter. Results are sorted by ID in ascending order. The response includes each pet's name, species, status, and owner information. Pagination is not yet supported; all matching records are returned in a single response.
       tags:
         - pets
       responses:

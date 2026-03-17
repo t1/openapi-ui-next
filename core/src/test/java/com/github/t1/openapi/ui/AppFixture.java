@@ -292,6 +292,30 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     String activeElementTag() {return (String) page.evaluate("() => document.activeElement.tagName");}
 
+    String activeElementSelector() {
+        return (String) page.evaluate("""
+                () => {
+                    var el = document.activeElement;
+                    if (!el) return '';
+                    var s = el.tagName.toLowerCase();
+                    if (el.classList.length > 0) s += '.' + Array.from(el.classList).join('.');
+                    if (el.getAttribute('data-path')) s += '[data-path]';
+                    return s;
+                }""");
+    }
+
+    void focusDescriptionToggle() {page.locator(".desc-toggle").focus();}
+
+    boolean isDescriptionClamped() {
+        return (Boolean) page.evaluate("() => document.querySelector('.op-description-wrapper.is-clamped') !== null");
+    }
+
+    boolean isDescriptionExpanded() {
+        return (Boolean) page.evaluate("() => document.querySelector('.op-description-wrapper.is-expanded') !== null");
+    }
+
+    void clickDescriptionToggle() {page.locator(".desc-toggle").click();}
+
 String readClipboard() {return (String) page.evaluate("() => navigator.clipboard.readText()");}
 
     void setViewportSize(int width, int height) {page.setViewportSize(width, height);}

@@ -125,12 +125,36 @@ class OpenApiUiGeneratorTest {
         then(outputDir.resolve("pets/{petId}/index.html")).exists();
     }
 
-    @Test void shouldRenderDescription() throws Exception {
+    @Test void shouldCombineSummaryAndDescriptionWithDash() throws Exception {
         generate("/multi-method.yaml");
 
         var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
-        then(fragment).contains("Returns all pets from the system.");
-        then(fragment).contains("op-description");
+        then(fragment).contains("<strong>List pets</strong>")
+                .contains("— Returns all pets from the system.")
+                .contains("Pagination is not yet supported");
+    }
+
+    @Test void shouldRenderSummaryAloneWhenNoDescription() throws Exception {
+        generate("/one-get.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("List pets");
+        then(fragment).doesNotContain("—");
+    }
+
+    @Test void shouldApplyLineClampToDescription() throws Exception {
+        generate("/one-get.yaml");
+
+        var css = Files.readString(outputDir.resolve("openapi-ui.css"));
+        then(css).contains("op-description");
+        then(css).contains("-webkit-line-clamp");
+    }
+
+    @Test void shouldRenderExpandChevron() throws Exception {
+        generate("/multi-method.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("desc-toggle");
     }
 
     @Test void shouldRenderDeprecatedBadge() throws Exception {
