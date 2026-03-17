@@ -1,0 +1,49 @@
+openapi: 3.0.3
+info:
+  title: Test API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    post:
+      summary: Add a pet
+      operationId: addPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                withExample:
+                  type: string
+                  example: Fido
+                withDefault:
+                  type: string
+                  default: unknown
+                withEnum:
+                  type: string
+                  enum: [available, adopted, pending]
+                withDateFormat:
+                  type: string
+                  format: date
+                withDateTimeFormat:
+                  type: string
+                  format: date-time
+                withEmailFormat:
+                  type: string
+                  format: email
+                withUriFormat:
+                  type: string
+                  format: uri
+                withUuidFormat:
+                  type: string
+                  format: uuid
+                plain:
+                  type: string
+                plainNumber:
+                  type: integer
+      responses:
+        '201':
+          description: Created

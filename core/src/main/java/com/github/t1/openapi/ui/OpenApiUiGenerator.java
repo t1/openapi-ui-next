@@ -351,13 +351,27 @@ public class OpenApiUiGenerator {
             if (!first) sb.append(",\n");
             first = false;
             sb.append("  \"").append(entry.getKey()).append("\": ");
-            sb.append(defaultValue(entry.getValue().getType()));
+            sb.append(sampleValue(entry.getValue()));
         }
         sb.append("\n}");
         return sb.toString();
     }
 
-    private static String defaultValue(String type) {
+    private static String sampleValue(Schema<?> schema) {
+        if (schema.getExample() != null) {
+            return formatSampleValue(schema.getType(), schema.getExample());
+        }
+        if (schema.getDefault() != null) {
+            return formatSampleValue(schema.getType(), schema.getDefault());
+        }
+        if (schema.getEnum() != null && !schema.getEnum().isEmpty()) {
+            return formatSampleValue(schema.getType(), schema.getEnum().getFirst());
+        }
+        if (schema.getFormat() != null) {
+            var formatted = formatBasedSample(schema.getFormat());
+            if (formatted != null) return "\"" + formatted + "\"";
+        }
+        var type = schema.getType();
         if (type == null) return "null";
         return switch (type) {
             case "string" -> "\"\"";
@@ -366,6 +380,21 @@ public class OpenApiUiGenerator {
             case "array" -> "[]";
             case "object" -> "{}";
             default -> "null";
+        };
+    }
+
+    private static String formatSampleValue(String type, Object value) {
+        return "string".equals(type) ? "\"" + value + "\"" : value.toString();
+    }
+
+    private static String formatBasedSample(String format) {
+        return switch (format) {
+            case "date" -> "2024-01-15";
+            case "date-time" -> "2024-01-15T12:00:00Z";
+            case "email" -> "user@example.com";
+            case "uri", "url" -> "https://example.com";
+            case "uuid" -> "3fa85f64-5717-4562-b3fc-2c963f66afa6";
+            default -> null;
         };
     }
 

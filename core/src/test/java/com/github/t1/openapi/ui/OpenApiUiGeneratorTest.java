@@ -94,6 +94,36 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("&quot;age&quot;: 0");
     }
 
+    @Test void shouldUseExampleValueInSkeleton() throws Exception {
+        generate("/request-body-samples.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/POST.html"));
+        then(fragment).contains("&quot;withExample&quot;: &quot;Fido&quot;");
+    }
+
+    @Test void shouldUseDefaultValueInSkeleton() throws Exception {
+        generate("/request-body-samples.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/POST.html"));
+        then(fragment).contains("&quot;withDefault&quot;: &quot;unknown&quot;");
+    }
+    @Test void shouldUseFirstEnumValueInSkeleton() throws Exception {
+        generate("/request-body-samples.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/POST.html"));
+        then(fragment).contains("&quot;withEnum&quot;: &quot;available&quot;");
+    }
+    @Test void shouldUseFormatBasedValueInSkeleton() throws Exception {
+        generate("/request-body-samples.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/POST.html"));
+        then(fragment).contains("&quot;withDateFormat&quot;: &quot;2024-01-15&quot;");
+        then(fragment).contains("&quot;withDateTimeFormat&quot;: &quot;2024-01-15T12:00:00Z&quot;");
+        then(fragment).contains("&quot;withEmailFormat&quot;: &quot;user@example.com&quot;");
+        then(fragment).contains("&quot;withUriFormat&quot;: &quot;https://example.com&quot;");
+        then(fragment).contains("&quot;withUuidFormat&quot;: &quot;3fa85f64-5717-4562-b3fc-2c963f66afa6&quot;");
+    }
+
     @Test void shouldIncludeRequestBodyStyles() throws Exception {
         generate("/request-body.yaml");
 
