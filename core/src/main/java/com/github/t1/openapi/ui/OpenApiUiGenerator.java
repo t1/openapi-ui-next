@@ -244,10 +244,17 @@ public class OpenApiUiGenerator {
                 headingBadge,
                 element("h2").classes("title", "is-4", "mb-0", "endpoint-path")
                         .content("/" + fullPath));
-        if (operation.getTags() != null && !operation.getTags().isEmpty()) {
+        var hasTags = operation.getTags() != null && !operation.getTags().isEmpty();
+        var isDeprecated = Boolean.TRUE.equals(operation.getDeprecated());
+        if (hasTags || isDeprecated) {
             var tagsRow = div().classes("tags").style("margin-left:auto");
-            for (var t : operation.getTags()) {
-                tagsRow.content(span(t).classes("tag", "op-tag"));
+            if (hasTags) {
+                for (var t : operation.getTags()) {
+                    tagsRow.content(span(t).classes("tag", "op-tag"));
+                }
+            }
+            if (isDeprecated) {
+                tagsRow.content(span("DEPRECATED").classes("tag", "is-warning", "deprecated-badge"));
             }
             headerRow.content(tagsRow);
         }
@@ -266,9 +273,6 @@ public class OpenApiUiGenerator {
                 headerRow,
                 descriptionWrapper
         );
-        if (Boolean.TRUE.equals(operation.getDeprecated())) {
-            fragment.content(span("DEPRECATED").classes("tag", "is-warning", "deprecated-badge"));
-        }
         if (operation.getExternalDocs() != null) {
             fragment.content(div().classes("external-docs").content(
                     element("a").attr("href", operation.getExternalDocs().getUrl())

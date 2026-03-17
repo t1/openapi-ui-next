@@ -157,12 +157,12 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("desc-toggle");
     }
 
-    @Test void shouldRenderDeprecatedBadge() throws Exception {
+    @Test void shouldRenderDeprecatedBadgeInHeaderRow() throws Exception {
         generate("/multi-method.yaml");
 
         var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
-        then(fragment).contains("DEPRECATED");
-        then(fragment).contains("deprecated-badge");
+        var headerRow = fragment.substring(fragment.indexOf("is-flex"), fragment.indexOf("</div>"));
+        then(headerRow).contains("deprecated-badge");
     }
 
     @Test void shouldRenderTags() throws Exception {
