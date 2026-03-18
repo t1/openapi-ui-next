@@ -70,10 +70,13 @@ public class OpenApiUiGenerator {
         var baseUrl = (servers != null && !servers.isEmpty()) ? servers.getFirst().getUrl() : "/";
 
         var modeToggle = div().attr("data-mode", "try").attr("data-base-url", baseUrl)
-                .classes("segmented-control").content(
-                        span("try").classes("is-active").attr("data-mode-btn", "try"),
-                        span("httpie").attr("data-mode-btn", "httpie"),
+                .classes("segmented-control").attr("tabindex", "0").content(
+                        span("try").classes("is-active").attr("data-mode-btn", "try")
+                                .attr("title", "Send requests directly from the browser (1)"),
+                        span("httpie").attr("data-mode-btn", "httpie")
+                                .attr("title", "Copy as HTTPie command (2)"),
                         span("curl").attr("data-mode-btn", "curl")
+                                .attr("title", "Copy as curl command (3)")
                 );
 
         var pageTitle = openApi.getInfo().getTitle();
@@ -583,20 +586,43 @@ public class OpenApiUiGenerator {
                 // Mode toggle
                 var modeContainer = document.querySelector('[data-mode]');
                 if (modeContainer) {
+                    var modes = ['try', 'httpie', 'curl'];
+                    function switchMode(newMode) {
+                        modeContainer.setAttribute('data-mode', newMode);
+                        modeContainer.querySelectorAll('[data-mode-btn]').forEach(function(b) {
+                            b.classList.remove('is-active');
+                        });
+                        modeContainer.querySelector('[data-mode-btn=' + newMode + ']').classList.add('is-active');
+                        var sendBtns = document.querySelectorAll('#detail button[data-path]');
+                        sendBtns.forEach(function(b) { b.textContent = newMode === 'try' ? 'Send' : 'Copy'; });
+                    }
                     modeContainer.querySelectorAll('[data-mode-btn]').forEach(function(btn) {
                         btn.addEventListener('click', function() {
-                            modeContainer.setAttribute('data-mode', btn.getAttribute('data-mode-btn'));
-                            modeContainer.querySelectorAll('[data-mode-btn]').forEach(function(b) {
-                                b.classList.remove('is-active');
-                            });
-                            btn.classList.add('is-active');
-                            var newMode = btn.getAttribute('data-mode-btn');
-                            var sendBtns = document.querySelectorAll('#detail button[data-path]');
-                            sendBtns.forEach(function(b) { b.textContent = newMode === 'try' ? 'Send' : 'Copy'; });
+                            switchMode(btn.getAttribute('data-mode-btn'));
                         });
                     });
+                    modeContainer.addEventListener('keydown', function(e) {
+                        var current = modeContainer.getAttribute('data-mode');
+                        var idx = modes.indexOf(current);
+                        if (e.key === 'ArrowRight') {
+                            e.preventDefault();
+                            switchMode(modes[(idx + 1) % modes.length]);
+                        } else if (e.key === 'ArrowLeft') {
+                            e.preventDefault();
+                            switchMode(modes[(idx - 1 + modes.length) % modes.length]);
+                        }
+                    });
+                    document.addEventListener('keydown', function(e) {
+                        if (e.key >= '1' && e.key <= '3') {
+                            var tag = document.activeElement.tagName;
+                            if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+                            if (document.activeElement.isContentEditable) return;
+                            e.preventDefault();
+                            switchMode(modes[parseInt(e.key) - 1]);
+                        }
+                    });
                 }
-            
+
                 // Tab switching — toggle is-active when HTMX swaps method content
                 document.body.addEventListener('htmx:afterRequest', function(e) {
                     var tabLink = e.detail.elt;

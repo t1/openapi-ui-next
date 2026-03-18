@@ -207,6 +207,14 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean isModeButtonVisible(String mode) {return page.locator("[data-mode-btn='" + mode.toLowerCase() + "']").isVisible();}
 
+    String modeButtonTooltip(String mode) {return page.locator("[data-mode-btn='" + mode.toLowerCase() + "']").getAttribute("title");}
+
+    void focusModeToggle() {page.locator(".segmented-control").focus();}
+
+    boolean isModeToggleFocused() {
+        return (Boolean) page.evaluate("() => document.activeElement.classList.contains('segmented-control')");
+    }
+
     void clickModeButton(String mode) {page.locator("[data-mode-btn='" + mode.toLowerCase() + "']").click();}
 
     boolean hasSegmentedControl() {
@@ -222,6 +230,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     void fillInput(String name, String value) {page.locator("#detail input[name='" + name + "']").fill(value);}
+
+    void focusInput(String name) {page.locator("#detail input[name='" + name + "']").focus();}
 
     void fillRequestBody(String body) {page.locator("#detail textarea[data-request-body]").fill(body);}
 

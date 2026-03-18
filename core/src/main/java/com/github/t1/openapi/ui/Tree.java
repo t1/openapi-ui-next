@@ -250,8 +250,17 @@ public class Tree extends AbstractElement<Tree> {
                                 }
                             }
                             break;
-                        case 'Enter':
                         case 'Tab':
+                            e.preventDefault();
+                            if (e.shiftKey) {
+                                var modeToggle = document.querySelector('.segmented-control');
+                                if (modeToggle) modeToggle.focus();
+                            } else {
+                                var activeTabLink = document.querySelector('.tabs .is-active a');
+                                if (activeTabLink) activeTabLink.focus();
+                            }
+                            break;
+                        case 'Enter':
                             e.preventDefault();
                             var activeTabLink = document.querySelector('.tabs .is-active a');
                             if (activeTabLink) {

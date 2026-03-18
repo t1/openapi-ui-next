@@ -74,6 +74,77 @@ class BrowserTest {
             then(app.currentMode()).isEqualTo("curl");
         }
 
+        @Test void modeButtonsHaveTooltips() {
+            then(app.modeButtonTooltip("try")).contains("1");
+            then(app.modeButtonTooltip("httpie")).contains("2");
+            then(app.modeButtonTooltip("curl")).contains("3");
+        }
+
+        @Test void arrowRightSwitchesToNextMode() {
+            app.focusModeToggle();
+
+            app.pressKey("ArrowRight");
+
+            then(app.currentMode()).isEqualTo("httpie");
+            then(app.isSegmentActive("httpie")).isTrue();
+        }
+
+        @Test void arrowLeftSwitchesToPreviousMode() {
+            app.clickModeButton("curl");
+
+            app.focusModeToggle();
+            app.pressKey("ArrowLeft");
+
+            then(app.currentMode()).isEqualTo("httpie");
+            then(app.isSegmentActive("httpie")).isTrue();
+        }
+
+        @Test void arrowRightWrapsFromCurlToTry() {
+            app.clickModeButton("curl");
+
+            app.focusModeToggle();
+            app.pressKey("ArrowRight");
+
+            then(app.currentMode()).isEqualTo("try");
+        }
+
+        @Test void arrowLeftWrapsFromTryToCurl() {
+            app.focusModeToggle();
+
+            app.pressKey("ArrowLeft");
+
+            then(app.currentMode()).isEqualTo("curl");
+        }
+
+        @Test void numberKeySwitchesMode() {
+            app.focusModeToggle();
+
+            app.pressKey("2");
+            then(app.currentMode()).isEqualTo("httpie");
+
+            app.pressKey("3");
+            then(app.currentMode()).isEqualTo("curl");
+
+            app.pressKey("1");
+            then(app.currentMode()).isEqualTo("try");
+        }
+
+        @Test void numberKeySwitchesModeFromTree() {
+            app.focusTree();
+
+            app.pressKey("2");
+
+            then(app.currentMode()).isEqualTo("httpie");
+        }
+
+        @Test void shiftTabFromTreeFocusesModeToggle() {
+            app.focusTree();
+
+            app.pressKey("Shift+Tab");
+
+            then(app.isModeToggleFocused()).isTrue();
+        }
+
         @Test void desktopLayoutIsSideBySide() {
             app.setViewportSize(1280, 720);
             app.navigate(app.baseUrl());
@@ -322,6 +393,15 @@ class BrowserTest {
             app.pressKey("ArrowDown");
             then(app.activeElementSelector()).contains("input")
                     .doesNotContain("data-path");
+        }
+
+        @Test void numberKeyDoesNotSwitchModeFromInput() {
+            app.waitForInput("petId");
+            app.focusInput("petId");
+
+            app.pressKey("2");
+
+            then(app.currentMode()).isEqualTo("try");
         }
 
         @Nested class InTryMode {
