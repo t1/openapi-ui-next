@@ -226,6 +226,14 @@ class BrowserTest {
         }
     }
 
+    @Nested class GivenAppWithDeepPaths {
+        @RegisterExtension static AppFixture app = context.launch("deep-paths.yaml");
+
+        @Test void methodAddonsShouldBeInSingleRow() {
+            then(app.areMethodAddonsInSingleRow()).isTrue();
+        }
+    }
+
     @Nested class GivenMultiMethodApp {
         @RegisterExtension static AppFixture app = context.launch("multi-method.yaml");
 

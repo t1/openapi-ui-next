@@ -306,6 +306,17 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return Math.abs(labelRight - groupRight) < 20;
     }
 
+    boolean areMethodAddonsInSingleRow() {
+        var groups = page.locator(".tree-label .tags.has-addons");
+        for (int i = 0; i < groups.count(); i++) {
+            var group = groups.nth(i);
+            var groupBox = group.boundingBox();
+            if (groupBox == null) return false;
+            if (groupBox.height > 30) return false;
+        }
+        return true;
+    }
+
     boolean isTabFocused() {
         return (Boolean) page.evaluate("() => document.activeElement.closest('.tabs') !== null");
     }

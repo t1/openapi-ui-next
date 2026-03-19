@@ -22,7 +22,7 @@ If you create a new file, also stage exactly this file to git, but not any other
 - Never add a `Co-Authored-By` trailer.
 - Squash related commits into one before finishing a task (e.g. a plan's worth of work
   becomes a single commit).
-- Before committing a core change, verify the demo app exercises the new feature.
+- Before committing a core change (feature or fix), verify the demo app exercises it.
 
 ## Shell Commands
 
@@ -63,8 +63,9 @@ When completing a step from a plan file (e.g. in `docs/superpowers/plans/`), tic
 
 ### Demo App
 
-The demo app should grow alongside the core, i.e. if we add a feature to the core, extend the app
-so that it shows that feature E2E.
+The demo app should grow alongside the core: if we change the core (feature or fix), extend the
+demo app so that it exercises the change E2E. A fix that only manifests with specific data (e.g.
+deep nesting, many methods) needs demo data that triggers it.
 
 ### Brainstorm Visual Companion
 

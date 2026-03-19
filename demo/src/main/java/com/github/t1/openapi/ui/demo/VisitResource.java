@@ -1,7 +1,9 @@
 package com.github.t1.openapi.ui.demo;
 
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -23,10 +25,22 @@ public class VisitResource {
                 .filter(v -> v.petId() == petId).toList();
     }
 
+    @POST @Operation(summary = "Record a visit")
+    public Visit create(@PathParam("petId") long petId, Visit visit) {
+        var created = new Visit(VISITS.size() + 1, petId, visit.date(), visit.reason());
+        VISITS.add(created);
+        return created;
+    }
+
     @GET @Path("/{visitId}") @Operation(summary = "Get a visit by ID")
     public Visit get(@PathParam("petId") long petId, @PathParam("visitId") long visitId) {
         return VISITS.stream()
                 .filter(v -> v.petId() == petId && v.id() == visitId).findFirst()
                 .orElseThrow(NotFoundException::new);
+    }
+
+    @DELETE @Path("/{visitId}") @Operation(summary = "Cancel a visit")
+    public void delete(@PathParam("petId") long petId, @PathParam("visitId") long visitId) {
+        VISITS.removeIf(v -> v.petId() == petId && v.id() == visitId);
     }
 }

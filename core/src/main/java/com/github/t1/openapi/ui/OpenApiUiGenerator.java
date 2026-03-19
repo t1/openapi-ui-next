@@ -421,6 +421,9 @@ public class OpenApiUiGenerator {
                 margin-left: auto;
                 margin-right: 4px;
                 margin-bottom: 0;
+                flex-wrap: nowrap;
+                flex-shrink: 0;
+                gap: 0;
             }
             .tags.has-addons .tag {
                 font-size: 0.65rem;

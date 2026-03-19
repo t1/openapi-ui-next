@@ -130,6 +130,7 @@ public class Tree extends AbstractElement<Tree> {
             }
             .tree-label > span:not(.tree-toggle) {
                 display: flex;
+                flex-wrap: wrap;
                 align-items: center;
                 flex: 1;
             }
