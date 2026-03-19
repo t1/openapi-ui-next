@@ -12,6 +12,28 @@ class BrowserTest {
     @Nested class GivenAppWithOneGet {
         @RegisterExtension static AppFixture app = context.launch("one-get.yaml");
 
+        @Test void shouldHaveSplitLayout() {
+            then(app.hasSplitLayout()).isTrue();
+        }
+
+        @Test void shouldResizeOnDrag() {
+            var widthBefore = app.treeWidth();
+            app.dragSplitHandle(100);
+            var widthAfter = app.treeWidth();
+
+            then(widthAfter).isGreaterThan(widthBefore + 50);
+        }
+
+        @Test void shouldPersistTreeWidthAcrossReload() {
+            app.dragSplitHandle(100);
+            var widthAfterDrag = app.treeWidth();
+
+            app.navigate(app.baseUrl());
+            var widthAfterReload = app.treeWidth();
+
+            then(Math.abs(widthAfterReload - widthAfterDrag)).isLessThan(10);
+        }
+
         @Test void shouldShowMethodBadge() {
             then(app.hasMethodBadge("GET")).isTrue();
         }

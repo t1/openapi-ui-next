@@ -295,6 +295,25 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator(".box#detail").count() == 1;
     }
 
+    boolean hasSplitLayout() {
+        return page.locator(".split-layout").count() == 1;
+    }
+
+    double treeWidth() {
+        return page.locator(".split-tree").boundingBox().width;
+    }
+
+    void dragSplitHandle(int deltaX) {
+        var handle = page.locator(".split-handle");
+        var box = handle.boundingBox();
+        var x = box.x + box.width / 2;
+        var y = box.y + box.height / 2;
+        page.mouse().move(x, y);
+        page.mouse().down();
+        page.mouse().move(x + deltaX, y);
+        page.mouse().up();
+    }
+
     boolean areMethodAddonsRightAligned() {
         var label = page.locator(".tree-label:has(.tags.has-addons)").first();
         var labelBox = label.boundingBox();

@@ -24,8 +24,6 @@ import static com.github.t1.bulmajava.basic.Color.PRIMARY;
 import static com.github.t1.bulmajava.basic.Color.SUCCESS;
 import static com.github.t1.bulmajava.basic.Color.WARNING;
 import static com.github.t1.bulmajava.basic.Size.MEDIUM;
-import static com.github.t1.bulmajava.columns.Column.column;
-import static com.github.t1.bulmajava.columns.Columns.columns;
 import static com.github.t1.bulmajava.elements.Box.box;
 import static com.github.t1.bulmajava.elements.Button.button;
 import static com.github.t1.bulmajava.elements.Tag.tag;
@@ -85,12 +83,14 @@ public class OpenApiUiGenerator {
                 element("h1").classes("title").content(pageTitle),
                 modeToggle
         );
+        var splitLayout = div().classes("split-layout").content(
+                div().classes("split-tree").content(box().content(list)),
+                div().classes("split-handle"),
+                div().classes("split-detail").content(detail)
+        );
         var body = section().content(container().content(
                 detailHeader,
-                columns().classes("is-desktop").content(
-                        column().classes("is-one-third").content(box().content(list)),
-                        column().classes("detail-column").content(detail)
-                )
+                splitLayout
         ));
         var page = html(pageTitle)
                 .stylesheet("bulma.min.css")
@@ -431,21 +431,64 @@ public class OpenApiUiGenerator {
                 height: auto;
                 margin-bottom: 0;
             }
-            .columns.is-desktop > .column.is-one-third {
+            .split-layout {
+                display: grid;
+                grid-template-columns: minmax(150px, 1fr) 0px minmax(150px, 2fr);
+                gap: 0;
+            }
+            .split-tree {
                 background-color: var(--bulma-scheme-main-bis);
-                padding: 1.25rem;
+                padding: 1.25rem 0 1.25rem 1.25rem;
                 display: flex;
                 flex-direction: column;
+                min-width: 0;
             }
-            .columns.is-desktop > .column.is-one-third > .box {
+            .split-tree > .box {
                 flex: 1;
+                min-width: 0;
+                overflow: hidden;
+                border-radius: 6px 0 0 6px;
+            }
+            .split-handle {
+                width: 14px;
+                margin-left: -7px;
+                margin-right: -7px;
+                cursor: col-resize;
+                background: transparent;
+                position: relative;
+                z-index: 1;
+            }
+            .split-handle::after {
+                content: '\\2022\\a\\2022\\a\\2022\\a\\2022\\a\\2022\\a\\2022\\a\\2022';
+                white-space: pre;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-150%, -50%);
+                color: var(--bulma-text-weak);
+                font-size: 0.6rem;
+                line-height: 0.7;
+                opacity: 0.7;
+                transition: opacity 0.15s;
+            }
+            .split-handle:hover::after {
+                opacity: 1;
+                color: var(--bulma-link);
             }
             @media screen and (min-width: 1024px) {
-                .columns.is-desktop > .column.is-one-third {
+                .split-tree {
                     min-height: calc(100vh - 4rem);
                 }
-                .detail-column {
+                .split-detail {
                     min-height: calc(100vh - 4rem);
+                }
+            }
+            @media screen and (max-width: 1023px) {
+                .split-layout {
+                    grid-template-columns: 1fr;
+                }
+                .split-handle {
+                    display: none;
                 }
             }
             .tabs a:focus-visible {
@@ -466,7 +509,7 @@ public class OpenApiUiGenerator {
             .detail-header .title {
                 margin-bottom: 0;
             }
-            .detail-column {
+            .split-detail {
                 padding-left: 2rem;
                 background-color: var(--bulma-scheme-main-bis);
             }
@@ -845,6 +888,36 @@ public class OpenApiUiGenerator {
                                 sendBtn.textContent = 'Send';
                             });
                         }
+                    });
+                }
+
+                // Split handle drag + localStorage persistence
+                var splitHandle = document.querySelector('.split-handle');
+                var splitLayout = document.querySelector('.split-layout');
+                if (splitHandle && splitLayout) {
+                    var savedWidth = localStorage.getItem('openapi-ui-tree-width');
+                    if (savedWidth) {
+                        splitLayout.style.gridTemplateColumns = savedWidth + 'px 0px 1fr';
+                    }
+                    splitHandle.addEventListener('pointerdown', function(e) {
+                        e.preventDefault();
+                        var splitTree = splitLayout.querySelector('.split-tree');
+                        var startX = e.clientX;
+                        var startWidth = splitTree.getBoundingClientRect().width;
+                        function onMove(e) {
+                            var newWidth = Math.max(150, startWidth + e.clientX - startX);
+                            var maxWidth = splitLayout.getBoundingClientRect().width - 150;
+                            newWidth = Math.min(newWidth, maxWidth);
+                            splitLayout.style.gridTemplateColumns = newWidth + 'px 0px 1fr';
+                        }
+                        function onUp() {
+                            document.removeEventListener('pointermove', onMove);
+                            document.removeEventListener('pointerup', onUp);
+                            var finalWidth = splitTree.getBoundingClientRect().width;
+                            localStorage.setItem('openapi-ui-tree-width', Math.round(finalWidth));
+                        }
+                        document.addEventListener('pointermove', onMove);
+                        document.addEventListener('pointerup', onUp);
                     });
                 }
             });
