@@ -64,7 +64,7 @@ public class Tree extends AbstractElement<Tree> {
         private final Element treeLabel;
 
         private Node(Renderable label) {
-            item = li().attr("role", "treeitem").attr("aria-expanded", "true");
+            item = li().attr("role", "treeitem").attr("aria-expanded", "false");
             treeLabel = span().classes("tree-label");
             treeLabel.content(span("\u25BC").classes("tree-toggle"));
             treeLabel.content(label);
@@ -167,8 +167,11 @@ public class Tree extends AbstractElement<Tree> {
                 vertical-align: middle;
                 color: var(--bulma-text-weak);
             }
-            [role="treeitem"][aria-expanded="false"] > .tree-toggle {
+            [role="treeitem"][aria-expanded="false"] > .tree-label > .tree-toggle {
                 transform: rotate(-90deg);
+            }
+            [role="treeitem"][aria-expanded="false"] > [role="group"] {
+                display: none;
             }
             """;
 

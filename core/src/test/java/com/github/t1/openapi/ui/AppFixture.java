@@ -181,6 +181,20 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void focusTree() {page.locator("[role='tree']").focus();}
 
+    void expandFirstNode() {
+        focusTree();
+        page.keyboard().press("ArrowRight");
+    }
+
+    void expandAllNodes() {
+        page.evaluate("""
+                () => document.querySelectorAll('[role="treeitem"][aria-expanded="false"]').forEach(item => {
+                    item.setAttribute('aria-expanded', 'true');
+                    var group = item.querySelector('[role="group"]');
+                    if (group) group.style.display = '';
+                })""");
+    }
+
     void pressKey(String key) {page.keyboard().press(key);}
 
     String selectedTreeItemText() {
@@ -195,6 +209,25 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     boolean isTextVisible(String text) {return page.locator(":text('" + text + "')").isVisible();}
+
+    double treeToggleRotation() {
+        var result = page.evaluate("""
+                () => new Promise(resolve => {
+                    var toggle = document.querySelector('[aria-selected="true"] .tree-toggle');
+                    if (!toggle) { resolve(0); return; }
+                    function read() {
+                        var transform = getComputedStyle(toggle).transform;
+                        if (!transform || transform === 'none') return 0;
+                        var m = transform.match(/matrix\\(([^)]+)\\)/);
+                        if (!m) return 0;
+                        var vals = m[1].split(',').map(Number);
+                        return Math.round(Math.atan2(vals[1], vals[0]) * 180 / Math.PI);
+                    }
+                    toggle.addEventListener('transitionend', () => resolve(read()), {once: true});
+                    setTimeout(() => resolve(read()), 300);
+                })""");
+        return ((Number) result).doubleValue();
+    }
 
     void clickTreeNode(String hxGetPath) {page.locator("[hx-get='" + hxGetPath + "']").click();}
 

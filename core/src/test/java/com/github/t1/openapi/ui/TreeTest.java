@@ -34,7 +34,7 @@ class TreeTest {
         var html = tree().node("parent", node -> node.item("child")).render();
 
         then(html)
-                .contains("aria-expanded=\"true\"")
+                .contains("aria-expanded=\"false\"")
                 .contains("tree-toggle")
                 .contains("<span>parent</span>")
                 .contains("role=\"group\"")

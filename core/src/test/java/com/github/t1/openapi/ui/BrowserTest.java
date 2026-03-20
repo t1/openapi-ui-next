@@ -264,6 +264,7 @@ class BrowserTest {
         @RegisterExtension static AppFixture app = context.launch("deep-paths.yaml");
 
         @Test void methodAddonsShouldBeInSingleRow() {
+            app.expandAllNodes();
             then(app.areMethodAddonsInSingleRow()).isTrue();
         }
     }
@@ -293,7 +294,8 @@ class BrowserTest {
 
         @Test void shouldEnterTabsOnArrowRight() {
             app.focusTree();
-            app.pressKey("ArrowRight"); // expanded node → enter tabs
+            app.pressKey("ArrowRight"); // expand collapsed node
+            app.pressKey("ArrowRight"); // enter tabs
             then(app.isTabFocused()).isTrue();
             app.screenshot("focus-tab");
         }
@@ -324,6 +326,7 @@ class BrowserTest {
 
         @Test void shouldSwitchTabsWithArrowKeys() {
             app.focusTree();
+            app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowRight"); // enter tabs on first tab (GET)
             app.pressKey("ArrowRight"); // switch to POST tab
             app.waitForDetailContent("Create a pet");
@@ -336,6 +339,7 @@ class BrowserTest {
 
         @Test void shouldReturnToTreeOnArrowLeftFromFirstTab() {
             app.focusTree();
+            app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowRight"); // enter tabs
             app.pressKey("ArrowLeft"); // first tab → back to tree
             then(app.isTreeFocused()).isTrue();
@@ -343,6 +347,7 @@ class BrowserTest {
 
         @Test void shouldEnterCurrentTabOnEnter() {
             app.focusTree();
+            app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowRight"); // enter tabs, first tab (GET)
             app.pressKey("ArrowRight"); // switch to POST
             app.pressKey("Escape"); // back to tree
@@ -353,8 +358,10 @@ class BrowserTest {
 
         @Test void shouldNavigateFromTabsToFields() {
             app.focusTree();
+            app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowDown"); // select {petId}
             app.waitForInput("petId");
+            app.pressKey("ArrowRight"); // expand {petId} node
             app.pressKey("ArrowRight"); // enter tabs
             app.pressKey("ArrowDown"); // enter fields
             then(app.activeElementTag()).isEqualTo("INPUT");
@@ -363,8 +370,10 @@ class BrowserTest {
 
         @Test void shouldReturnToTabsOnArrowUpFromFirstField() {
             app.focusTree();
+            app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowDown"); // select {petId}
             app.waitForInput("petId");
+            app.pressKey("ArrowRight"); // expand {petId} node
             app.pressKey("ArrowRight"); // enter tabs
             app.pressKey("ArrowDown"); // enter fields
             app.pressKey("ArrowUp"); // back to tabs
@@ -379,8 +388,10 @@ class BrowserTest {
 
         @Test void shouldEscapeFromFieldsToTree() {
             app.focusTree();
+            app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowDown"); // select {petId}
             app.waitForDetailContent("Get pet by ID");
+            app.pressKey("ArrowRight"); // expand {petId} node
             app.pressKey("ArrowRight"); // enter tabs
             app.pressKey("ArrowDown"); // enter fields
             app.pressKey("Escape"); // back to tree
@@ -416,6 +427,7 @@ class BrowserTest {
 
         @Test void tryModeSendsRequestWithPathParam() {
             app.mockRootEndpoint("/items/42", "application/json", "{\"id\":\"42\",\"name\":\"Widget\"}");
+            app.expandFirstNode();
             app.clickTreeNode("items/{itemId}/index.html");
             app.waitForInput("itemId");
             app.fillInput("itemId", "42");
@@ -462,6 +474,7 @@ class BrowserTest {
 
             @Test void tryModeSendsRequestWithPathParam() {
                 app.mockEndpoint("/pets/42", "application/json", "{\"id\":\"42\",\"name\":\"Fido\"}");
+                app.expandFirstNode();
                 app.clickTreeNode("pets/{petId}/index.html");
                 app.waitForInput("petId");
                 app.fillInput("petId", "42");
@@ -475,6 +488,7 @@ class BrowserTest {
 
         @Test void curlModeCopiesCommand() {
             app.clickModeButton("curl");
+            app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");
             app.waitForInput("petId");
             app.fillInput("petId", "42");
@@ -488,6 +502,7 @@ class BrowserTest {
 
         @Test void curlModeShowsCopyButtonLabel() {
             app.clickModeButton("curl");
+            app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");
             app.waitForInput("petId");
 
@@ -496,6 +511,7 @@ class BrowserTest {
 
         @Test void curlModeShowsCopiedFeedback() {
             app.clickModeButton("curl");
+            app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");
             app.waitForInput("petId");
             app.fillInput("petId", "42");
@@ -506,6 +522,7 @@ class BrowserTest {
 
         @Test void curlModeIncludesMethod() {
             app.clickModeButton("curl");
+            app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");
             app.waitForInput("petId");
             app.fillInput("petId", "42");
@@ -516,6 +533,7 @@ class BrowserTest {
 
         @Test void httpieModeCopiesCommand() {
             app.clickModeButton("httpie");
+            app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");
             app.waitForInput("petId");
             app.fillInput("petId", "42");
@@ -630,6 +648,8 @@ class BrowserTest {
         @Test void clickingTreeNodeSelectsIt() {
             then(app.isTreeItemSelected("pets/index.html")).isTrue();
 
+            app.focusTree();
+            app.pressKey("ArrowRight"); // expand collapsed node
             app.clickTreeNode("pets/{petId}/index.html");
 
             then(app.isTreeItemSelected("pets/{petId}/index.html")).isTrue();
@@ -637,6 +657,7 @@ class BrowserTest {
 
         @Test void clickingTreeNodeFocusesTreeAfterContentSwap() {
             app.focusTree();
+            app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowRight"); // enter tabs
             then(app.isTreeFocused()).isFalse();
 
@@ -646,15 +667,32 @@ class BrowserTest {
             then(app.isTreeFocused()).isTrue();
         }
 
-        @Test void arrowRightExpandsAndLeftCollapsesNode() {
+        @Test void nodesStartCollapsed() {
+            then(app.isTextVisible("{petId}")).isFalse();
+            app.screenshot("tree-collapsed");
+        }
+
+        @Test void trianglePointsRightWhenCollapsed() {
             app.focusTree();
-            then(app.isTextVisible("{petId}")).isTrue();
+            then(app.treeToggleRotation()).as("collapsed: rotated -90deg").isEqualTo(-90.0);
+
+            app.pressKey("ArrowRight");
+            then(app.treeToggleRotation()).as("expanded: no rotation").isEqualTo(0.0);
 
             app.pressKey("ArrowLeft");
+            then(app.treeToggleRotation()).as("re-collapsed: rotated -90deg").isEqualTo(-90.0);
+            app.screenshot("tree-toggle-rotation");
+        }
+
+        @Test void arrowRightExpandsAndLeftCollapsesNode() {
+            app.focusTree();
             then(app.isTextVisible("{petId}")).isFalse();
 
             app.pressKey("ArrowRight");
             then(app.isTextVisible("{petId}")).isTrue();
+
+            app.pressKey("ArrowLeft");
+            then(app.isTextVisible("{petId}")).isFalse();
             app.screenshot("tree-expanded");
         }
     }
