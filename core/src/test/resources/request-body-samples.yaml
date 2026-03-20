@@ -40,6 +40,8 @@ paths:
                 withUuidFormat:
                   type: string
                   format: uuid
+                withEnumRef:
+                  $ref: '#/components/schemas/PetStatus'
                 plain:
                   type: string
                 plainNumber:
@@ -47,3 +49,8 @@ paths:
       responses:
         '201':
           description: Created
+components:
+  schemas:
+    PetStatus:
+      type: string
+      enum: [available, adopted, pending]

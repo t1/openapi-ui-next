@@ -2,6 +2,8 @@ package com.github.t1.openapi.ui;
 
 import com.github.t1.bulmajava.basic.Color;
 import com.github.t1.htmljava.Element;
+import com.github.t1.htmljava.Renderable;
+import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import io.swagger.v3.oas.models.media.Schema;
@@ -14,7 +16,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -75,7 +79,36 @@ public class OpenApiUiGenerator {
                 .mapToInt(p -> p.readOperationsMap().size()).sum();
         log.info("Found {} paths with {} operations", pathCount, operationCount);
 
-        var list = buildTree(root);
+        var pathTree = buildTree(root);
+        var tagTree = buildTagTree(openApi, root);
+
+        var uniqueTags = openApi.getPaths().values().stream()
+                .flatMap(p -> p.readOperationsMap().values().stream())
+                .filter(op -> op.getTags() != null)
+                .flatMap(op -> op.getTags().stream())
+                .distinct().count();
+        var singleSegmentPaths = openApi.getPaths().keySet().stream()
+                .filter(p -> splitSegments(p).size() == 1).count();
+        var totalPaths = openApi.getPaths().size();
+        var defaultToTags = uniqueTags > 1 && singleSegmentPaths > totalPaths / 2;
+
+        var viewToggle = div().classes("segmented-control")
+                .attr("data-view-toggle", "")
+                .attr("data-persist", "openapi-ui-view")
+                .attr("tabindex", "0").content(
+                        span("paths").attr("data-view-btn", "paths")
+                                .attr("hx-get", "path-tree.html")
+                                .attr("hx-target", "#tree-container")
+                                .attr("hx-swap", "innerHTML")
+                                .classes(defaultToTags ? "" : "is-active"),
+                        span("tags").attr("data-view-btn", "tags")
+                                .attr("hx-get", "tag-tree.html")
+                                .attr("hx-target", "#tree-container")
+                                .attr("hx-swap", "innerHTML")
+                                .classes(defaultToTags ? "is-active" : "")
+                );
+        Renderable defaultTree = defaultToTags ? tagTree : pathTree;
+        var treeContainer = div().id("tree-container").content(defaultTree);
 
         var servers = openApi.getServers();
         var baseUrl = (servers != null && !servers.isEmpty()) ? servers.getFirst().getUrl() : "/";
@@ -97,7 +130,7 @@ public class OpenApiUiGenerator {
                 modeToggle
         );
         var splitLayout = splitPane()
-                .first(box().content(list))
+                .first(box().content(viewToggle, treeContainer))
                 .second(detail)
                 .persistAs("openapi-ui-tree-width");
         var body = section().content(container().content(
@@ -118,10 +151,85 @@ public class OpenApiUiGenerator {
         Files.writeString(outputDir.resolve("openapi-ui.css"), Tree.css() + SplitPane.css() + APP_CSS);
 
         generateFragments(root, "");
+        Files.writeString(outputDir.resolve("tag-tree.html"), tagTree.render());
+        Files.writeString(outputDir.resolve("path-tree.html"), pathTree.render());
 
         copyWebJarResource("bulma", "css/bulma.min.css", "bulma.min.css");
         copyWebJarResource("htmx.org", "dist/htmx.min.js", "htmx.min.js");
         log.info("Done. Output written to {}", outputDir);
+    }
+
+    record TaggedOperation(HttpMethod method, String path, io.swagger.v3.oas.models.Operation operation, List<String> allTags) {}
+
+    private Renderable buildTagTree(OpenAPI openApi, PathNode root) {
+        var tagOps = new LinkedHashMap<String, List<TaggedOperation>>();
+        collectTaggedOperations(root, "", tagOps);
+
+        // Use declared tag order, then append undeclared tags
+        var orderedTags = new LinkedHashSet<String>();
+        if (openApi.getTags() != null) {
+            for (var t : openApi.getTags()) orderedTags.add(t.getName());
+        }
+        orderedTags.addAll(tagOps.keySet());
+
+        var uniqueTags = orderedTags.stream().filter(t -> !"Other".equals(t)).count();
+        if (uniqueTags == 0) {
+            return element("p").classes("no-tags-message")
+                    .content("This API doesn't define any tags. Use the path view to browse operations.");
+        }
+        if (uniqueTags == 1) {
+            return element("p").classes("no-tags-message")
+                    .content("This API has only one tag. Use the path view to browse operations.");
+        }
+
+        var tagTree = tree();
+        for (var tagName : orderedTags) {
+            var ops = tagOps.get(tagName);
+            if (ops == null) continue;
+            tagTree.node(tagName, node -> {
+                for (var op : ops) {
+                    var label = span().content(
+                            tag(op.method.name()).is(methodColor(op.method)),
+                            span(" /" + op.path + " "),
+                            span(op.operation.getSummary() != null ? op.operation.getSummary() : "")
+                    );
+                    if (op.allTags.size() > 1) {
+                        var otherTags = op.allTags.stream()
+                                .filter(t -> !t.equals(tagName))
+                                .toList();
+                        label.content(span("also in: " + String.join(", ", otherTags)).classes("also-in"));
+                    }
+                    node.item(label, item -> item
+                            .attr("hx-get", op.path + "/index.html")
+                            .attr("hx-target", "#detail")
+                            .attr("hx-swap", "innerHTML")
+                            .attr("data-method", op.method.name()));
+                }
+            });
+        }
+        return tagTree;
+    }
+
+    private void collectTaggedOperations(PathNode node, String pathPrefix, Map<String, List<TaggedOperation>> tagOps) {
+        for (var entry : node.children.entrySet()) {
+            var segment = entry.getKey();
+            var child = entry.getValue();
+            var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
+            for (var opEntry : child.operations.entrySet()) {
+                var operation = opEntry.getValue();
+                var tags = operation.getTags();
+                if (tags != null && !tags.isEmpty()) {
+                    var taggedOp = new TaggedOperation(opEntry.getKey(), fullPath, operation, List.copyOf(tags));
+                    for (var t : tags) {
+                        tagOps.computeIfAbsent(t, k -> new ArrayList<>()).add(taggedOp);
+                    }
+                } else {
+                    var taggedOp = new TaggedOperation(opEntry.getKey(), fullPath, operation, List.of());
+                    tagOps.computeIfAbsent("Other", k -> new ArrayList<>()).add(taggedOp);
+                }
+            }
+            collectTaggedOperations(child, fullPath, tagOps);
+        }
     }
 
     private void copyWebJarResource(String artifactId, String resourcePath, String outputName) throws IOException {
@@ -315,13 +423,33 @@ public class OpenApiUiGenerator {
             if (jsonContent == null) jsonContent = content.get("*/*");
             if (jsonContent != null && jsonContent.getSchema() != null) {
                 var skeleton = generateJsonSkeleton(jsonContent.getSchema());
-                fragment.content(
-                        field("Request Body (application/json)").content(
-                                element("textarea")
-                                        .attr("data-request-body", "true")
-                                        .classes("textarea", "is-family-code")
-                                        .attr("rows", "6")
-                                        .content(skeleton)));
+                if ("{}".equals(skeleton)) skeleton = mediaTypeExample(jsonContent);
+                var requestBodyField = field("Request Body (application/json)");
+                if (jsonContent.getExamples() != null && jsonContent.getExamples().size() > 1) {
+                    var select = element("select")
+                            .attr("data-example-select", "true");
+                    for (var entry : jsonContent.getExamples().entrySet()) {
+                        var value = entry.getValue().getValue();
+                        var formatted = (value instanceof com.fasterxml.jackson.databind.JsonNode node)
+                                ? node.toPrettyString() : value.toString();
+                        var label = entry.getValue().getSummary() != null
+                                ? entry.getValue().getSummary() : entry.getKey();
+                        select.content(element("option")
+                                .attr("value", formatted)
+                                .content(label));
+                    }
+                    requestBodyField.content(
+                            div().classes("select", "is-small")
+                                    .style("float: right; margin-top: -2rem")
+                                    .content(select));
+                }
+                requestBodyField.content(
+                        element("textarea")
+                                .attr("data-request-body", "true")
+                                .classes("textarea", "is-family-code")
+                                .attr("rows", "6")
+                                .content(skeleton));
+                fragment.content(requestBodyField);
             }
         }
         if (operation.getResponses() != null) {
@@ -400,8 +528,19 @@ public class OpenApiUiGenerator {
         };
     }
 
+    private static String mediaTypeExample(io.swagger.v3.oas.models.media.MediaType mediaType) {
+        var example = mediaType.getExample();
+        if (example == null && mediaType.getExamples() != null)
+            example = mediaType.getExamples().values().iterator().next().getValue();
+        if (example == null) return "{}";
+        if (example instanceof com.fasterxml.jackson.databind.JsonNode node)
+            return node.toPrettyString();
+        return example.toString();
+    }
+
     private static String formatSampleValue(String type, Object value) {
-        return "string".equals(type) ? "\"" + value + "\"" : value.toString();
+        var quote = type == null || "string".equals(type);
+        return quote ? "\"" + value + "\"" : value.toString();
     }
 
     private static String formatBasedSample(String format) {
@@ -599,6 +738,26 @@ public class OpenApiUiGenerator {
                 font-weight: 500;
                 box-shadow: 0 1px 2px rgba(0,0,0,0.06);
             }
+            .also-in {
+                font-size: 0.7rem;
+                color: var(--bulma-text-weak);
+                margin-left: 1.75rem;
+                font-style: italic;
+            }
+            .tag-tree-path {
+                font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+                font-size: 0.85rem;
+                color: var(--bulma-text-weak);
+                margin-left: 0.5rem;
+            }
+            .no-tags-message {
+                padding: 1.5rem;
+                color: var(--bulma-text-weak);
+                text-align: center;
+            }
+            [data-view-toggle] {
+                margin-bottom: 0.75rem;
+            }
             """;
 
     private static final String APP_JS = """
@@ -645,6 +804,41 @@ public class OpenApiUiGenerator {
                     });
                 }
 
+                // View toggle
+                var viewToggle = document.querySelector('[data-view-toggle]');
+                if (viewToggle) {
+                    var persistKey = viewToggle.getAttribute('data-persist');
+                    var views = ['paths', 'tags'];
+                    function switchView(view) {
+                        viewToggle.querySelectorAll('[data-view-btn]').forEach(function(b) {
+                            b.classList.remove('is-active');
+                        });
+                        var btn = viewToggle.querySelector('[data-view-btn=' + view + ']');
+                        btn.classList.add('is-active');
+                        htmx.ajax('GET', btn.getAttribute('hx-get'), '#tree-container');
+                        if (persistKey) localStorage.setItem(persistKey, view);
+                    }
+                    viewToggle.querySelectorAll('[data-view-btn]').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            switchView(btn.getAttribute('data-view-btn'));
+                        });
+                    });
+                    viewToggle.addEventListener('keydown', function(e) {
+                        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                            e.preventDefault();
+                            var current = viewToggle.querySelector('.is-active').getAttribute('data-view-btn');
+                            var idx = views.indexOf(current);
+                            var next = e.key === 'ArrowRight' ? (idx + 1) % views.length : (idx - 1 + views.length) % views.length;
+                            switchView(views[next]);
+                        }
+                    });
+                    if (persistKey) {
+                        var saved = localStorage.getItem(persistKey);
+                        var defaultView = viewToggle.querySelector('.is-active').getAttribute('data-view-btn');
+                        if (saved && saved !== defaultView) switchView(saved);
+                    }
+                }
+
                 // Tab switching — toggle is-active when HTMX swaps method content
                 document.body.addEventListener('htmx:afterRequest', function(e) {
                     var tabLink = e.detail.elt;
@@ -674,13 +868,30 @@ public class OpenApiUiGenerator {
                     });
                 }
 
-                document.body.addEventListener('htmx:afterSwap', function() {
+                document.body.addEventListener('htmx:afterSwap', function(e) {
                     var currentMode = modeContainer ? modeContainer.getAttribute('data-mode') : 'try';
                     if (currentMode !== 'try') {
                         var sendBtns = document.querySelectorAll('#detail button[data-path]');
                         sendBtns.forEach(function(b) { b.textContent = 'Copy'; });
                     }
                     initDescriptionToggle();
+                    document.querySelectorAll('select[data-example-select]').forEach(function(sel) {
+                        sel.addEventListener('change', function() {
+                            var textarea = sel.closest('.field').querySelector('textarea[data-request-body]');
+                            if (textarea) textarea.value = sel.value;
+                        });
+                    });
+                    // After detail content swaps, check if a specific method tab should be activated
+                    var trigger = e.detail.elt;
+                    if (trigger && trigger.getAttribute && trigger.getAttribute('data-method')) {
+                        var method = trigger.getAttribute('data-method');
+                        var tabLinks = document.querySelectorAll('.tabs li a');
+                        tabLinks.forEach(function(a) {
+                            if (a.textContent.trim() === method) {
+                                a.click();
+                            }
+                        });
+                    }
                 });
             
                 function showCopied(btn) {
@@ -781,7 +992,7 @@ public class OpenApiUiGenerator {
                 }, true);
 
                 // Auto-load the first operation
-                var firstHxEl = document.querySelector('[hx-get]');
+                var firstHxEl = document.querySelector('#tree-container [hx-get]');
                 if (firstHxEl) htmx.ajax('GET', firstHxEl.getAttribute('hx-get'), '#detail');
             
                 // Send button handler (delegated from detail pane)

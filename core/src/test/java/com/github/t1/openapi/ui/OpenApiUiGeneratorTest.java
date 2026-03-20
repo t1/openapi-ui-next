@@ -143,6 +143,12 @@ class OpenApiUiGeneratorTest {
         var fragment = Files.readString(outputDir.resolve("pets/POST.html"));
         then(fragment).contains("&quot;withEnum&quot;: &quot;available&quot;");
     }
+    @Test void shouldQuoteEnumRefValueInSkeleton() throws Exception {
+        generate("/request-body-samples.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/POST.html"));
+        then(fragment).contains("&quot;withEnumRef&quot;: &quot;available&quot;");
+    }
     @Test void shouldUseFormatBasedValueInSkeleton() throws Exception {
         generate("/request-body-samples.yaml");
 
@@ -152,6 +158,30 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("&quot;withEmailFormat&quot;: &quot;user@example.com&quot;");
         then(fragment).contains("&quot;withUriFormat&quot;: &quot;https://example.com&quot;");
         then(fragment).contains("&quot;withUuidFormat&quot;: &quot;3fa85f64-5717-4562-b3fc-2c963f66afa6&quot;");
+    }
+
+    @Test void shouldUseMediaTypeExampleWhenSchemaHasNoProperties() throws Exception {
+        generate("/request-body-media-type-example.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{id}/PATCH.html"));
+        then(fragment).contains("&quot;name&quot; : &quot;Rex&quot;");
+    }
+
+    @Test void shouldRenderExampleSelectWhenMultipleNamedExamples() throws Exception {
+        generate("/request-body-media-type-example.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{id}/PATCH.html"));
+        then(fragment).contains("<select");
+        then(fragment).contains("Rename a pet");
+        then(fragment).contains("Update multiple fields");
+    }
+
+    @Test void shouldNotRenderExampleSelectWhenSingleExample() throws Exception {
+        generate("/request-body-single-example.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{id}/PATCH.html"));
+        then(fragment).doesNotContain("<select");
+        then(fragment).contains("&quot;name&quot; : &quot;Rex&quot;");
     }
 
     @Test void shouldIncludeRequestBodyStyles() throws Exception {
@@ -269,5 +299,162 @@ class OpenApiUiGeneratorTest {
         var indexHtml = Files.readString(outputDir.resolve("index.html"));
         then(indexHtml).contains("pets");
         then(indexHtml).contains("GET");
+    }
+
+    @Test void shouldGenerateTagTreeFragment() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        then(outputDir.resolve("tag-tree.html")).exists();
+    }
+
+    @Test void shouldRenderTagGroupsInTagTree() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
+        then(tagTree).contains("billing");
+        then(tagTree).contains("users");
+    }
+
+    @Test void shouldRenderOperationsUnderTagGroups() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
+        then(tagTree).contains("List invoices");
+        then(tagTree).contains("GET");
+        then(tagTree).contains("/invoices");
+    }
+
+    @Test void shouldDuplicateMultiTaggedOperations() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
+        var billingSection = tagTree.indexOf("billing");
+        var usersSection = tagTree.indexOf("users");
+        var createUserInBilling = tagTree.indexOf("Create user", billingSection);
+        var createUserInUsers = tagTree.indexOf("Create user", usersSection);
+        then(createUserInBilling).as("Create user should appear under billing").isGreaterThan(billingSection);
+        then(createUserInUsers).as("Create user should appear under users").isGreaterThan(usersSection);
+    }
+
+    @Test void shouldShowAlsoInHintForMultiTaggedOperations() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
+        then(tagTree).contains("also in");
+    }
+
+    @Test void shouldLinkTagTreeOperationsToPathFragments() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
+        then(tagTree).contains("hx-get=\"invoices/index.html\"");
+        then(tagTree).contains("hx-get=\"users/index.html\"");
+    }
+
+    @Test void shouldOrderTagsPerSpecDeclaration() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
+        int billingPos = tagTree.indexOf("billing");
+        int usersPos = tagTree.indexOf("users");
+        then(billingPos).as("billing should appear before users").isLessThan(usersPos);
+    }
+
+    @Test void shouldGroupUntaggedOperationsUnderOther() throws Exception {
+        generate("/tagged-with-untagged.yaml");
+
+        var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
+        then(tagTree).contains("Other");
+    }
+
+    @Test void shouldDefaultToTagViewForFlatTaggedApi() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("billing");
+        then(indexHtml).contains("users");
+    }
+
+    @Test void shouldDefaultToPathViewForNestedTaggedApi() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("class=\"tree-segment\"");
+    }
+
+    @Test void shouldDefaultToPathViewForNoTagApi() throws Exception {
+        generate("/one-get.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("class=\"tree-segment\"");
+    }
+
+    @Test void shouldRenderViewToggleAboveTree() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        int togglePos = indexHtml.indexOf("data-view-toggle");
+        int treeContainerPos = indexHtml.indexOf("id=\"tree-container\"");
+        then(togglePos).as("view toggle should appear before tree container").isGreaterThan(-1);
+        then(togglePos).isLessThan(treeContainerPos);
+    }
+
+    @Test void shouldRenderPathsAndTagsSegments() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("data-view-btn=\"paths\"");
+        then(indexHtml).contains("data-view-btn=\"tags\"");
+    }
+
+    @Test void shouldHaveHtmxAttributesOnViewToggle() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("hx-get=\"path-tree.html\"");
+        then(indexHtml).contains("hx-get=\"tag-tree.html\"");
+    }
+
+    @Test void shouldRenderViewToggleEvenWithoutTags() throws Exception {
+        generate("/one-get.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("data-view-toggle");
+    }
+
+    @Test void shouldShowNoTagsMessageInTagTree() throws Exception {
+        generate("/one-get.yaml");
+
+        var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
+        then(tagTree).contains("define any tags");
+    }
+
+    @Test void shouldShowSingleTagMessageInTagTree() throws Exception {
+        generate("/single-tag.yaml");
+
+        var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
+        then(tagTree).contains("only one tag");
+    }
+
+    @Test void shouldGeneratePathTreeFragment() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        then(outputDir.resolve("path-tree.html")).exists();
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        then(pathTree).contains("role=\"tree\"");
+    }
+
+    @Test void shouldStyleAlsoInHint() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        var css = Files.readString(outputDir.resolve("openapi-ui.css"));
+        then(css).contains("also-in");
+    }
+
+    @Test void shouldIncludeMethodHintOnTagTreeOperations() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
+        then(tagTree).contains("data-method=\"POST\"");
     }
 }
