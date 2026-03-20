@@ -346,7 +346,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     double treeWidth() {
-        return page.locator(".split-tree").boundingBox().width;
+        return page.locator(".split-first").boundingBox().width;
     }
 
     void dragSplitHandle(int deltaX) {

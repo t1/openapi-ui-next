@@ -7,6 +7,8 @@ import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.ParseOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,9 +42,12 @@ import static com.github.t1.htmljava.HtmlBasics.code;
 import static com.github.t1.htmljava.HtmlBasics.div;
 import static com.github.t1.htmljava.HtmlBasics.element;
 import static com.github.t1.htmljava.HtmlBasics.span;
+import static com.github.t1.openapi.ui.SplitPane.splitPane;
 import static com.github.t1.openapi.ui.Tree.tree;
 
 public class OpenApiUiGenerator {
+    private static final Logger log = LoggerFactory.getLogger(OpenApiUiGenerator.class);
+
     private final Path specFile;
     private final Path outputDir;
 
@@ -52,6 +57,7 @@ public class OpenApiUiGenerator {
     }
 
     public void generate() throws IOException {
+        log.info("Parsing {}", specFile);
         var parseOptions = new ParseOptions();
         parseOptions.setResolveFully(true);
         var openApi = new OpenAPIV3Parser().read(specFile.toString(), null, parseOptions);
@@ -63,6 +69,11 @@ public class OpenApiUiGenerator {
             var segments = splitSegments(pathString);
             root.add(segments, 0, pathItem);
         }
+
+        var pathCount = openApi.getPaths().size();
+        var operationCount = openApi.getPaths().values().stream()
+                .mapToInt(p -> p.readOperationsMap().size()).sum();
+        log.info("Found {} paths with {} operations", pathCount, operationCount);
 
         var list = buildTree(root);
 
@@ -85,11 +96,10 @@ public class OpenApiUiGenerator {
                 element("h1").classes("title").content(pageTitle),
                 modeToggle
         );
-        var splitLayout = div().classes("split-layout").content(
-                div().classes("split-tree").content(box().content(list)),
-                div().classes("split-handle"),
-                div().classes("split-detail").content(detail)
-        );
+        var splitLayout = splitPane()
+                .first(box().content(list))
+                .second(detail)
+                .persistAs("openapi-ui-tree-width");
         var body = section().content(container().content(
                 detailHeader,
                 splitLayout
@@ -99,17 +109,19 @@ public class OpenApiUiGenerator {
                 .stylesheet("openapi-ui.css")
                 .script("htmx.min.js")
                 .javaScriptCode(Tree.js())
+                .javaScriptCode(SplitPane.js())
                 .javaScriptCode(APP_JS)
                 .body(body);
 
         Files.createDirectories(outputDir);
         Files.writeString(outputDir.resolve("index.html"), page.render());
-        Files.writeString(outputDir.resolve("openapi-ui.css"), Tree.css() + APP_CSS);
+        Files.writeString(outputDir.resolve("openapi-ui.css"), Tree.css() + SplitPane.css() + APP_CSS);
 
         generateFragments(root, "");
 
         copyWebJarResource("bulma", "css/bulma.min.css", "bulma.min.css");
         copyWebJarResource("htmx.org", "dist/htmx.min.js", "htmx.min.js");
+        log.info("Done. Output written to {}", outputDir);
     }
 
     private void copyWebJarResource(String artifactId, String resourcePath, String outputName) throws IOException {
@@ -433,64 +445,25 @@ public class OpenApiUiGenerator {
                 height: auto;
                 margin-bottom: 0;
             }
-            .split-layout {
-                display: grid;
-                grid-template-columns: minmax(150px, 1fr) 0px minmax(150px, 2fr);
-                gap: 0;
-            }
-            .split-tree {
+            .split-first {
                 background-color: var(--bulma-scheme-main-bis);
                 padding: 1.25rem 0 1.25rem 1.25rem;
                 display: flex;
                 flex-direction: column;
                 min-width: 0;
             }
-            .split-tree > .box {
+            .split-first > .box {
                 flex: 1;
                 min-width: 0;
                 overflow: hidden;
                 border-radius: 6px 0 0 6px;
             }
-            .split-handle {
-                width: 14px;
-                margin-left: -7px;
-                margin-right: -7px;
-                cursor: col-resize;
-                background: transparent;
-                position: relative;
-                z-index: 1;
-            }
-            .split-handle::after {
-                content: '\\2022\\a\\2022\\a\\2022\\a\\2022\\a\\2022\\a\\2022\\a\\2022';
-                white-space: pre;
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-150%, -50%);
-                color: var(--bulma-text-weak);
-                font-size: 0.6rem;
-                line-height: 0.7;
-                opacity: 0.7;
-                transition: opacity 0.15s;
-            }
-            .split-handle:hover::after {
-                opacity: 1;
-                color: var(--bulma-link);
-            }
             @media screen and (min-width: 1024px) {
-                .split-tree {
+                .split-first {
                     min-height: calc(100vh - 4rem);
                 }
-                .split-detail {
+                .split-second {
                     min-height: calc(100vh - 4rem);
-                }
-            }
-            @media screen and (max-width: 1023px) {
-                .split-layout {
-                    grid-template-columns: 1fr;
-                }
-                .split-handle {
-                    display: none;
                 }
             }
             .tabs a:focus {
@@ -511,7 +484,7 @@ public class OpenApiUiGenerator {
             .detail-header .title {
                 margin-bottom: 0;
             }
-            .split-detail {
+            .split-second {
                 padding-left: 2rem;
                 padding-right: 2rem;
                 background-color: var(--bulma-scheme-main-bis);
@@ -891,36 +864,6 @@ public class OpenApiUiGenerator {
                                 sendBtn.textContent = 'Send';
                             });
                         }
-                    });
-                }
-
-                // Split handle drag + localStorage persistence
-                var splitHandle = document.querySelector('.split-handle');
-                var splitLayout = document.querySelector('.split-layout');
-                if (splitHandle && splitLayout) {
-                    var savedWidth = localStorage.getItem('openapi-ui-tree-width');
-                    if (savedWidth) {
-                        splitLayout.style.gridTemplateColumns = savedWidth + 'px 0px 1fr';
-                    }
-                    splitHandle.addEventListener('pointerdown', function(e) {
-                        e.preventDefault();
-                        var splitTree = splitLayout.querySelector('.split-tree');
-                        var startX = e.clientX;
-                        var startWidth = splitTree.getBoundingClientRect().width;
-                        function onMove(e) {
-                            var newWidth = Math.max(150, startWidth + e.clientX - startX);
-                            var maxWidth = splitLayout.getBoundingClientRect().width - 150;
-                            newWidth = Math.min(newWidth, maxWidth);
-                            splitLayout.style.gridTemplateColumns = newWidth + 'px 0px 1fr';
-                        }
-                        function onUp() {
-                            document.removeEventListener('pointermove', onMove);
-                            document.removeEventListener('pointerup', onUp);
-                            var finalWidth = splitTree.getBoundingClientRect().width;
-                            localStorage.setItem('openapi-ui-tree-width', Math.round(finalWidth));
-                        }
-                        document.addEventListener('pointermove', onMove);
-                        document.addEventListener('pointerup', onUp);
                     });
                 }
             });
