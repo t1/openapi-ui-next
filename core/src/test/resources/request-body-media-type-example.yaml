@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info:
+  title: Test API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets/{id}:
+    patch:
+      summary: Partially update a pet
+      operationId: patchPet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+            examples:
+              rename:
+                summary: Rename a pet
+                value:
+                  name: Rex
+              multipleFields:
+                summary: Update multiple fields
+                value:
+                  name: Rex
+                  status: adopted
+      responses:
+        '200':
+          description: Updated
