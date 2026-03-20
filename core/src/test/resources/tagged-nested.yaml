@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: Nested Tagged API
+  version: "1.0"
+tags:
+  - name: pets
+  - name: owners
+paths:
+  /pets:
+    get:
+      summary: List pets
+      tags: [pets]
+      responses:
+        "200":
+          description: OK
+  /pets/{petId}:
+    get:
+      summary: Get a pet
+      tags: [pets]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+  /owners:
+    get:
+      summary: List owners
+      tags: [owners]
+      responses:
+        "200":
+          description: OK
+  /owners/{ownerId}:
+    get:
+      summary: Get an owner
+      tags: [owners]
+      parameters:
+        - name: ownerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK

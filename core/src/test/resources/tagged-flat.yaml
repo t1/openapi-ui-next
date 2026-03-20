@@ -1,0 +1,41 @@
+openapi: 3.0.3
+info:
+  title: Flat Tagged API
+  version: "1.0"
+tags:
+  - name: billing
+  - name: users
+paths:
+  /invoices:
+    get:
+      summary: List invoices
+      tags: [billing]
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create invoice
+      tags: [billing]
+      responses:
+        "201":
+          description: Created
+  /payments:
+    get:
+      summary: List payments
+      tags: [billing]
+      responses:
+        "200":
+          description: OK
+  /users:
+    get:
+      summary: List users
+      tags: [users]
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create user
+      tags: [users, billing]
+      responses:
+        "201":
+          description: Created
