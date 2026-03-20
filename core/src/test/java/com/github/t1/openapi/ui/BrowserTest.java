@@ -171,8 +171,16 @@ class BrowserTest {
             then(app.currentMode()).isEqualTo("httpie");
         }
 
-        @Test void shiftTabFromTreeFocusesModeToggle() {
+        @Test void shiftTabFromTreeFocusesViewToggle() {
             app.focusTree();
+
+            app.pressKey("Shift+Tab");
+
+            then(app.isViewToggleFocused()).isTrue();
+        }
+
+        @Test void shiftTabFromViewToggleFocusesModeToggle() {
+            app.focusViewToggle();
 
             app.pressKey("Shift+Tab");
 
@@ -257,6 +265,84 @@ class BrowserTest {
                         .contains("pets:")
                         .contains("Fido");
             }
+        }
+    }
+
+    @Nested class GivenErrorBanner {
+        @RegisterExtension static AppFixture app = context.launch("one-get.yaml");
+
+        @Test void shouldShowBannerWhenHtmxRequestFails() {
+            app.waitForDetailContent("List pets");
+            app.blockHtmxRequests();
+            app.clickTreeNode("pets/index.html");
+            app.waitForErrorBanner();
+
+            then(app.isErrorBannerVisible()).isTrue();
+        }
+
+        @Test void shouldHideBannerAndShowContentWhenRetrySucceeds() {
+            app.waitForDetailContent("List pets");
+            app.blockHtmxRequests();
+            app.clickTreeNode("pets/index.html");
+            app.waitForErrorBanner();
+
+            app.unblockHtmxRequests();
+            app.waitForErrorBannerGone();
+
+            then(app.isErrorBannerVisible()).isFalse();
+            then(app.detailText()).contains("List pets");
+        }
+    }
+
+    @Nested class GivenFlatTaggedApp {
+        @RegisterExtension static AppFixture app = context.launch("tagged-flat.yaml");
+
+        @Test void shouldSwitchToPathViewOnClick() {
+            then(app.isViewActive("tags")).isTrue();
+
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+
+            then(app.isViewActive("paths")).isTrue();
+        }
+
+        @Test void shouldSwitchBackToTagViewOnClick() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+
+            app.clickViewButton("tags");
+            app.waitForTreeContent("billing");
+
+            then(app.isViewActive("tags")).isTrue();
+        }
+
+        @Test void arrowKeysSwitchView() {
+            app.focusViewToggle();
+            app.pressKey("ArrowRight"); // tags is active, switch to paths
+            app.waitForTreeContent("invoices");
+            then(app.isViewActive("paths")).isTrue();
+        }
+
+        @Test void clickingTagTreeOperationLoadsDetail() {
+            app.expandFirstNode();
+            app.clickTreeNodeWithMethod("invoices/index.html", "GET");
+            app.waitForDetailContent("List invoices");
+
+            then(app.detailText()).contains("List invoices");
+        }
+
+        @Test void tagViewScreenshot() {
+            app.screenshot("tag-view");
+        }
+
+        @Test void shouldPersistViewChoiceAcrossReload() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+
+            app.navigate(app.baseUrl());
+            app.waitForTreeContent("invoices");
+
+            then(app.isViewActive("paths")).isTrue();
         }
     }
 
@@ -381,10 +467,10 @@ class BrowserTest {
             then(app.isTabFocused()).isTrue();
         }
 
-        @Test void shouldBumpOnTreeBoundary() {
+        @Test void arrowUpAtFirstItemFocusesViewToggle() {
             app.focusTree();
-            app.pressKey("ArrowUp"); // already first item → bump
-            then(app.selectedItemHasBumpClass()).isTrue();
+            app.pressKey("ArrowUp"); // already first item → view toggle
+            then(app.isViewToggleFocused()).isTrue();
         }
 
         @Test void shouldEscapeFromFieldsToTree() {

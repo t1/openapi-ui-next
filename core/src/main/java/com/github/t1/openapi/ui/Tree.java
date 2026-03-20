@@ -184,10 +184,14 @@ public class Tree extends AbstractElement<Tree> {
                 setTimeout(function() { el.classList.remove(cls); }, 250);
             }
             document.addEventListener('DOMContentLoaded', function() {
-                var tree = document.querySelector('[role="tree"]');
-                if (!tree) return;
+                var treeContainer = document.getElementById('tree-container');
+
+                function getTree() {
+                    return document.querySelector('[role="tree"]');
+                }
 
                 function isGroupVisible(el) {
+                    var tree = getTree();
                     while (el && el !== tree) {
                         if (el.parentElement && el.parentElement.getAttribute('aria-expanded') === 'false') return false;
                         el = el.parentElement;
@@ -196,6 +200,8 @@ public class Tree extends AbstractElement<Tree> {
                 }
 
                 function getVisibleItems() {
+                    var tree = getTree();
+                    if (!tree) return [];
                     return Array.from(tree.querySelectorAll('[role="treeitem"]')).filter(function(item) {
                         return isGroupVisible(item);
                     });
@@ -208,7 +214,11 @@ public class Tree extends AbstractElement<Tree> {
                     group.style.display = expand ? '' : 'none';
                 }
 
-                tree.addEventListener('click', function(e) {
+                // Delegate click from tree-container (survives HTMX swaps)
+                var clickTarget = treeContainer || document;
+                clickTarget.addEventListener('click', function(e) {
+                    var tree = getTree();
+                    if (!tree || !tree.contains(e.target)) return;
                     var toggle = e.target.closest('.tree-toggle');
                     if (toggle) {
                         var item = toggle.closest('[role="treeitem"]');
@@ -225,7 +235,10 @@ public class Tree extends AbstractElement<Tree> {
                     }
                 });
 
-                tree.addEventListener('keydown', function(e) {
+                // Delegate keydown from tree-container
+                clickTarget.addEventListener('keydown', function(e) {
+                    var tree = getTree();
+                    if (!tree || !tree.contains(e.target)) return;
                     var items = getVisibleItems();
                     var current = tree.querySelector('[aria-selected="true"]');
                     var idx = items.indexOf(current);
@@ -239,7 +252,11 @@ public class Tree extends AbstractElement<Tree> {
                         case 'ArrowUp':
                             e.preventDefault();
                             if (idx > 0) selectItem(items[idx - 1]);
-                            else bump(current, 'v');
+                            else {
+                                var viewToggle = document.querySelector('[data-view-toggle]');
+                                if (viewToggle) viewToggle.focus();
+                                else bump(current, 'v');
+                            }
                             break;
                         case 'ArrowRight':
                             e.preventDefault();
@@ -265,8 +282,12 @@ public class Tree extends AbstractElement<Tree> {
                         case 'Tab':
                             e.preventDefault();
                             if (e.shiftKey) {
-                                var modeToggle = document.querySelector('.segmented-control');
-                                if (modeToggle) modeToggle.focus();
+                                var viewToggle = document.querySelector('[data-view-toggle]');
+                                if (viewToggle) viewToggle.focus();
+                                else {
+                                    var modeToggle = document.querySelector('[data-mode].segmented-control');
+                                    if (modeToggle) modeToggle.focus();
+                                }
                             } else {
                                 var activeTabLink = document.querySelector('.tabs .is-active a');
                                 if (activeTabLink) activeTabLink.focus();
@@ -290,9 +311,12 @@ public class Tree extends AbstractElement<Tree> {
                 });
 
                 function selectItem(item) {
-                    tree.querySelectorAll('[aria-selected="true"]').forEach(function(el) {
-                        el.removeAttribute('aria-selected');
-                    });
+                    var tree = getTree();
+                    if (tree) {
+                        tree.querySelectorAll('[aria-selected="true"]').forEach(function(el) {
+                            el.removeAttribute('aria-selected');
+                        });
+                    }
                     item.setAttribute('aria-selected', 'true');
                     var hxEl = item.querySelector('[hx-get]') || item;
                     if (hxEl.getAttribute('hx-get')) htmx.ajax('GET', hxEl.getAttribute('hx-get'), '#detail');
@@ -301,7 +325,8 @@ public class Tree extends AbstractElement<Tree> {
                 document.addEventListener('keydown', function(e) {
                     if (e.key === 'Escape' && !e.target.closest('[role="tree"]')) {
                         e.preventDefault();
-                        tree.focus();
+                        var tree = getTree();
+                        if (tree) tree.focus();
                     }
                 });
             });

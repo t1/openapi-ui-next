@@ -133,10 +133,13 @@ public class OpenApiUiGenerator {
                 .first(box().content(viewToggle, treeContainer))
                 .second(detail)
                 .persistAs("openapi-ui-tree-width");
+        var errorBanner = div().id("error-banner").classes("notification", "is-danger")
+                .style("display:none; position:fixed; bottom:0; left:0; right:0; margin:0; z-index:100; border-radius:0")
+                .content("Backend not reachable — retrying...");
         var body = section().content(container().content(
                 detailHeader,
                 splitLayout
-        ));
+        ), errorBanner);
         var page = html(pageTitle)
                 .stylesheet("bulma.min.css")
                 .stylesheet("openapi-ui.css")
@@ -830,6 +833,19 @@ public class OpenApiUiGenerator {
                             var idx = views.indexOf(current);
                             var next = e.key === 'ArrowRight' ? (idx + 1) % views.length : (idx - 1 + views.length) % views.length;
                             switchView(views[next]);
+                        } else if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            var tree = document.querySelector('[role="tree"]');
+                            if (tree) tree.focus();
+                        } else if (e.key === 'Tab') {
+                            e.preventDefault();
+                            if (e.shiftKey) {
+                                var modeToggle = document.querySelector('[data-mode].segmented-control');
+                                if (modeToggle) modeToggle.focus();
+                            } else {
+                                var tree = document.querySelector('[role="tree"]');
+                                if (tree) tree.focus();
+                            }
                         }
                     });
                     if (persistKey) {
@@ -1077,6 +1093,48 @@ public class OpenApiUiGenerator {
                         }
                     });
                 }
+                // htmx error retry with banner
+                var banner = document.getElementById('error-banner');
+                var activeRetries = 0;
+                function showBanner() {
+                    activeRetries++;
+                    banner.style.display = '';
+                }
+                function hideBannerIfDone() {
+                    activeRetries--;
+                    if (activeRetries <= 0) {
+                        activeRetries = 0;
+                        banner.style.display = 'none';
+                    }
+                }
+                function retryHtmx(url, targetEl) {
+                    showBanner();
+                    var interval = setInterval(function() {
+                        fetch(url).then(function(resp) {
+                            if (!resp.ok) return;
+                            clearInterval(interval);
+                            return resp.text().then(function(html) {
+                                if (targetEl) targetEl.innerHTML = html;
+                                hideBannerIfDone();
+                                if (typeof htmx !== 'undefined') htmx.process(targetEl);
+                            });
+                        }).catch(function() {});
+                    }, 1000);
+                }
+                function htmxErrorUrl(e) {
+                    return (e.detail.pathInfo && e.detail.pathInfo.requestPath)
+                        || (e.detail.elt && e.detail.elt.getAttribute('hx-get'));
+                }
+                document.body.addEventListener('htmx:sendError', function(e) {
+                    var url = htmxErrorUrl(e);
+                    if (!url) return;
+                    retryHtmx(url, e.detail.target || document.getElementById('detail'));
+                });
+                document.body.addEventListener('htmx:responseError', function(e) {
+                    var url = htmxErrorUrl(e);
+                    if (!url) return;
+                    retryHtmx(url, e.detail.target || document.getElementById('detail'));
+                });
             });
             """;
 

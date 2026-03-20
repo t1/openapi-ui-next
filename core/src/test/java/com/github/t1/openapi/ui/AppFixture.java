@@ -94,6 +94,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     @Override public void afterEach(@NonNull ExtensionContext extensionContext) {
+        blockFragments = false;
+        try { server.removeContext("/pets"); } catch (IllegalArgumentException ignored) {}
         context.close();
     }
 
@@ -231,6 +233,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void clickTreeNode(String hxGetPath) {page.locator("[hx-get='" + hxGetPath + "']").click();}
 
+    void clickTreeNodeWithMethod(String hxGetPath, String method) {
+        page.locator("[hx-get='" + hxGetPath + "'][data-method='" + method + "']").click();
+    }
+
     void waitForDetailContent(String text) {page.waitForSelector("#detail :text('" + text + "')");}
 
     String detailText() {return page.locator("#detail").textContent();}
@@ -249,20 +255,20 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     String modeButtonTooltip(String mode) {return page.locator("[data-mode-btn='" + mode.toLowerCase() + "']").getAttribute("title");}
 
-    void focusModeToggle() {page.locator(".segmented-control").focus();}
+    void focusModeToggle() {page.locator("[data-mode].segmented-control").focus();}
 
     boolean isModeToggleFocused() {
-        return (Boolean) page.evaluate("() => document.activeElement.classList.contains('segmented-control')");
+        return (Boolean) page.evaluate("() => document.activeElement.matches('[data-mode].segmented-control')");
     }
 
     void clickModeButton(String mode) {page.locator("[data-mode-btn='" + mode.toLowerCase() + "']").click();}
 
     boolean hasSegmentedControl() {
-        return page.locator(".segmented-control").count() == 1;
+        return page.locator("[data-mode].segmented-control").count() == 1;
     }
 
     boolean isSegmentActive(String mode) {
-        return page.locator(".segmented-control [data-mode-btn='" + mode + "'].is-active").count() == 1;
+        return page.locator("[data-mode] [data-mode-btn='" + mode + "'].is-active").count() == 1;
     }
 
     String currentMode() {
@@ -420,6 +426,24 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
 String readClipboard() {return (String) page.evaluate("() => navigator.clipboard.readText()");}
 
+    boolean hasViewToggle() {return page.locator("[data-view-toggle]").count() == 1;}
+
+    boolean isViewActive(String view) {
+        return page.locator("[data-view-btn='" + view + "'].is-active").count() == 1;
+    }
+
+    void clickViewButton(String view) {page.locator("[data-view-btn='" + view + "']").click();}
+
+    boolean isViewToggleFocused() {
+        return (Boolean) page.evaluate("() => document.activeElement.hasAttribute('data-view-toggle')");
+    }
+
+    void focusViewToggle() {page.locator("[data-view-toggle]").focus();}
+
+    void waitForTreeContent(String text) {
+        page.waitForSelector("#tree-container :text('" + text + "')");
+    }
+
     void setViewportSize(int width, int height) {page.setViewportSize(width, height);}
 
     void navigate(String url) {page.navigate(url);}
@@ -439,6 +463,46 @@ String readClipboard() {return (String) page.evaluate("() => navigator.clipboard
                 .setPath(dir.resolve(name + "-dark.png"))
                 .setFullPage(true));
         page.emulateMedia(new Page.EmulateMediaOptions().setColorScheme(ColorScheme.LIGHT));
+    }
+
+    private volatile boolean blockFragments = false;
+
+    void blockHtmxRequests() {
+        blockFragments = true;
+        server.createContext("/pets", exchange -> {
+            if (blockFragments) {
+                exchange.sendResponseHeaders(503, 0);
+            } else {
+                var uriPath = exchange.getRequestURI().getPath();
+                var file = outputDir.resolve(uriPath.substring(1));
+                if (Files.exists(file) && Files.isRegularFile(file)) {
+                    var bytes = Files.readAllBytes(file);
+                    exchange.getResponseHeaders().set("Content-Type", "text/html");
+                    exchange.sendResponseHeaders(200, bytes.length);
+                    exchange.getResponseBody().write(bytes);
+                } else {
+                    exchange.sendResponseHeaders(404, 0);
+                }
+            }
+            exchange.close();
+        });
+    }
+
+    void unblockHtmxRequests() {
+        blockFragments = false;
+    }
+
+    boolean isErrorBannerVisible() {
+        return page.locator("#error-banner").isVisible();
+    }
+
+    void waitForErrorBanner() {
+        page.waitForSelector("#error-banner:not([style*='display: none'])");
+    }
+
+    void waitForErrorBannerGone() {
+        page.waitForSelector("#error-banner", new Page.WaitForSelectorOptions()
+                .setState(com.microsoft.playwright.options.WaitForSelectorState.HIDDEN));
     }
 
     private static void deleteRecursively(Path path) {
