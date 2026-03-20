@@ -1,3 +1,5 @@
 package com.github.t1.openapi.ui.demo;
 
-public record Owner(long id, String name, String email) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record Owner(long id, @NotBlank String name, @NotBlank String email) {}

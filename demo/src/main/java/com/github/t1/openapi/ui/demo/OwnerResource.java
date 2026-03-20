@@ -1,7 +1,6 @@
 package com.github.t1.openapi.ui.demo;
 
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -27,7 +26,7 @@ public class OwnerResource {
     public Owner get(@PathParam("id") long id) {
         return OWNERS.stream()
                 .filter(o -> o.id() == id).findFirst()
-                .orElseThrow(NotFoundException::new);
+                .orElseThrow(() -> new OwnerNotFoundException(id));
     }
 
     @GET @Path("/{ownerId}/pets") @Operation(summary = "List pets for an owner")

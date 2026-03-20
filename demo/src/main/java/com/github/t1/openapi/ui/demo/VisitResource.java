@@ -1,17 +1,19 @@
 package com.github.t1.openapi.ui.demo;
 
+import jakarta.validation.Valid;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Path("/pets/{petId}/visits")
+@Tag(name = "visits")
 public class VisitResource {
     static final List<Visit> VISITS = new ArrayList<>(List.of(
             new Visit(1, 1, "2024-01-15", "Annual checkup"),
@@ -26,7 +28,9 @@ public class VisitResource {
     }
 
     @POST @Operation(summary = "Record a visit")
-    public Visit create(@PathParam("petId") long petId, Visit visit) {
+    public Visit create(@PathParam("petId") long petId, @Valid Visit visit) {
+        var petExists = PetResource.PETS.stream().anyMatch(p -> p.id() == petId);
+        if (!petExists) throw new PetNotFoundException(petId);
         var created = new Visit(VISITS.size() + 1, petId, visit.date(), visit.reason());
         VISITS.add(created);
         return created;
@@ -36,7 +40,7 @@ public class VisitResource {
     public Visit get(@PathParam("petId") long petId, @PathParam("visitId") long visitId) {
         return VISITS.stream()
                 .filter(v -> v.petId() == petId && v.id() == visitId).findFirst()
-                .orElseThrow(NotFoundException::new);
+                .orElseThrow(() -> new VisitNotFoundException(visitId));
     }
 
     @DELETE @Path("/{visitId}") @Operation(summary = "Cancel a visit")

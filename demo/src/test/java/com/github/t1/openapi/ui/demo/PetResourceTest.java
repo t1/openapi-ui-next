@@ -38,11 +38,16 @@ class PetResourceTest {
                 .body("[0].name", is("Bella"));
     }
 
-    @Test void shouldReturn404ForUnknownPet() {
+    @Test void shouldReturnProblemDetailsForUnknownPet() {
         given()
                 .when().get("/pets/999")
                 .then()
-                .statusCode(404);
+                .statusCode(400)
+                .contentType("application/problem+json")
+                .body("type", is("urn:problem-type:pet-not-found"))
+                .body("title", is("Bad Request"))
+                .body("status", is(400))
+                .body("detail", is("Pet with ID 999 not found"));
     }
 
     @Test void shouldCreatePet() {
@@ -74,13 +79,15 @@ class PetResourceTest {
                 .body("status", is("available"));
     }
 
-    @Test void shouldReturn404ForPutUnknownPet() {
+    @Test void shouldReturnProblemDetailsForPutUnknownPet() {
         given()
                 .contentType(APPLICATION_JSON)
                 .body("{\"name\":\"X\",\"status\":\"available\",\"ownerId\":1}")
                 .when().put("/pets/999")
                 .then()
-                .statusCode(404);
+                .statusCode(400)
+                .contentType("application/problem+json")
+                .body("type", is("urn:problem-type:pet-not-found"));
     }
 
     @Test void shouldPatchPet() {
@@ -101,13 +108,52 @@ class PetResourceTest {
                 .body("status", is("available"));
     }
 
-    @Test void shouldReturn404ForPatchUnknownPet() {
+    @Test void shouldReturnProblemDetailsForPatchUnknownPet() {
         given()
                 .contentType(APPLICATION_JSON)
                 .body("{\"name\":\"X\"}")
                 .when().patch("/pets/999")
                 .then()
-                .statusCode(404);
+                .statusCode(400)
+                .contentType("application/problem+json")
+                .body("type", is("urn:problem-type:pet-not-found"));
+    }
+
+    @Test void shouldReturnProblemDetailsForDeleteUnknownPet() {
+        given()
+                .when().delete("/pets/999")
+                .then()
+                .statusCode(400)
+                .contentType("application/problem+json")
+                .body("type", is("urn:problem-type:pet-not-found"));
+    }
+
+    @Test void shouldReturnConstraintViolationForBlankPetName() {
+        given()
+                .contentType(APPLICATION_JSON)
+                .body("{\"name\":\"\",\"status\":\"available\",\"ownerId\":1}")
+                .when().post("/pets")
+                .then()
+                .statusCode(400)
+                .contentType("application/problem+json")
+                .body("type", is("urn:problem-type:constraint-violation"))
+                .body("title", is("Bad Request"))
+                .body("status", is(400))
+                .body("violations.size()", is(1))
+                .body("violations[0].field", is("name"))
+                .body("violations[0].message", is("must not be blank"));
+    }
+
+    @Test void shouldReturnProblemDetailsForInvalidOwnerId() {
+        given()
+                .contentType(APPLICATION_JSON)
+                .body("{\"name\":\"Rex\",\"status\":\"available\",\"ownerId\":999}")
+                .when().post("/pets")
+                .then()
+                .statusCode(400)
+                .contentType("application/problem+json")
+                .body("type", is("urn:problem-type:invalid-owner-id"))
+                .body("detail", is("Owner with ID 999 does not exist"));
     }
 
     @Test void shouldDeletePet() {

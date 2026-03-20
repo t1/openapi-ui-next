@@ -1,3 +1,5 @@
 package com.github.t1.openapi.ui.demo;
 
-public record Visit(long id, long petId, String date, String reason) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record Visit(long id, long petId, @NotBlank String date, @NotBlank String reason) {}

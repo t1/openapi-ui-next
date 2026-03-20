@@ -25,11 +25,14 @@ class OwnerResourceTest {
                 .body("name", is("Alice"))
                 .body("email", is("alice@example.com"));
     }
-    @Test void shouldReturn404ForUnknownOwner() {
+    @Test void shouldReturnProblemDetailsForUnknownOwner() {
         given()
                 .when().get("/owners/999")
                 .then()
-                .statusCode(404);
+                .statusCode(400)
+                .contentType("application/problem+json")
+                .body("type", is("urn:problem-type:owner-not-found"))
+                .body("detail", is("Owner with ID 999 not found"));
     }
     @Test void shouldListPetsForOwner() {
         given()
