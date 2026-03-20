@@ -34,6 +34,28 @@ class MainTest {
         assertTrue(Files.exists(outputDir.resolve("index.html")));
     }
 
+    @Test void shouldAcceptVerboseFlag() throws Exception {
+        var specFile = tempDir.resolve("spec.yaml");
+        Files.writeString(specFile, """
+                openapi: 3.0.3
+                info:
+                  title: Test
+                  version: 1.0.0
+                paths:
+                  /test:
+                    get:
+                      summary: Test endpoint
+                      responses:
+                        '200':
+                          description: OK
+                """);
+        var outputDir = tempDir.resolve("output");
+
+        Main.main(new String[]{"--verbose", specFile.toString(), outputDir.toString()});
+
+        assertTrue(Files.exists(outputDir.resolve("index.html")));
+    }
+
     @Test
     void shouldPrintUsageWithNoArgs() {
         var ex = assertThrows(IllegalArgumentException.class, () ->

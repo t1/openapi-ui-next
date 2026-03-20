@@ -19,6 +19,36 @@ class OpenApiUiGeneratorTest {
         new OpenApiUiGenerator(specPath, outputDir).generate();
     }
 
+    String generateCapturingLogs(String path) throws URISyntaxException, IOException {
+        var original = System.err;
+        var capture = new java.io.ByteArrayOutputStream();
+        System.setErr(new java.io.PrintStream(capture));
+        try {
+            generate(path);
+        } finally {
+            System.setErr(original);
+        }
+        return capture.toString();
+    }
+
+    @Test void shouldLogParsingStep() throws Exception {
+        var logs = generateCapturingLogs("/one-get.yaml");
+
+        then(logs).contains("Parsing");
+    }
+
+    @Test void shouldLogPathAndOperationCount() throws Exception {
+        var logs = generateCapturingLogs("/nested-paths.yaml");
+
+        then(logs).contains("2 paths").contains("2 operations");
+    }
+
+    @Test void shouldLogCompletion() throws Exception {
+        var logs = generateCapturingLogs("/one-get.yaml");
+
+        then(logs).contains("Done");
+    }
+
     @Test void shouldGroupPathsBySegments() throws Exception {
         generate("/nested-paths.yaml");
 
