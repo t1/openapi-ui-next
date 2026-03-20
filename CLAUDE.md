@@ -38,8 +38,12 @@ language/framework skill (e.g. `tdder:java` for `.java` files). No exception for
 Skills encode conventions (imports, naming, idioms) that apply to every change, not just big tasks.
 
 **Never look into library source code** (e.g. bulma-java JARs) when a skill covers that library.
-The skill is the authoritative reference. If the skill is missing something, report it so the
+The skill is the authoritative reference. If the skill is missing something, report it, so the
 skill can be updated — don't work around it by reading source.
+
+**Prefer Bulma components over custom CSS.** Before writing custom styles, check whether a Bulma
+component already provides the desired visual treatment (e.g. `messageBody()` for accent blocks,
+`notification()` for alerts, `box()` for cards). Only use custom CSS when no Bulma component fits.
 
 ## TDD
 
@@ -70,6 +74,8 @@ demo app so that it exercises the change E2E. A fix that only manifests with spe
 deep nesting, many methods) needs demo data that triggers it.
 
 ### Brainstorm Visual Companion
+
+Always use the visual companion for brainstorming — no need to ask for consent.
 
 Start the brainstorm server for visual mockups during design discussions:
 

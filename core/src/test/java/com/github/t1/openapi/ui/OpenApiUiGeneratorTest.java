@@ -180,6 +180,13 @@ class OpenApiUiGeneratorTest {
         then(fragment).doesNotContain("—");
     }
 
+    @Test void shouldWrapDescriptionInMessageBody() throws Exception {
+        generate("/one-get.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/index.html"));
+        then(fragment).contains("class=\"message");
+    }
+
     @Test void shouldApplyLineClampToDescription() throws Exception {
         generate("/one-get.yaml");
 

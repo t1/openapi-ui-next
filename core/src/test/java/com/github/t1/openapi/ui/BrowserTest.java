@@ -361,8 +361,9 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowDown"); // select {petId}
             app.waitForInput("petId");
-            app.pressKey("ArrowRight"); // expand {petId} node
-            app.pressKey("ArrowRight"); // enter tabs
+            app.pressKey("ArrowRight"); // enter tabs (leaf item)
+            app.pressKey("ArrowRight"); // switch to DELETE tab
+            app.waitForDetailContent("Delete a pet"); // wait for tab swap
             app.pressKey("ArrowDown"); // enter fields
             then(app.activeElementTag()).isEqualTo("INPUT");
             app.screenshot("focus-field");

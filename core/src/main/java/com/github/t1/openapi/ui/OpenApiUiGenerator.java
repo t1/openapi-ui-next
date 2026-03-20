@@ -24,6 +24,8 @@ import static com.github.t1.bulmajava.basic.Color.PRIMARY;
 import static com.github.t1.bulmajava.basic.Color.SUCCESS;
 import static com.github.t1.bulmajava.basic.Color.WARNING;
 import static com.github.t1.bulmajava.basic.Size.MEDIUM;
+import static com.github.t1.bulmajava.components.Message.message;
+import static com.github.t1.bulmajava.components.Message.messageBody;
 import static com.github.t1.bulmajava.elements.Box.box;
 import static com.github.t1.bulmajava.elements.Button.button;
 import static com.github.t1.bulmajava.elements.Tag.tag;
@@ -277,7 +279,7 @@ public class OpenApiUiGenerator {
                         .content(span("▸")));
         var fragment = div().content(
                 headerRow,
-                descriptionWrapper
+                message().content(messageBody().content(descriptionWrapper))
         );
         if (operation.getExternalDocs() != null) {
             fragment.content(div().classes("external-docs").content(
@@ -511,6 +513,7 @@ public class OpenApiUiGenerator {
             }
             .split-detail {
                 padding-left: 2rem;
+                padding-right: 2rem;
                 background-color: var(--bulma-scheme-main-bis);
             }
             #detail .endpoint-path {
