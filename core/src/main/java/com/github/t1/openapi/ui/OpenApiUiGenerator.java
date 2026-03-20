@@ -491,7 +491,7 @@ public class OpenApiUiGenerator {
                     display: none;
                 }
             }
-            .tabs a:focus-visible {
+            .tabs a:focus {
                 outline: none;
                 box-shadow: inset 0 0 0 2px var(--bulma-link);
             }

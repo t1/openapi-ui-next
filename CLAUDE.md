@@ -28,6 +28,8 @@ If you create a new file, also stage exactly this file to git, but not any other
 
 - Always quote Maven `-Dtest` values containing `#` (method selectors), e.g.:
   `mvn test -Dtest='MyTest#myMethod'` — unquoted `#` is parsed as a shell comment.
+- Run Playwright browser tests (BrowserTest) with `dangerouslyDisableSandbox: true` —
+  Chromium's Mach port registration fails inside the Claude Code sandbox.
 
 ## Skills
 

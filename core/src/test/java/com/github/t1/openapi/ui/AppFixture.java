@@ -187,6 +187,13 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("[role='treeitem'][aria-selected='true']").textContent();
     }
 
+    boolean isTreeItemSelected(String hxGetPath) {
+        return (Boolean) page.evaluate(
+                "path => { var el = document.querySelector(\"[hx-get='\" + path + \"']\");"
+                + " return el ? el.closest('[role=treeitem]').getAttribute('aria-selected') === 'true' : false; }",
+                hxGetPath);
+    }
+
     boolean isTextVisible(String text) {return page.locator(":text('" + text + "')").isVisible();}
 
     void clickTreeNode(String hxGetPath) {page.locator("[hx-get='" + hxGetPath + "']").click();}
@@ -282,6 +289,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 + " || document.activeElement === document.querySelector('[role=\"tree\"]')");
     }
 
+    boolean selectedItemHasFocusRing() {
+        return (Boolean) page.evaluate(
+                "() => { var label = document.querySelector('[aria-selected=\"true\"] > .tree-label');"
+                + " return label && getComputedStyle(label).boxShadow !== 'none'; }");
+    }
+
     boolean selectedItemHasBumpClass() {
         var cls = page.locator("[aria-selected='true']").getAttribute("class");
         return cls != null && cls.contains("bump");
@@ -338,6 +351,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean isTabFocused() {
         return (Boolean) page.evaluate("() => document.activeElement.closest('.tabs') !== null");
+    }
+
+    boolean focusedTabHasFocusRing() {
+        return (Boolean) page.evaluate(
+                "() => { var el = document.activeElement;"
+                + " return el && el.closest('.tabs') && getComputedStyle(el).boxShadow !== 'none'; }");
     }
 
     String activeElementTag() {return (String) page.evaluate("() => document.activeElement.tagName");}

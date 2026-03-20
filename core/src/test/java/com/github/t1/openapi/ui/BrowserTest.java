@@ -82,6 +82,18 @@ class BrowserTest {
             then(app.detailText()).contains("List pets");
         }
 
+        @Test void clickingTreeNodeFocusesTree() {
+            app.focusTree();
+            app.pressKey("Tab");
+            then(app.isTreeFocused()).isFalse();
+
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("List pets");
+
+            then(app.isTreeFocused()).isTrue();
+            then(app.selectedItemHasFocusRing()).isTrue();
+        }
+
         @Test void modeToggleIsSegmentedControl() {
             then(app.hasSegmentedControl()).isTrue();
             then(app.isSegmentActive("try")).isTrue();
@@ -267,6 +279,16 @@ class BrowserTest {
             app.waitForDetailContent("Create a pet");
 
             then(app.detailText()).contains("Create a pet");
+        }
+
+        @Test void clickingTabFocusesIt() {
+            app.waitForDetailContent("List pets");
+
+            app.clickMethodTab(2);
+            app.waitForDetailContent("Create a pet");
+
+            then(app.isTabFocused()).isTrue();
+            then(app.focusedTabHasFocusRing()).isTrue();
         }
 
         @Test void shouldEnterTabsOnArrowRight() {
@@ -603,6 +625,25 @@ class BrowserTest {
 
             app.pressKey("ArrowDown");
             then(app.selectedTreeItemText()).isNotNull();
+        }
+
+        @Test void clickingTreeNodeSelectsIt() {
+            then(app.isTreeItemSelected("pets/index.html")).isTrue();
+
+            app.clickTreeNode("pets/{petId}/index.html");
+
+            then(app.isTreeItemSelected("pets/{petId}/index.html")).isTrue();
+        }
+
+        @Test void clickingTreeNodeFocusesTreeAfterContentSwap() {
+            app.focusTree();
+            app.pressKey("ArrowRight"); // enter tabs
+            then(app.isTreeFocused()).isFalse();
+
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+
+            then(app.isTreeFocused()).isTrue();
         }
 
         @Test void arrowRightExpandsAndLeftCollapsesNode() {

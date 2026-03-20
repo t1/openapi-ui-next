@@ -138,10 +138,10 @@ public class Tree extends AbstractElement<Tree> {
                 background: linear-gradient(90deg, var(--bulma-link) 3px, color-mix(in srgb, var(--bulma-link) 14%, transparent) 3px);
                 border-radius: 4px;
             }
-            [role="tree"]:focus-visible {
+            [role="tree"]:focus {
                 outline: none;
             }
-            [role="tree"]:focus-visible [role="treeitem"][aria-selected="true"] > .tree-label {
+            [role="tree"]:focus [role="treeitem"][aria-selected="true"] > .tree-label {
                 box-shadow: inset 0 0 0 2px var(--bulma-link);
             }
             .tree-segment {
@@ -207,11 +207,19 @@ public class Tree extends AbstractElement<Tree> {
 
                 tree.addEventListener('click', function(e) {
                     var toggle = e.target.closest('.tree-toggle');
-                    if (!toggle) return;
-                    var item = toggle.closest('[role="treeitem"]');
-                    if (!item) return;
-                    var expanded = item.getAttribute('aria-expanded') === 'true';
-                    toggleNode(item, !expanded);
+                    if (toggle) {
+                        var item = toggle.closest('[role="treeitem"]');
+                        if (item) {
+                            var expanded = item.getAttribute('aria-expanded') === 'true';
+                            toggleNode(item, !expanded);
+                        }
+                        return;
+                    }
+                    var item = e.target.closest('[role="treeitem"]');
+                    if (item) {
+                        selectItem(item);
+                        tree.focus();
+                    }
                 });
 
                 tree.addEventListener('keydown', function(e) {
