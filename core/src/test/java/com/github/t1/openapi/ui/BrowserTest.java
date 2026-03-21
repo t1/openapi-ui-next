@@ -325,13 +325,14 @@ class BrowserTest {
 
         @Test void clickingTagTreeOperationLoadsDetail() {
             app.expandFirstNode();
-            app.clickTreeNodeWithMethod("invoices/index.html", "GET");
+            app.clickTreeNode("invoices/GET.html");
             app.waitForDetailContent("List invoices");
 
             then(app.detailText()).contains("List invoices");
         }
 
         @Test void tagViewScreenshot() {
+            app.expandFirstNode();
             app.screenshot("tag-view");
         }
 

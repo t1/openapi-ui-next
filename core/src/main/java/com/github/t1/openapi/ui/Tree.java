@@ -264,7 +264,8 @@ public class Tree extends AbstractElement<Tree> {
                                 toggleNode(current, true);
                             } else {
                                 var firstTabLink = document.querySelector('.tabs li:first-child a');
-                                if (firstTabLink) firstTabLink.focus();
+                                if (firstTabLink) { firstTabLink.focus(); }
+                                else { focusFirstDetailField(); }
                             }
                             break;
                         case 'ArrowLeft':
@@ -291,6 +292,7 @@ public class Tree extends AbstractElement<Tree> {
                             } else {
                                 var activeTabLink = document.querySelector('.tabs .is-active a');
                                 if (activeTabLink) activeTabLink.focus();
+                                else focusFirstDetailField();
                             }
                             break;
                         case 'Enter':
@@ -309,6 +311,13 @@ public class Tree extends AbstractElement<Tree> {
                             break;
                     }
                 });
+
+                function focusFirstDetailField() {
+                    var detail = document.getElementById('detail');
+                    if (!detail) return;
+                    var first = detail.querySelector('input, textarea, button[data-path]');
+                    if (first) first.focus();
+                }
 
                 function selectItem(item) {
                     var tree = getTree();

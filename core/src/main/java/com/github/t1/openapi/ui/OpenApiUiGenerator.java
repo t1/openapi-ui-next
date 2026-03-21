@@ -192,9 +192,8 @@ public class OpenApiUiGenerator {
             tagTree.node(tagName, node -> {
                 for (var op : ops) {
                     var label = span().content(
-                            tag(op.method.name()).is(methodColor(op.method)),
-                            span(" /" + op.path + " "),
-                            span(op.operation.getSummary() != null ? op.operation.getSummary() : "")
+                            tag(op.method.name()).is(methodColor(op.method)).classes("method-tag"),
+                            span("/" + op.path).classes("tree-segment").style("margin-left:0.5rem")
                     );
                     if (op.allTags.size() > 1) {
                         var otherTags = op.allTags.stream()
@@ -203,10 +202,9 @@ public class OpenApiUiGenerator {
                         label.content(span("also in: " + String.join(", ", otherTags)).classes("also-in"));
                     }
                     node.item(label, item -> item
-                            .attr("hx-get", op.path + "/index.html")
+                            .attr("hx-get", op.path + "/" + op.method.name() + ".html")
                             .attr("hx-target", "#detail")
-                            .attr("hx-swap", "innerHTML")
-                            .attr("data-method", op.method.name()));
+                            .attr("hx-swap", "innerHTML"));
                 }
             });
         }
@@ -741,17 +739,15 @@ public class OpenApiUiGenerator {
                 font-weight: 500;
                 box-shadow: 0 1px 2px rgba(0,0,0,0.06);
             }
+            .method-tag {
+                min-width: 3.5rem;
+                justify-content: center;
+            }
             .also-in {
                 font-size: 0.7rem;
                 color: var(--bulma-text-weak);
                 margin-left: 1.75rem;
                 font-style: italic;
-            }
-            .tag-tree-path {
-                font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
-                font-size: 0.85rem;
-                color: var(--bulma-text-weak);
-                margin-left: 0.5rem;
             }
             .no-tags-message {
                 padding: 1.5rem;
@@ -967,7 +963,7 @@ public class OpenApiUiGenerator {
 
                 // Field navigation within method content
                 document.addEventListener('keydown', function(e) {
-                    var mc = document.getElementById('method-content');
+                    var mc = document.getElementById('method-content') || document.getElementById('detail');
                     if (!mc) return;
                     var focusables = Array.from(mc.querySelectorAll('input, textarea, button[data-path]'));
                     var idx = focusables.indexOf(document.activeElement);
@@ -995,6 +991,10 @@ public class OpenApiUiGenerator {
                         } else {
                             var activeTabLink = document.querySelector('.tabs .is-active a');
                             if (activeTabLink) activeTabLink.focus();
+                            else {
+                                var tree = document.querySelector('[role="tree"]');
+                                if (tree) tree.focus();
+                            }
                         }
                     } else if (e.key === 'Enter') {
                         var sendBtn = mc.querySelector('button[data-path]');

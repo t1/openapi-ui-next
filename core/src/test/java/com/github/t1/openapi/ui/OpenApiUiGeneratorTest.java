@@ -319,21 +319,29 @@ class OpenApiUiGeneratorTest {
         generate("/tagged-flat.yaml");
 
         var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
-        then(tagTree).contains("List invoices");
         then(tagTree).contains("GET");
         then(tagTree).contains("/invoices");
+        then(tagTree).contains("tree-segment");
+    }
+
+    @Test void shouldApplyMethodTagClassToHttpMethodBadges() throws Exception {
+        generate("/tagged-flat.yaml");
+
+        var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
+        then(tagTree).contains("method-tag");
     }
 
     @Test void shouldDuplicateMultiTaggedOperations() throws Exception {
         generate("/tagged-flat.yaml");
 
         var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
+        // POST /users is tagged [users, billing] — hx-get="users/POST.html" should appear under both
         var billingSection = tagTree.indexOf("billing");
-        var usersSection = tagTree.indexOf("users");
-        var createUserInBilling = tagTree.indexOf("Create user", billingSection);
-        var createUserInUsers = tagTree.indexOf("Create user", usersSection);
-        then(createUserInBilling).as("Create user should appear under billing").isGreaterThan(billingSection);
-        then(createUserInUsers).as("Create user should appear under users").isGreaterThan(usersSection);
+        var usersSection = tagTree.indexOf(">users<"); // the tag group header, not the path
+        var postUsersInBilling = tagTree.indexOf("users/POST.html", billingSection);
+        var postUsersInUsers = tagTree.indexOf("users/POST.html", usersSection);
+        then(postUsersInBilling).as("POST /users should appear under billing").isGreaterThan(billingSection);
+        then(postUsersInUsers).as("POST /users should appear under users").isGreaterThan(usersSection);
     }
 
     @Test void shouldShowAlsoInHintForMultiTaggedOperations() throws Exception {
@@ -343,12 +351,14 @@ class OpenApiUiGeneratorTest {
         then(tagTree).contains("also in");
     }
 
-    @Test void shouldLinkTagTreeOperationsToPathFragments() throws Exception {
+    @Test void shouldLinkTagTreeOperationsToMethodFragments() throws Exception {
         generate("/tagged-flat.yaml");
 
         var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
-        then(tagTree).contains("hx-get=\"invoices/index.html\"");
-        then(tagTree).contains("hx-get=\"users/index.html\"");
+        then(tagTree).contains("hx-get=\"invoices/GET.html\"");
+        then(tagTree).contains("hx-get=\"invoices/POST.html\"");
+        then(tagTree).contains("hx-get=\"users/GET.html\"");
+        then(tagTree).doesNotContain("hx-get=\"invoices/index.html\"");
     }
 
     @Test void shouldOrderTagsPerSpecDeclaration() throws Exception {
@@ -451,10 +461,10 @@ class OpenApiUiGeneratorTest {
         then(css).contains("also-in");
     }
 
-    @Test void shouldIncludeMethodHintOnTagTreeOperations() throws Exception {
+    @Test void shouldNotIncludeDataMethodOnTagTreeOperations() throws Exception {
         generate("/tagged-flat.yaml");
 
         var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
-        then(tagTree).contains("data-method=\"POST\"");
+        then(tagTree).doesNotContain("data-method");
     }
 }
