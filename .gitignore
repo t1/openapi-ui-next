@@ -4,6 +4,8 @@
 .project
 **/.settings/org.eclipse.*
 
+/.links/
+
 target/
 
 /.superpowers/

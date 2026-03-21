@@ -1,0 +1,28 @@
+openapi: 3.0.3
+info:
+  title: Partially Tagged API
+  version: "1.0"
+tags:
+  - name: pets
+  - name: admin
+paths:
+  /pets:
+    get:
+      summary: List pets
+      tags: [pets]
+      responses:
+        "200":
+          description: OK
+  /settings:
+    get:
+      summary: Get settings
+      tags: [admin]
+      responses:
+        "200":
+          description: OK
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: OK

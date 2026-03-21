@@ -1,0 +1,21 @@
+openapi: 3.0.3
+info:
+  title: Single Tag API
+  version: "1.0"
+tags:
+  - name: everything
+paths:
+  /items:
+    get:
+      summary: List items
+      tags: [everything]
+      responses:
+        "200":
+          description: OK
+  /things:
+    get:
+      summary: List things
+      tags: [everything]
+      responses:
+        "200":
+          description: OK

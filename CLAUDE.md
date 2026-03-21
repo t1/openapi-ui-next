@@ -28,8 +28,11 @@ If you create a new file, also stage exactly this file to git, but not any other
 
 - Always quote Maven `-Dtest` values containing `#` (method selectors), e.g.:
   `mvn test -Dtest='MyTest#myMethod'` — unquoted `#` is parsed as a shell comment.
-- Run Playwright browser tests (BrowserTest) with `dangerouslyDisableSandbox: true` —
-  Chromium's Mach port registration fails inside the Claude Code sandbox.
+- Run `mvn test` with `dangerouslyDisableSandbox: true` when the run includes Playwright
+  browser tests (BrowserTest) — Chromium hangs inside the Claude Code sandbox. This applies
+  to the full suite (`mvn test -pl core`) and any `-Dtest` selection that includes BrowserTest.
+- Use a 1-minute timeout (`timeout: 60000`) for `mvn test` — the full suite takes ~30 s.
+  If it times out, something is wrong — investigate rather than retry.
 
 ## Skills
 
