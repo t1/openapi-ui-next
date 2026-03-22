@@ -1096,6 +1096,7 @@ public class OpenApiUiGenerator {
                             }).finally(function() {
                                 sendBtn.disabled = false;
                                 sendBtn.textContent = 'Send';
+                                sendBtn.focus();
                             });
                         }
                     });

@@ -326,6 +326,11 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 "() => !document.querySelector('#detail button[data-path]').disabled");
     }
 
+    boolean isSendButtonFocused() {
+        return (Boolean) page.evaluate(
+                "() => document.activeElement === document.querySelector('#detail button[data-path]')");
+    }
+
     String responseText() {return page.locator("#detail pre.response").textContent();}
 
     boolean isTreeFocused() {

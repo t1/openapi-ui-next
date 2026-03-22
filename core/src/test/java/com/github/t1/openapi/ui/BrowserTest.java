@@ -685,6 +685,18 @@ class BrowserTest {
                 then(app.responseText()).contains("Fido");
                 app.screenshot("try-mode-path-param");
             }
+
+            @Test void shouldRestoreFocusToSendButtonAfterSend() {
+                app.mockEndpoint("/pets/42", "application/json", "{\"id\":\"42\"}");
+                app.expandFirstNode();
+                app.clickTreeNode("pets/{petId}/index.html");
+                app.waitForInput("petId");
+                app.fillInput("petId", "42");
+                app.clickSend();
+                app.waitForResponse();
+
+                then(app.isSendButtonFocused()).isTrue();
+            }
         }
 
         @Test void curlModeCopiesCommand() {
