@@ -133,19 +133,36 @@ class BrowserTest {
             then(app.isSegmentActive("httpie")).isTrue();
         }
 
-        @Test void arrowRightWrapsFromCurlToTry() {
+        @Test void shouldNotWrapRightWhenOnLastMode() {
             app.clickModeButton("curl");
 
             app.focusModeToggle();
             app.pressKey("ArrowRight");
 
-            then(app.currentMode()).isEqualTo("try");
+            then(app.currentMode()).isEqualTo("curl");
         }
 
-        @Test void arrowLeftWrapsFromTryToCurl() {
+        @Test void shouldNotWrapLeftWhenOnFirstMode() {
             app.focusModeToggle();
 
             app.pressKey("ArrowLeft");
+
+            then(app.currentMode()).isEqualTo("try");
+        }
+
+        @Test void homeKeySelectsFirstMode() {
+            app.clickModeButton("curl");
+
+            app.focusModeToggle();
+            app.pressKey("Home");
+
+            then(app.currentMode()).isEqualTo("try");
+        }
+
+        @Test void endKeySelectsLastMode() {
+            app.focusModeToggle();
+
+            app.pressKey("End");
 
             then(app.currentMode()).isEqualTo("curl");
         }
@@ -341,9 +358,65 @@ class BrowserTest {
 
         @Test void arrowKeysSwitchView() {
             app.focusViewToggle();
-            app.pressKey("ArrowRight"); // tags is active, switch to paths
+            app.pressKey("ArrowLeft"); // tags is active (rightmost), ArrowLeft switches to paths
             app.waitForTreeContent("invoices");
             then(app.isViewActive("paths")).isTrue();
+        }
+
+        @Test void arrowUpFromViewToggleFocusesModeToggle() {
+            app.focusViewToggle();
+
+            app.pressKey("ArrowUp");
+            app.waitForModeToggleFocused();
+
+            then(app.isModeToggleFocused()).isTrue();
+        }
+
+        @Test void arrowDownFromModeToggleFocusesViewToggle() {
+            app.focusModeToggle();
+
+            app.pressKey("ArrowDown");
+            app.waitForViewToggleFocused();
+
+            then(app.isViewToggleFocused()).isTrue();
+        }
+
+        @Test void shouldNotWrapRightWhenOnLastView() {
+            app.focusViewToggle();
+            // tags is already active (rightmost), ArrowRight should not wrap to paths
+            app.pressKey("ArrowRight");
+
+            then(app.isViewActive("tags")).isTrue();
+        }
+
+        @Test void shouldNotWrapLeftWhenOnFirstView() {
+            app.focusViewToggle();
+            app.pressKey("ArrowLeft"); // switch from tags to paths (leftmost)
+            app.waitForTreeContent("invoices");
+
+            app.pressKey("ArrowLeft"); // already on paths (leftmost), should not wrap
+
+            then(app.isViewActive("paths")).isTrue();
+        }
+
+        @Test void homeKeySelectsFirstView() {
+            app.focusViewToggle();
+            // tags is active (rightmost), Home should switch to paths (first)
+            app.pressKey("Home");
+            app.waitForTreeContent("invoices");
+
+            then(app.isViewActive("paths")).isTrue();
+        }
+
+        @Test void endKeySelectsLastView() {
+            app.focusViewToggle();
+            app.pressKey("ArrowLeft"); // switch to paths first
+            app.waitForTreeContent("invoices");
+
+            app.pressKey("End");
+            app.waitForTreeContent("billing");
+
+            then(app.isViewActive("tags")).isTrue();
         }
 
         @Test void shouldKeepFocusOnViewToggleAfterSwitch() {

@@ -22,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.function.Consumer;
 
 import static com.github.t1.bulmajava.basic.Color.DANGER;
 import static com.github.t1.bulmajava.basic.Color.INFO;
@@ -49,6 +50,7 @@ import static com.github.t1.htmljava.HtmlBasics.div;
 import static com.github.t1.htmljava.HtmlBasics.element;
 import static com.github.t1.htmljava.HtmlBasics.span;
 import static com.github.t1.openapi.ui.SplitPane.splitPane;
+import static com.github.t1.openapi.ui.Toggle.toggle;
 import static com.github.t1.openapi.ui.Tree.tree;
 
 public class OpenApiUiGenerator {
@@ -94,36 +96,23 @@ public class OpenApiUiGenerator {
         var totalPaths = openApi.getPaths().size();
         var defaultToTags = uniqueTags > 1 && singleSegmentPaths > totalPaths / 2;
 
-        var viewToggle = div().classes("segmented-control")
-                .attr("data-view-toggle", "")
-                .attr("data-persist", "openapi-ui-view")
-                .attr("tabindex", "0").content(
-                        span("paths").attr("data-view-btn", "paths")
-                                .attr("hx-get", "path-tree.html")
-                                .attr("hx-target", "#tree-container")
-                                .attr("hx-swap", "innerHTML")
-                                                                .classes(defaultToTags ? "" : "is-active"),
-                        span("tags").attr("data-view-btn", "tags")
-                                .attr("hx-get", "tag-tree.html")
-                                .attr("hx-target", "#tree-container")
-                                .attr("hx-swap", "innerHTML")
-                                                                .classes(defaultToTags ? "is-active" : "")
-                );
+        Consumer<Element> hxPaths = o -> o.attr("hx-get", "path-tree.html").attr("hx-target", "#tree-container").attr("hx-swap", "innerHTML");
+        Consumer<Element> hxTags = o -> o.attr("hx-get", "tag-tree.html").attr("hx-target", "#tree-container").attr("hx-swap", "innerHTML");
+        var viewToggle = defaultToTags
+                ? toggle("view").option("paths", hxPaths).activeOption("tags", hxTags)
+                : toggle("view").activeOption("paths", hxPaths).option("tags", hxTags);
+        viewToggle.persistAs("openapi-ui-view");
         Renderable defaultTree = defaultToTags ? tagTree : pathTree;
         var treeContainer = div().id("tree-container").content(defaultTree);
 
         var servers = openApi.getServers();
         var baseUrl = (servers != null && !servers.isEmpty()) ? servers.getFirst().getUrl() : "/";
 
-        var modeToggle = div().attr("data-mode", "try").attr("data-base-url", baseUrl)
-                .classes("segmented-control").attr("tabindex", "0").content(
-                        span("try").classes("is-active").attr("data-mode-btn", "try")
-                                .attr("title", "Send requests directly from the browser (1)"),
-                        span("httpie").attr("data-mode-btn", "httpie")
-                                .attr("title", "Copy as HTTPie command (2)"),
-                        span("curl").attr("data-mode-btn", "curl")
-                                .attr("title", "Copy as curl command (3)")
-                );
+        var modeToggle = toggle("mode")
+                .activeOption("try", o -> o.attr("title", "Send requests directly from the browser (1)"))
+                .option("httpie", o -> o.attr("title", "Copy as HTTPie command (2)"))
+                .option("curl", o -> o.attr("title", "Copy as curl command (3)"))
+                .attr("data-mode", "try").attr("data-base-url", baseUrl);
 
         var pageTitle = openApi.getInfo().getTitle();
         var detail = div().id("detail").attr("tabindex", "0");
@@ -146,6 +135,7 @@ public class OpenApiUiGenerator {
                 .stylesheet("bulma.min.css")
                 .stylesheet("openapi-ui.css")
                 .script("htmx.min.js")
+                .javaScriptCode(Toggle.js())
                 .javaScriptCode(Tree.js())
                 .javaScriptCode(SplitPane.js())
                 .javaScriptCode(APP_JS)
@@ -153,7 +143,7 @@ public class OpenApiUiGenerator {
 
         Files.createDirectories(outputDir);
         Files.writeString(outputDir.resolve("index.html"), page.render());
-        Files.writeString(outputDir.resolve("openapi-ui.css"), Tree.css() + SplitPane.css() + APP_CSS);
+        Files.writeString(outputDir.resolve("openapi-ui.css"), Toggle.css() + Tree.css() + SplitPane.css() + APP_CSS);
 
         generateFragments(root, "");
         Files.writeString(outputDir.resolve("tag-tree.html"), tagTree.render());
@@ -733,28 +723,6 @@ public class OpenApiUiGenerator {
             }
             .bump-v { animation: bump-vertical 0.2s ease; }
             .bump-h { animation: bump-horizontal 0.2s ease; }
-            .segmented-control {
-                display: inline-flex;
-                gap: 1px;
-                background: var(--bulma-scheme-main-ter);
-                border-radius: 6px;
-                padding: 2px;
-            }
-            .segmented-control > span {
-                padding: 5px 14px;
-                font-size: 0.75rem;
-                color: var(--bulma-text-weak);
-                border-radius: 5px;
-                cursor: pointer;
-                transition: all 0.15s;
-                user-select: none;
-            }
-            .segmented-control > span.is-active {
-                background: var(--bulma-scheme-main);
-                color: var(--bulma-text-strong);
-                font-weight: 500;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-            }
             .method-tag {
                 min-width: 4.5rem;
                 justify-content: center;
@@ -770,7 +738,7 @@ public class OpenApiUiGenerator {
                 color: var(--bulma-text-weak);
                 text-align: center;
             }
-            [data-view-toggle] {
+            [data-toggle="view"] {
                 margin-bottom: 0.75rem;
             }
             .response-status {
@@ -795,33 +763,19 @@ public class OpenApiUiGenerator {
             document.addEventListener('DOMContentLoaded', function() {
                 var detail = document.getElementById('detail');
             
-                // Mode toggle
-                var modeContainer = document.querySelector('[data-mode]');
+                // Mode toggle consumer
+                var modeContainer = document.querySelector('[data-toggle="mode"]');
                 if (modeContainer) {
-                    var modes = ['try', 'httpie', 'curl'];
-                    function switchMode(newMode) {
-                        modeContainer.setAttribute('data-mode', newMode);
-                        modeContainer.querySelectorAll('[data-mode-btn]').forEach(function(b) {
-                            b.classList.remove('is-active');
-                        });
-                        modeContainer.querySelector('[data-mode-btn=' + newMode + ']').classList.add('is-active');
+                    modeContainer.addEventListener('toggle', function(e) {
+                        modeContainer.setAttribute('data-mode', e.detail.value);
                         var sendBtns = document.querySelectorAll('#detail button[data-path]');
-                        sendBtns.forEach(function(b) { b.textContent = newMode === 'try' ? 'Send' : 'Copy'; });
-                    }
-                    modeContainer.querySelectorAll('[data-mode-btn]').forEach(function(btn) {
-                        btn.addEventListener('click', function() {
-                            switchMode(btn.getAttribute('data-mode-btn'));
-                        });
+                        sendBtns.forEach(function(b) { b.textContent = e.detail.value === 'try' ? 'Send' : 'Copy'; });
                     });
                     modeContainer.addEventListener('keydown', function(e) {
-                        var current = modeContainer.getAttribute('data-mode');
-                        var idx = modes.indexOf(current);
-                        if (e.key === 'ArrowRight') {
+                        if (e.key === 'ArrowDown') {
                             e.preventDefault();
-                            switchMode(modes[(idx + 1) % modes.length]);
-                        } else if (e.key === 'ArrowLeft') {
-                            e.preventDefault();
-                            switchMode(modes[(idx - 1 + modes.length) % modes.length]);
+                            var viewToggle = document.querySelector('[data-toggle="view"]');
+                            if (viewToggle) viewToggle.focus();
                         }
                     });
                     document.addEventListener('keydown', function(e) {
@@ -830,39 +784,28 @@ public class OpenApiUiGenerator {
                             if (tag === 'INPUT' || tag === 'TEXTAREA') return;
                             if (document.activeElement.isContentEditable) return;
                             e.preventDefault();
-                            switchMode(modes[parseInt(e.key) - 1]);
+                            var values = Array.from(modeContainer.querySelectorAll('[data-toggle-value]')).map(function(el) {
+                                return el.getAttribute('data-toggle-value');
+                            });
+                            modeContainer._select(values[parseInt(e.key) - 1]);
                         }
                     });
                 }
 
-                // View toggle
-                var viewToggle = document.querySelector('[data-view-toggle]');
+                // View toggle consumer
+                var viewToggle = document.querySelector('[data-toggle="view"]');
                 if (viewToggle) {
-                    var persistKey = viewToggle.getAttribute('data-persist');
-                    var views = ['paths', 'tags'];
-                    function switchView(view) {
-                        viewToggle.querySelectorAll('[data-view-btn]').forEach(function(b) {
-                            b.classList.remove('is-active');
-                        });
-                        var btn = viewToggle.querySelector('[data-view-btn=' + view + ']');
-                        btn.classList.add('is-active');
+                    viewToggle.addEventListener('toggle', function(e) {
+                        var btn = viewToggle.querySelector('[data-toggle-value=' + e.detail.value + ']');
                         htmx.ajax('GET', btn.getAttribute('hx-get'), {target: '#tree-container', swap: 'innerHTML'}).then(function() {
                             viewToggle.focus();
                         });
-                        if (persistKey) localStorage.setItem(persistKey, view);
-                    }
-                    viewToggle.querySelectorAll('[data-view-btn]').forEach(function(btn) {
-                        btn.addEventListener('click', function() {
-                            switchView(btn.getAttribute('data-view-btn'));
-                        });
                     });
                     viewToggle.addEventListener('keydown', function(e) {
-                        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                        if (e.key === 'ArrowUp') {
                             e.preventDefault();
-                            var current = viewToggle.querySelector('.is-active').getAttribute('data-view-btn');
-                            var idx = views.indexOf(current);
-                            var next = e.key === 'ArrowRight' ? (idx + 1) % views.length : (idx - 1 + views.length) % views.length;
-                            switchView(views[next]);
+                            var modeToggle = document.querySelector('[data-toggle="mode"]');
+                            if (modeToggle) modeToggle.focus();
                         } else if (e.key === 'ArrowDown') {
                             e.preventDefault();
                             var tree = document.querySelector('[role="tree"]');
@@ -870,7 +813,7 @@ public class OpenApiUiGenerator {
                         } else if (e.key === 'Tab') {
                             e.preventDefault();
                             if (e.shiftKey) {
-                                var modeToggle = document.querySelector('[data-mode].segmented-control');
+                                var modeToggle = document.querySelector('[data-toggle="mode"]');
                                 if (modeToggle) modeToggle.focus();
                             } else {
                                 var tree = document.querySelector('[role="tree"]');
@@ -878,12 +821,15 @@ public class OpenApiUiGenerator {
                             }
                         }
                     });
-                    if (persistKey) {
-                        var saved = localStorage.getItem(persistKey);
-                        var defaultView = viewToggle.querySelector('.is-active').getAttribute('data-view-btn');
-                        if (saved && saved !== defaultView) switchView(saved);
-                    }
                 }
+
+                // Restore persisted toggle state (after consumers registered)
+                document.querySelectorAll('.segmented-control[data-persist]').forEach(function(container) {
+                    var saved = localStorage.getItem(container.getAttribute('data-persist'));
+                    if (saved && saved !== container.querySelector('.is-active').getAttribute('data-toggle-value')) {
+                        container._select(saved);
+                    }
+                });
 
                 // Tab switching — toggle is-active when HTMX swaps method content
                 document.body.addEventListener('htmx:afterRequest', function(e) {
@@ -1076,7 +1022,7 @@ public class OpenApiUiGenerator {
             
                         var pathTemplate = sendBtn.getAttribute('data-path');
                         var method = sendBtn.getAttribute('data-method');
-                        var modeEl = document.querySelector('[data-mode]');
+                        var modeEl = document.querySelector('[data-toggle="mode"]');
                         var mode = modeEl ? modeEl.getAttribute('data-mode') : 'try';
                         var baseUrl = modeEl ? (modeEl.getAttribute('data-base-url') || '') : '';
             

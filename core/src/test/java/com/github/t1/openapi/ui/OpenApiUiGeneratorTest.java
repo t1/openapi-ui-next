@@ -414,7 +414,7 @@ class OpenApiUiGeneratorTest {
         generate("/tagged-flat.yaml");
 
         var indexHtml = Files.readString(outputDir.resolve("index.html"));
-        int togglePos = indexHtml.indexOf("data-view-toggle");
+        int togglePos = indexHtml.indexOf("data-toggle=\"view\"");
         int treeContainerPos = indexHtml.indexOf("id=\"tree-container\"");
         then(togglePos).as("view toggle should appear before tree container").isGreaterThan(-1);
         then(togglePos).isLessThan(treeContainerPos);
@@ -424,8 +424,8 @@ class OpenApiUiGeneratorTest {
         generate("/tagged-flat.yaml");
 
         var indexHtml = Files.readString(outputDir.resolve("index.html"));
-        then(indexHtml).contains("data-view-btn=\"paths\"");
-        then(indexHtml).contains("data-view-btn=\"tags\"");
+        then(indexHtml).contains("data-toggle-value=\"paths\"");
+        then(indexHtml).contains("data-toggle-value=\"tags\"");
     }
 
     @Test void shouldHaveHtmxAttributesOnViewToggle() throws Exception {
@@ -440,7 +440,7 @@ class OpenApiUiGeneratorTest {
         generate("/one-get.yaml");
 
         var indexHtml = Files.readString(outputDir.resolve("index.html"));
-        then(indexHtml).contains("data-view-toggle");
+        then(indexHtml).contains("data-toggle=\"view\"");
     }
 
     @Test void shouldShowNoTagsMessageInTagTree() throws Exception {

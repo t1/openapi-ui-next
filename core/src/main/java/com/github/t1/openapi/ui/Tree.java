@@ -253,7 +253,7 @@ public class Tree extends AbstractElement<Tree> {
                             e.preventDefault();
                             if (idx > 0) selectItem(items[idx - 1]);
                             else {
-                                var viewToggle = document.querySelector('[data-view-toggle]');
+                                var viewToggle = document.querySelector('[data-toggle="view"]');
                                 if (viewToggle) viewToggle.focus();
                                 else bump(current, 'v');
                             }
@@ -283,10 +283,10 @@ public class Tree extends AbstractElement<Tree> {
                         case 'Tab':
                             e.preventDefault();
                             if (e.shiftKey) {
-                                var viewToggle = document.querySelector('[data-view-toggle]');
+                                var viewToggle = document.querySelector('[data-toggle="view"]');
                                 if (viewToggle) viewToggle.focus();
                                 else {
-                                    var modeToggle = document.querySelector('[data-mode].segmented-control');
+                                    var modeToggle = document.querySelector('[data-toggle="mode"]');
                                     if (modeToggle) modeToggle.focus();
                                 }
                             } else {

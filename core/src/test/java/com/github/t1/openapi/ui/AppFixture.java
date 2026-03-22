@@ -251,28 +251,28 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return new double[]{box.x, box.y, box.width, box.height};
     }
 
-    boolean isModeButtonVisible(String mode) {return page.locator("[data-mode-btn='" + mode.toLowerCase() + "']").isVisible();}
+    boolean isModeButtonVisible(String mode) {return page.locator("[data-toggle-value='" + mode.toLowerCase() + "']").isVisible();}
 
-    String modeButtonTooltip(String mode) {return page.locator("[data-mode-btn='" + mode.toLowerCase() + "']").getAttribute("title");}
+    String modeButtonTooltip(String mode) {return page.locator("[data-toggle-value='" + mode.toLowerCase() + "']").getAttribute("title");}
 
-    void focusModeToggle() {page.locator("[data-mode].segmented-control").focus();}
+    void focusModeToggle() {page.locator("[data-toggle='mode']").focus();}
 
     boolean isModeToggleFocused() {
-        return (Boolean) page.evaluate("() => document.activeElement.matches('[data-mode].segmented-control')");
+        return (Boolean) page.evaluate("() => document.activeElement.matches('[data-toggle=mode]')");
     }
 
-    void clickModeButton(String mode) {page.locator("[data-mode-btn='" + mode.toLowerCase() + "']").click();}
+    void clickModeButton(String mode) {page.locator("[data-toggle-value='" + mode.toLowerCase() + "']").click();}
 
     boolean hasSegmentedControl() {
-        return page.locator("[data-mode].segmented-control").count() == 1;
+        return page.locator("[data-toggle='mode']").count() == 1;
     }
 
     boolean isSegmentActive(String mode) {
-        return page.locator("[data-mode] [data-mode-btn='" + mode + "'].is-active").count() == 1;
+        return page.locator("[data-toggle='mode'] [data-toggle-value='" + mode + "'].is-active").count() == 1;
     }
 
     String currentMode() {
-        return (String) page.evaluate("() => document.querySelector('[data-mode]').getAttribute('data-mode')");
+        return (String) page.evaluate("() => document.querySelector('[data-toggle=mode]').getAttribute('data-mode')");
     }
 
     void fillInput(String name, String value) {page.locator("#detail input[name='" + name + "']").fill(value);}
@@ -432,26 +432,30 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
 String readClipboard() {return (String) page.evaluate("() => navigator.clipboard.readText()");}
 
-    boolean hasViewToggle() {return page.locator("[data-view-toggle]").count() == 1;}
+    boolean hasViewToggle() {return page.locator("[data-toggle='view']").count() == 1;}
 
     boolean isViewActive(String view) {
-        return page.locator("[data-view-btn='" + view + "'].is-active").count() == 1;
+        return page.locator("[data-toggle-value='" + view + "'].is-active").count() == 1;
     }
 
-    void clickViewButton(String view) {page.locator("[data-view-btn='" + view + "']").click();}
+    void clickViewButton(String view) {page.locator("[data-toggle-value='" + view + "']").click();}
 
     boolean isViewToggleFocused() {
-        return (Boolean) page.evaluate("() => document.activeElement.hasAttribute('data-view-toggle')");
+        return (Boolean) page.evaluate("() => document.activeElement.matches('[data-toggle=view]')");
     }
 
     String focusedElementInfo() {
         return (String) page.evaluate("() => { var el = document.activeElement; return el.tagName + '.' + el.className + '#' + el.id; }");
     }
 
-    void focusViewToggle() {page.locator("[data-view-toggle]").focus();}
+    void focusViewToggle() {page.locator("[data-toggle='view']").focus();}
 
     void waitForViewToggleFocused() {
-        page.waitForFunction("() => document.activeElement.hasAttribute('data-view-toggle')");
+        page.waitForFunction("() => document.activeElement.matches('[data-toggle=view]')");
+    }
+
+    void waitForModeToggleFocused() {
+        page.waitForFunction("() => document.activeElement.matches('[data-toggle=mode]')");
     }
 
     void waitForTreeContent(String text) {
