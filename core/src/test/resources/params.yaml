@@ -22,6 +22,11 @@ paths:
           schema:
             type: string
           description: Comma-separated list of fields
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [available, adopted, pending]
       responses:
         '200':
           description: A pet

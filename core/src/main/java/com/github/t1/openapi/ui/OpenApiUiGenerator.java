@@ -39,7 +39,9 @@ import static com.github.t1.bulmajava.elements.Tag.tagsAddon;
 import static com.github.t1.bulmajava.form.Field.field;
 import static com.github.t1.bulmajava.form.Input.input;
 import static com.github.t1.bulmajava.form.InputType.TEXT;
+import static com.github.t1.bulmajava.form.Select.select;
 import static com.github.t1.bulmajava.layout.Container.container;
+import static com.github.t1.bulmajava.layout.Level.level;
 import static com.github.t1.bulmajava.layout.Section.section;
 import static com.github.t1.htmljava.Html.html;
 import static com.github.t1.htmljava.HtmlBasics.code;
@@ -100,12 +102,12 @@ public class OpenApiUiGenerator {
                                 .attr("hx-get", "path-tree.html")
                                 .attr("hx-target", "#tree-container")
                                 .attr("hx-swap", "innerHTML")
-                                .classes(defaultToTags ? "" : "is-active"),
+                                                                .classes(defaultToTags ? "" : "is-active"),
                         span("tags").attr("data-view-btn", "tags")
                                 .attr("hx-get", "tag-tree.html")
                                 .attr("hx-target", "#tree-container")
                                 .attr("hx-swap", "innerHTML")
-                                .classes(defaultToTags ? "is-active" : "")
+                                                                .classes(defaultToTags ? "is-active" : "")
                 );
         Renderable defaultTree = defaultToTags ? tagTree : pathTree;
         var treeContainer = div().id("tree-container").content(defaultTree);
@@ -410,8 +412,18 @@ public class OpenApiUiGenerator {
         }
         if (operation.getParameters() != null) {
             for (var param : operation.getParameters()) {
-                var inputField = field(param.getName())
-                        .content(input(TEXT).attr("name", param.getName()));
+                var schema = param.getSchema();
+                var enumValues = (schema != null) ? schema.getEnum() : null;
+                var inputField = field(param.getName());
+                if (enumValues != null && !enumValues.isEmpty()) {
+                    var sel = select(param.getName()).option("", "(any)");
+                    for (var value : enumValues) {
+                        sel.option(value.toString(), value.toString());
+                    }
+                    inputField.content(sel);
+                } else {
+                    inputField.content(input(TEXT).attr("name", param.getName()));
+                }
                 if (param.getDescription() != null) {
                     inputField.help(param.getDescription());
                 }
@@ -476,9 +488,13 @@ public class OpenApiUiGenerator {
                 }
             }
         }
-        fragment.content(button("Send").is(PRIMARY)
-                .attr("data-path", "/" + fullPath)
-                .attr("data-method", method.name()));
+        var sendRow = level().content(
+                div().classes("level-left").content(
+                        button("Send").is(PRIMARY)
+                                .attr("data-path", "/" + fullPath)
+                                .attr("data-method", method.name())),
+                div().classes("level-right"));
+        fragment.content(sendRow);
         return fragment;
     }
 
@@ -740,7 +756,7 @@ public class OpenApiUiGenerator {
                 box-shadow: 0 1px 2px rgba(0,0,0,0.06);
             }
             .method-tag {
-                min-width: 3.5rem;
+                min-width: 4.5rem;
                 justify-content: center;
             }
             .also-in {
@@ -756,6 +772,22 @@ public class OpenApiUiGenerator {
             }
             [data-view-toggle] {
                 margin-bottom: 0.75rem;
+            }
+            .response-status {
+                font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+                font-weight: 600;
+                font-size: 0.85rem;
+            }
+            .response-status.is-success {
+                color: var(--bulma-success);
+            }
+            .response-status.is-error {
+                color: var(--bulma-danger);
+            }
+            .response-no-body {
+                color: var(--bulma-text-weak);
+                font-style: italic;
+                margin-top: 0.75rem;
             }
             """;
 
@@ -814,7 +846,9 @@ public class OpenApiUiGenerator {
                         });
                         var btn = viewToggle.querySelector('[data-view-btn=' + view + ']');
                         btn.classList.add('is-active');
-                        htmx.ajax('GET', btn.getAttribute('hx-get'), '#tree-container');
+                        htmx.ajax('GET', btn.getAttribute('hx-get'), {target: '#tree-container', swap: 'innerHTML'}).then(function() {
+                            viewToggle.focus();
+                        });
                         if (persistKey) localStorage.setItem(persistKey, view);
                     }
                     viewToggle.querySelectorAll('[data-view-btn]').forEach(function(btn) {
@@ -880,6 +914,11 @@ public class OpenApiUiGenerator {
                     });
                 }
 
+                document.body.addEventListener('htmx:afterSettle', function(e) {
+                    if (e.detail.target && e.detail.target.id === 'tree-container' && viewToggle) {
+                        viewToggle.focus();
+                    }
+                });
                 document.body.addEventListener('htmx:afterSwap', function(e) {
                     var currentMode = modeContainer ? modeContainer.getAttribute('data-mode') : 'try';
                     if (currentMode !== 'try') {
@@ -906,6 +945,24 @@ public class OpenApiUiGenerator {
                     }
                 });
             
+                function clearPreviousResponse() {
+                    var existing = detail.querySelector('pre.response');
+                    if (existing) existing.remove();
+                    var noBody = detail.querySelector('.response-no-body');
+                    if (noBody) noBody.remove();
+                }
+
+                function showResponseStatus(btn, status, statusText) {
+                    var levelRight = btn.closest('.level').querySelector('.level-right');
+                    levelRight.textContent = '';
+                    var badge = document.createElement('span');
+                    badge.className = 'response-status';
+                    badge.textContent = status + ' ' + statusText;
+                    if (status >= 200 && status < 300) badge.classList.add('is-success');
+                    else badge.classList.add('is-error');
+                    levelRight.appendChild(badge);
+                }
+
                 function showCopied(btn) {
                     var original = btn.textContent;
                     btn.textContent = 'Copied!';
@@ -941,7 +998,7 @@ public class OpenApiUiGenerator {
                             document.querySelector('[role="tree"]').focus();
                         }
                     } else if (e.key === 'ArrowDown' || e.key === 'Enter') {
-                        var firstInput = document.querySelector('#method-content input, #method-content textarea, #method-content button[data-path]');
+                        var firstInput = document.querySelector('#method-content input, #method-content select, #method-content textarea, #method-content button[data-path]');
                         if (firstInput) firstInput.focus();
                     } else if (e.key === 'Escape') {
                         document.querySelector('[role="tree"]').focus();
@@ -965,7 +1022,7 @@ public class OpenApiUiGenerator {
                 document.addEventListener('keydown', function(e) {
                     var mc = document.getElementById('method-content') || document.getElementById('detail');
                     if (!mc) return;
-                    var focusables = Array.from(mc.querySelectorAll('input, textarea, button[data-path]'));
+                    var focusables = Array.from(mc.querySelectorAll('input, select, textarea, button[data-path]'));
                     var idx = focusables.indexOf(document.activeElement);
                     if (idx < 0) return;
 
@@ -1024,7 +1081,7 @@ public class OpenApiUiGenerator {
                         var baseUrl = modeEl ? (modeEl.getAttribute('data-base-url') || '') : '';
             
                         // Collect input values
-                        var inputs = detail.querySelectorAll('input[name]');
+                        var inputs = detail.querySelectorAll('input[name], select[name]');
                         var resolvedPath = pathTemplate;
                         var queryParams = [];
                         inputs.forEach(function(inp) {
@@ -1066,27 +1123,31 @@ public class OpenApiUiGenerator {
                             fetch(url, fetchOptions).then(function(resp) {
                                 var ct = resp.headers.get('Content-Type') || '';
                                 return resp.text().then(function(text) {
-                                    var pre = document.createElement('pre');
-                                    if (!resp.ok) {
-                                        text = resp.status + ' ' + resp.statusText + '\\n' + text;
-                                    } else if (ct.includes('json')) {
+                                    showResponseStatus(sendBtn, resp.status, resp.statusText);
+                                    if (ct.includes('json')) {
                                         try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
                                     }
-                                    pre.textContent = text;
-                                    var existing = detail.querySelector('pre.response');
-                                    if (existing) existing.remove();
-                                    pre.className = 'response';
-                                    detail.appendChild(pre);
-                                    sendBtn.disabled = false;
-                                    sendBtn.textContent = 'Send';
+                                    clearPreviousResponse();
+                                    if (text.trim()) {
+                                        var pre = document.createElement('pre');
+                                        pre.textContent = text;
+                                        pre.className = 'response';
+                                        detail.appendChild(pre);
+                                    } else {
+                                        var msg = document.createElement('p');
+                                        msg.textContent = 'no body';
+                                        msg.className = 'response-no-body';
+                                        detail.appendChild(msg);
+                                    }
                                 });
                             }).catch(function(err) {
+                                showResponseStatus(sendBtn, 0, 'Network error');
+                                clearPreviousResponse();
                                 var pre = document.createElement('pre');
-                                pre.textContent = 'Network error: ' + err.message;
-                                var existing = detail.querySelector('pre.response');
-                                if (existing) existing.remove();
+                                pre.textContent = err.message;
                                 pre.className = 'response';
                                 detail.appendChild(pre);
+                            }).finally(function() {
                                 sendBtn.disabled = false;
                                 sendBtn.textContent = 'Send';
                             });

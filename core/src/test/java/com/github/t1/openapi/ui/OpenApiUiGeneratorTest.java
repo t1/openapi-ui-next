@@ -89,6 +89,17 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("Comma-separated list of fields");
     }
 
+    @Test void shouldRenderEnumParameterAsSelect() throws Exception {
+        generate("/params.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).contains("<select");
+        then(fragment).contains("name=\"status\"");
+        then(fragment).contains("available");
+        then(fragment).contains("adopted");
+        then(fragment).contains("pending");
+    }
+
     @Test void shouldRenderResponseSchema() throws Exception {
         generate("/params.yaml");
 

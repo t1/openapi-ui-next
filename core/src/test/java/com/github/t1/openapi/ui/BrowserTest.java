@@ -250,11 +250,34 @@ class BrowserTest {
                 then(app.isSendButtonEnabled()).isTrue();
             }
 
-            @Test void tryModeShowsErrorForFailedFetch() {
+            @Test void tryModeShowsStatusBadgeNextToSendButton() {
+                app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+                navigateToListPetsAndSend();
+
+                then(app.statusBadgeText()).isEqualTo("200 OK");
+            }
+
+            @Test void tryModeShowsErrorStatusBadge() {
                 app.mockEndpoint("/pets", "text/plain", "not found", 404);
                 navigateToListPetsAndSend();
 
-                then(app.responseText()).contains("404");
+                then(app.statusBadgeText()).isEqualTo("404 Not Found");
+            }
+
+            @Test void tryModeErrorStatusNotDuplicatedInBody() {
+                app.mockEndpoint("/pets", "text/plain", "not found", 404);
+                navigateToListPetsAndSend();
+
+                then(app.responseText()).doesNotContain("404");
+                then(app.responseText()).contains("not found");
+            }
+
+            @Test void tryModeShowsNoBodyMessageForEmptyResponse() {
+                app.mockEndpoint("/pets", "application/json", "", 204);
+                navigateToListPetsAndSend();
+
+                then(app.statusBadgeText()).isEqualTo("204 No Content");
+                then(app.noBodyMessageText()).isEqualTo("no body");
             }
 
             @Test void tryModeShowsYamlResponseAsIs() {
@@ -321,6 +344,14 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // tags is active, switch to paths
             app.waitForTreeContent("invoices");
             then(app.isViewActive("paths")).isTrue();
+        }
+
+        @Test void shouldKeepFocusOnViewToggleAfterSwitch() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.waitForViewToggleFocused();
+
+            then(app.isViewToggleFocused()).isTrue();
         }
 
         @Test void clickingTagTreeOperationLoadsDetail() {
@@ -454,6 +485,15 @@ class BrowserTest {
             app.pressKey("ArrowDown"); // enter fields
             then(app.activeElementTag()).isEqualTo("INPUT");
             app.screenshot("focus-field");
+        }
+
+        @Test void shouldFocusSendButtonOnArrowDownFromTabWithoutParams() {
+            app.waitForDetailContent("List pets");
+            app.focusTab(1);
+
+            app.pressKey("ArrowDown");
+
+            then(app.activeElementSelector()).contains("button").contains("data-path");
         }
 
         @Test void shouldReturnToTabsOnArrowUpFromFirstField() {

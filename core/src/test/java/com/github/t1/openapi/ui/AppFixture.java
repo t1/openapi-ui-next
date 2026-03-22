@@ -297,9 +297,15 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     String sendButtonText() {return page.locator("#detail button[data-path]").textContent();}
 
-    void waitForResponse() {page.waitForSelector("#detail pre.response");}
+    void waitForResponse() {page.waitForSelector("#detail .response-status");}
+
+    String statusBadgeText() {return page.locator("#detail .response-status").textContent();}
+
+    String noBodyMessageText() {return page.locator("#detail .response-no-body").textContent();}
 
     void clickMethodTab(int index) {page.locator(".tabs li:nth-child(" + index + ") a").click();}
+
+    void focusTab(int index) {page.locator(".tabs li:nth-child(" + index + ") a").focus();}
 
     boolean isTabActive(int index) {
         var cls = page.locator(".tabs li:nth-child(" + index + ")").getAttribute("class");
@@ -438,7 +444,15 @@ String readClipboard() {return (String) page.evaluate("() => navigator.clipboard
         return (Boolean) page.evaluate("() => document.activeElement.hasAttribute('data-view-toggle')");
     }
 
+    String focusedElementInfo() {
+        return (String) page.evaluate("() => { var el = document.activeElement; return el.tagName + '.' + el.className + '#' + el.id; }");
+    }
+
     void focusViewToggle() {page.locator("[data-view-toggle]").focus();}
+
+    void waitForViewToggleFocused() {
+        page.waitForFunction("() => document.activeElement.hasAttribute('data-view-toggle')");
+    }
 
     void waitForTreeContent(String text) {
         page.waitForSelector("#tree-container :text('" + text + "')");
