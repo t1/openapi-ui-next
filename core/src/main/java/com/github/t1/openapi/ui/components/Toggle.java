@@ -1,4 +1,4 @@
-package com.github.t1.openapi.ui;
+package com.github.t1.openapi.ui.components;
 
 import com.github.t1.htmljava.AbstractElement;
 import com.github.t1.htmljava.Element;

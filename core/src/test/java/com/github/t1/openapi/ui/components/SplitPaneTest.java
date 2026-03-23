@@ -1,9 +1,9 @@
-package com.github.t1.openapi.ui;
+package com.github.t1.openapi.ui.components;
 
 import org.junit.jupiter.api.Test;
 
 import static com.github.t1.htmljava.HtmlBasics.div;
-import static com.github.t1.openapi.ui.SplitPane.splitPane;
+import static com.github.t1.openapi.ui.components.SplitPane.splitPane;
 import static org.assertj.core.api.BDDAssertions.then;
 
 class SplitPaneTest {

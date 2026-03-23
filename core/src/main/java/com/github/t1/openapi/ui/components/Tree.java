@@ -1,4 +1,4 @@
-package com.github.t1.openapi.ui;
+package com.github.t1.openapi.ui.components;
 
 import com.github.t1.htmljava.AbstractElement;
 import com.github.t1.htmljava.Element;
@@ -353,17 +353,4 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                 });
             });
             """;
-}
-
-/// Shared API between {@link Tree} and {@link Tree.Node} for adding items and subtrees.
-interface TreeContainer {
-    TreeContainer item(String label);
-
-    TreeContainer item(Renderable label);
-
-    TreeContainer item(Renderable label, Consumer<Element> extra);
-
-    TreeContainer node(String label, Consumer<Tree.Node> children);
-
-    TreeContainer node(Renderable label, Consumer<Tree.Node> children);
 }

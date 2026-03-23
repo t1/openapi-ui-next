@@ -1,4 +1,4 @@
-package com.github.t1.openapi.ui;
+package com.github.t1.openapi.ui.generator;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.Playwright;

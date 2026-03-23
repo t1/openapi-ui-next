@@ -1,4 +1,4 @@
-package com.github.t1.openapi.ui;
+package com.github.t1.openapi.ui.generator;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -109,7 +109,7 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("string");
     }
 
-@Test void shouldUseParamClassForPathParameters() throws Exception {
+    @Test void shouldUseParamClassForPathParameters() throws Exception {
         generate("/nested-paths.yaml");
 
         var html = Files.readString(outputDir.resolve("index.html"));
@@ -148,18 +148,21 @@ class OpenApiUiGeneratorTest {
         var fragment = Files.readString(outputDir.resolve("pets/POST.html"));
         then(fragment).contains("&quot;withDefault&quot;: &quot;unknown&quot;");
     }
+
     @Test void shouldUseFirstEnumValueInSkeleton() throws Exception {
         generate("/request-body-samples.yaml");
 
         var fragment = Files.readString(outputDir.resolve("pets/POST.html"));
         then(fragment).contains("&quot;withEnum&quot;: &quot;available&quot;");
     }
+
     @Test void shouldQuoteEnumRefValueInSkeleton() throws Exception {
         generate("/request-body-samples.yaml");
 
         var fragment = Files.readString(outputDir.resolve("pets/POST.html"));
         then(fragment).contains("&quot;withEnumRef&quot;: &quot;available&quot;");
     }
+
     @Test void shouldUseFormatBasedValueInSkeleton() throws Exception {
         generate("/request-body-samples.yaml");
 

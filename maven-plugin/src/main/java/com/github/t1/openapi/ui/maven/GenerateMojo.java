@@ -1,6 +1,6 @@
 package com.github.t1.openapi.ui.maven;
 
-import com.github.t1.openapi.ui.OpenApiUiGenerator;
+import com.github.t1.openapi.ui.generator.OpenApiUiGenerator;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;

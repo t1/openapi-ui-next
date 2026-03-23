@@ -1,4 +1,4 @@
-package com.github.t1.openapi.ui;
+package com.github.t1.openapi.ui.generator;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

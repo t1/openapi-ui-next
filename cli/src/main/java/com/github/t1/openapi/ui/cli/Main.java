@@ -2,7 +2,7 @@ package com.github.t1.openapi.ui.cli;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-import com.github.t1.openapi.ui.OpenApiUiGenerator;
+import com.github.t1.openapi.ui.generator.OpenApiUiGenerator;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;

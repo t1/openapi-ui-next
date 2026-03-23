@@ -1,0 +1,184 @@
+.section {
+    padding-top: 1.5rem;
+    min-height: 100vh;
+}
+.tags.has-addons {
+    margin-left: auto;
+    margin-right: 4px;
+    margin-bottom: 0;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    gap: 0;
+}
+.tags.has-addons .tag {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    height: auto;
+    margin-bottom: 0;
+}
+.split-first {
+    background-color: var(--bulma-scheme-main-bis);
+    padding: 1.25rem 0 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.split-first > .box {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 6px 0 0 6px;
+}
+@media screen and (min-width: 1024px) {
+    .split-first {
+        min-height: calc(100vh - 4rem);
+    }
+    .split-second {
+        min-height: calc(100vh - 4rem);
+    }
+}
+.tabs a:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--bulma-link);
+}
+/* --- Detail pane --- */
+.detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--bulma-border);
+}
+.detail-header .title {
+    margin-bottom: 0;
+}
+.split-second {
+    padding-left: 2rem;
+    padding-right: 2rem;
+    background-color: var(--bulma-scheme-main-bis);
+}
+#detail .endpoint-path {
+    font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+    font-weight: 500;
+    color: var(--bulma-text-strong);
+}
+.op-description-wrapper {
+    position: relative;
+    margin-bottom: 1rem;
+}
+#detail .op-description {
+    color: var(--bulma-text-weak);
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+}
+#detail .op-description-wrapper.is-expanded .op-description {
+    display: inline;
+    overflow: visible;
+}
+.desc-toggle {
+    border: none;
+    background: linear-gradient(90deg, transparent, var(--bulma-scheme-main-bis) 30%);
+    cursor: pointer;
+    padding: 0 0 0 1.5rem;
+    color: var(--bulma-text-weak);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    display: none;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+}
+.desc-toggle:focus-visible {
+    outline: 2px solid var(--bulma-link);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+.op-description-wrapper.is-clamped .desc-toggle {
+    display: inline;
+}
+.op-description-wrapper.is-expanded .desc-toggle {
+    display: inline;
+    position: static;
+    background: none;
+    padding: 0 0 0 0.25rem;
+}
+.deprecated-badge {
+    font-weight: 600;
+}
+#detail .external-docs a {
+    color: var(--bulma-link);
+    text-decoration: underline;
+}
+#detail pre {
+    border: 1px solid var(--bulma-border);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    background-color: var(--bulma-scheme-main);
+    font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+    font-size: 0.875rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+#detail .field {
+    margin-bottom: 1rem;
+}
+#detail textarea[data-request-body] {
+    font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+    font-size: 0.875rem;
+    resize: vertical;
+}
+#detail button[data-path] {
+    margin-top: 0.75rem;
+}
+@keyframes bump-vertical {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(-2px); }
+    75% { transform: translateY(2px); }
+}
+@keyframes bump-horizontal {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+.bump-v { animation: bump-vertical 0.2s ease; }
+.bump-h { animation: bump-horizontal 0.2s ease; }
+.method-tag {
+    min-width: 4.5rem;
+    justify-content: center;
+}
+.also-in {
+    font-size: 0.7rem;
+    color: var(--bulma-text-weak);
+    margin-left: 1.75rem;
+    font-style: italic;
+}
+.no-tags-message {
+    padding: 1.5rem;
+    color: var(--bulma-text-weak);
+    text-align: center;
+}
+[data-toggle="view"] {
+    margin-bottom: 0.75rem;
+}
+.response-status {
+    font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.response-status.is-success {
+    color: var(--bulma-success);
+}
+.response-status.is-error {
+    color: var(--bulma-danger);
+}
+.response-no-body {
+    color: var(--bulma-text-weak);
+    font-style: italic;
+    margin-top: 0.75rem;
+}

@@ -1,8 +1,8 @@
-package com.github.t1.openapi.ui;
+package com.github.t1.openapi.ui.components;
 
 import org.junit.jupiter.api.Test;
 
-import static com.github.t1.openapi.ui.Toggle.toggle;
+import static com.github.t1.openapi.ui.components.Toggle.toggle;
 import static org.assertj.core.api.BDDAssertions.then;
 
 class ToggleTest {

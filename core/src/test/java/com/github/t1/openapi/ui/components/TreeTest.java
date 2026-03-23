@@ -1,9 +1,9 @@
-package com.github.t1.openapi.ui;
+package com.github.t1.openapi.ui.components;
 
 import org.junit.jupiter.api.Test;
 
 import static com.github.t1.htmljava.HtmlBasics.span;
-import static com.github.t1.openapi.ui.Tree.tree;
+import static com.github.t1.openapi.ui.components.Tree.tree;
 import static org.assertj.core.api.BDDAssertions.then;
 
 class TreeTest {
