@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Restore persisted toggle state (after consumers registered)
-    document.querySelectorAll('.segmented-control[data-persist]').forEach(function(container) {
+    document.querySelectorAll('.toggle[data-persist]').forEach(function(container) {
         var saved = localStorage.getItem(container.getAttribute('data-persist'));
         if (saved && saved !== container.querySelector('.is-active').getAttribute('data-toggle-value')) {
             container._select(saved);

@@ -11,7 +11,7 @@ class ToggleTest {
         var rendered = toggle("mode").render();
 
         then(rendered).isEqualTo("""
-                <div class="segmented-control" data-toggle="mode" tabindex="0"></div>
+                <div class="toggle" data-toggle="mode" tabindex="0"></div>
                 """);
     }
 
@@ -19,7 +19,7 @@ class ToggleTest {
         var rendered = toggle("mode").option("try").render();
 
         then(rendered).isEqualTo("""
-                <div class="segmented-control" data-toggle="mode" tabindex="0">
+                <div class="toggle" data-toggle="mode" tabindex="0">
                     <span data-toggle-value="try">try</span>
                 </div>
                 """);
@@ -29,7 +29,7 @@ class ToggleTest {
         var rendered = toggle("mode").option("try", "Try it").render();
 
         then(rendered).isEqualTo("""
-                <div class="segmented-control" data-toggle="mode" tabindex="0">
+                <div class="toggle" data-toggle="mode" tabindex="0">
                     <span data-toggle-value="try">Try it</span>
                 </div>
                 """);
@@ -39,7 +39,7 @@ class ToggleTest {
         var rendered = toggle("mode").option("try", o -> o.attr("title", "Send requests")).render();
 
         then(rendered).isEqualTo("""
-                <div class="segmented-control" data-toggle="mode" tabindex="0">
+                <div class="toggle" data-toggle="mode" tabindex="0">
                     <span data-toggle-value="try" title="Send requests">try</span>
                 </div>
                 """);
@@ -49,7 +49,7 @@ class ToggleTest {
         var rendered = toggle("mode").activeOption("try").render();
 
         then(rendered).isEqualTo("""
-                <div class="segmented-control" data-toggle="mode" tabindex="0">
+                <div class="toggle" data-toggle="mode" tabindex="0">
                     <span class="is-active" data-toggle-value="try">try</span>
                 </div>
                 """);
@@ -59,7 +59,7 @@ class ToggleTest {
         var rendered = toggle("mode").activeOption("try", "Try it").render();
 
         then(rendered).isEqualTo("""
-                <div class="segmented-control" data-toggle="mode" tabindex="0">
+                <div class="toggle" data-toggle="mode" tabindex="0">
                     <span class="is-active" data-toggle-value="try">Try it</span>
                 </div>
                 """);
@@ -69,7 +69,7 @@ class ToggleTest {
         var rendered = toggle("mode").activeOption("try", o -> o.attr("title", "Send")).render();
 
         then(rendered).isEqualTo("""
-                <div class="segmented-control" data-toggle="mode" tabindex="0">
+                <div class="toggle" data-toggle="mode" tabindex="0">
                     <span class="is-active" data-toggle-value="try" title="Send">try</span>
                 </div>
                 """);
@@ -79,7 +79,7 @@ class ToggleTest {
         var rendered = toggle("mode").persistAs("my-key").render();
 
         then(rendered).isEqualTo("""
-                <div class="segmented-control" data-toggle="mode" tabindex="0" data-persist="my-key"></div>
+                <div class="toggle" data-toggle="mode" tabindex="0" data-persist="my-key"></div>
                 """);
     }
 
@@ -87,7 +87,7 @@ class ToggleTest {
         var rendered = toggle("mode").option("try").option("curl").activate("curl").render();
 
         then(rendered).isEqualTo("""
-                <div class="segmented-control" data-toggle="mode" tabindex="0">
+                <div class="toggle" data-toggle="mode" tabindex="0">
                     <span data-toggle-value="try">try</span>
                     <span class="is-active" data-toggle-value="curl">curl</span>
                 </div>
@@ -98,7 +98,7 @@ class ToggleTest {
         var rendered = toggle("mode").activeOption("try").option("curl").activate("curl").render();
 
         then(rendered).isEqualTo("""
-                <div class="segmented-control" data-toggle="mode" tabindex="0">
+                <div class="toggle" data-toggle="mode" tabindex="0">
                     <span data-toggle-value="try">try</span>
                     <span class="is-active" data-toggle-value="curl">curl</span>
                 </div>

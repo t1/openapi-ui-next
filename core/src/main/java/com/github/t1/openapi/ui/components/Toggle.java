@@ -7,14 +7,14 @@ import java.util.function.Consumer;
 
 import static com.github.t1.htmljava.HtmlBasics.span;
 
-/// A segmented-control toggle that emits a `toggle` CustomEvent on selection change.
+/// A toggle toggle that emits a `toggle` CustomEvent on selection change.
 public class Toggle extends AbstractElement<Toggle> {
 
     public static Toggle toggle(String name) {return new Toggle(name);}
 
     private Toggle(String name) {
         super("div");
-        classes("segmented-control");
+        classes("toggle");
         attr("data-toggle", name);
         attr("tabindex", "0");
     }
@@ -65,14 +65,14 @@ public class Toggle extends AbstractElement<Toggle> {
     public static String js() {return JS;}
 
     private static final String CSS = """
-            .segmented-control {
+            .toggle {
                 display: inline-flex;
                 gap: 1px;
                 background: var(--bulma-scheme-main-ter);
                 border-radius: 6px;
                 padding: 2px;
             }
-            .segmented-control > span {
+            .toggle > span {
                 padding: 5px 14px;
                 font-size: 0.75rem;
                 color: var(--bulma-text-weak);
@@ -81,7 +81,7 @@ public class Toggle extends AbstractElement<Toggle> {
                 transition: all 0.15s;
                 user-select: none;
             }
-            .segmented-control > span.is-active {
+            .toggle > span.is-active {
                 background: var(--bulma-scheme-main);
                 color: var(--bulma-text-strong);
                 font-weight: 500;
@@ -132,7 +132,7 @@ public class Toggle extends AbstractElement<Toggle> {
                     });
                     container._select = select;
                 }
-                document.querySelectorAll('.segmented-control[data-toggle]').forEach(initToggle);
+                document.querySelectorAll('.toggle[data-toggle]').forEach(initToggle);
             });
             """;
 }
