@@ -9,11 +9,10 @@ import java.util.function.Consumer;
 import static com.github.t1.htmljava.HtmlBasics.li;
 import static com.github.t1.htmljava.HtmlBasics.span;
 
-public class Tree extends AbstractElement<Tree> {
+public class Tree extends AbstractElement<Tree> implements TreeContainer {
     private final boolean isRoot;
-    private boolean firstItem = true;
 
-    public static Tree tree() { return new Tree("tree").attr("tabindex", "0").attr("autofocus", ""); }
+    public static Tree tree() {return new Tree("tree").attr("tabindex", "0").attr("autofocus", "");}
 
     private Tree(String role) {
         super("ul");
@@ -21,7 +20,7 @@ public class Tree extends AbstractElement<Tree> {
         isRoot = "tree".equals(role);
     }
 
-    public Tree item(String label) { return item(span(label)); }
+    public Tree item(String label) {return item(span(label));}
 
     public Tree item(Renderable label) {
         var item = li().attr("role", "treeitem").content(span().classes("tree-label").content(label));
@@ -39,7 +38,7 @@ public class Tree extends AbstractElement<Tree> {
         return this;
     }
 
-    public Tree node(String label, Consumer<Node> children) { return node(span(label), children); }
+    public Tree node(String label, Consumer<Node> children) {return node(span(label), children);}
 
     public Tree node(Renderable label, Consumer<Node> children) {
         var node = new Node(label);
@@ -51,13 +50,12 @@ public class Tree extends AbstractElement<Tree> {
     }
 
     private void markFirstItem(Element item) {
-        if (isRoot && firstItem) {
+        if (isRoot && content() == null) {
             item.attr("aria-selected", "true");
-            firstItem = false;
         }
     }
 
-    public static class Node {
+    public static class Node implements TreeContainer {
         private final Element item;
         private final Tree subtree;
 
@@ -78,15 +76,30 @@ public class Tree extends AbstractElement<Tree> {
             return this;
         }
 
-        public Node item(String label) { subtree.item(label); return this; }
+        public Node item(String label) {
+            subtree.item(label);
+            return this;
+        }
 
-        public Node item(Renderable label) { subtree.item(label); return this; }
+        public Node item(Renderable label) {
+            subtree.item(label);
+            return this;
+        }
 
-        public Node item(Renderable label, Consumer<Element> extra) { subtree.item(label, extra); return this; }
+        public Node item(Renderable label, Consumer<Element> extra) {
+            subtree.item(label, extra);
+            return this;
+        }
 
-        public Node node(String label, Consumer<Node> children) { subtree.node(label, children); return this; }
+        public Node node(String label, Consumer<Node> children) {
+            subtree.node(label, children);
+            return this;
+        }
 
-        public Node node(Renderable label, Consumer<Node> children) { subtree.node(label, children); return this; }
+        public Node node(Renderable label, Consumer<Node> children) {
+            subtree.node(label, children);
+            return this;
+        }
 
         Element build() {
             item.content(subtree);
@@ -94,9 +107,9 @@ public class Tree extends AbstractElement<Tree> {
         }
     }
 
-    public static String css() { return CSS; }
+    public static String css() {return CSS;}
 
-    public static String js() { return JS; }
+    public static String js() {return JS;}
 
     private static final String CSS = """
             [role="tree"] {
@@ -185,11 +198,11 @@ public class Tree extends AbstractElement<Tree> {
             }
             document.addEventListener('DOMContentLoaded', function() {
                 var treeContainer = document.getElementById('tree-container');
-
+            
                 function getTree() {
                     return document.querySelector('[role="tree"]');
                 }
-
+            
                 function isGroupVisible(el) {
                     var tree = getTree();
                     while (el && el !== tree) {
@@ -198,7 +211,7 @@ public class Tree extends AbstractElement<Tree> {
                     }
                     return true;
                 }
-
+            
                 function getVisibleItems() {
                     var tree = getTree();
                     if (!tree) return [];
@@ -206,14 +219,14 @@ public class Tree extends AbstractElement<Tree> {
                         return isGroupVisible(item);
                     });
                 }
-
+            
                 function toggleNode(item, expand) {
                     var group = item.querySelector('[role="group"]');
                     if (!group) return;
                     item.setAttribute('aria-expanded', expand ? 'true' : 'false');
                     group.style.display = expand ? '' : 'none';
                 }
-
+            
                 // Delegate click from tree-container (survives HTMX swaps)
                 var clickTarget = treeContainer || document;
                 clickTarget.addEventListener('click', function(e) {
@@ -234,7 +247,7 @@ public class Tree extends AbstractElement<Tree> {
                         tree.focus();
                     }
                 });
-
+            
                 // Delegate keydown from tree-container
                 clickTarget.addEventListener('keydown', function(e) {
                     var tree = getTree();
@@ -242,7 +255,7 @@ public class Tree extends AbstractElement<Tree> {
                     var items = getVisibleItems();
                     var current = tree.querySelector('[aria-selected="true"]');
                     var idx = items.indexOf(current);
-
+            
                     switch (e.key) {
                         case 'ArrowDown':
                             e.preventDefault();
@@ -311,14 +324,14 @@ public class Tree extends AbstractElement<Tree> {
                             break;
                     }
                 });
-
+            
                 function focusFirstDetailField() {
                     var detail = document.getElementById('detail');
                     if (!detail) return;
                     var first = detail.querySelector('input, select, textarea, button[data-path]');
                     if (first) first.focus();
                 }
-
+            
                 function selectItem(item) {
                     var tree = getTree();
                     if (tree) {
@@ -330,7 +343,7 @@ public class Tree extends AbstractElement<Tree> {
                     var hxEl = item.querySelector('[hx-get]') || item;
                     if (hxEl.getAttribute('hx-get')) htmx.ajax('GET', hxEl.getAttribute('hx-get'), '#detail');
                 }
-
+            
                 document.addEventListener('keydown', function(e) {
                     if (e.key === 'Escape' && !e.target.closest('[role="tree"]')) {
                         e.preventDefault();
@@ -340,4 +353,17 @@ public class Tree extends AbstractElement<Tree> {
                 });
             });
             """;
+}
+
+/// Shared API between {@link Tree} and {@link Tree.Node} for adding items and subtrees.
+interface TreeContainer {
+    TreeContainer item(String label);
+
+    TreeContainer item(Renderable label);
+
+    TreeContainer item(Renderable label, Consumer<Element> extra);
+
+    TreeContainer node(String label, Consumer<Tree.Node> children);
+
+    TreeContainer node(Renderable label, Consumer<Tree.Node> children);
 }

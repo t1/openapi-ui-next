@@ -8,7 +8,6 @@ import java.util.function.Consumer;
 import static com.github.t1.htmljava.HtmlBasics.span;
 
 /// A segmented-control toggle that emits a `toggle` CustomEvent on selection change.
-@SuppressWarnings("unused")
 public class Toggle extends AbstractElement<Toggle> {
 
     public static Toggle toggle(String name) {return new Toggle(name);}
@@ -41,6 +40,18 @@ public class Toggle extends AbstractElement<Toggle> {
         if (active) option.classes("is-active");
         customizer.accept(option);
         content(option);
+        return this;
+    }
+
+    public Toggle activate(String value) {
+        contentStream()
+                .filter(AbstractElement.class::isInstance)
+                .map(AbstractElement.class::cast)
+                .filter(el -> el.hasAttribute("data-toggle-value"))
+                .forEach(el -> {
+                    if (el.hasAttribute("data-toggle-value", value)) el.classes("is-active");
+                    else el.notClasses("is-active");
+                });
         return this;
     }
 

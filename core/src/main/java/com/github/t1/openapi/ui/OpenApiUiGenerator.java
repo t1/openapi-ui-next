@@ -96,11 +96,10 @@ public class OpenApiUiGenerator {
         var totalPaths = openApi.getPaths().size();
         var defaultToTags = uniqueTags > 1 && singleSegmentPaths > totalPaths / 2;
 
-        Consumer<Element> hxPaths = o -> o.attr("hx-get", "path-tree.html").attr("hx-target", "#tree-container").attr("hx-swap", "innerHTML");
-        Consumer<Element> hxTags = o -> o.attr("hx-get", "tag-tree.html").attr("hx-target", "#tree-container").attr("hx-swap", "innerHTML");
-        var viewToggle = defaultToTags
-                ? toggle("view").option("paths", hxPaths).activeOption("tags", hxTags)
-                : toggle("view").activeOption("paths", hxPaths).option("tags", hxTags);
+        var viewToggle = toggle("view")
+                .option("paths", hxLoad("path-tree.html"))
+                .option("tags", hxLoad("tag-tree.html"))
+                .activate(defaultToTags ? "tags" : "paths");
         viewToggle.persistAs("openapi-ui-view");
         Renderable defaultTree = defaultToTags ? tagTree : pathTree;
         var treeContainer = div().id("tree-container").content(defaultTree);
@@ -245,7 +244,7 @@ public class OpenApiUiGenerator {
         return t;
     }
 
-    private void addNodes(Tree tree, PathNode node, String pathPrefix) {
+    private void addNodes(TreeContainer tree, PathNode node, String pathPrefix) {
         for (var entry : node.children.entrySet()) {
             var segment = entry.getKey();
             var child = entry.getValue();
@@ -267,38 +266,6 @@ public class OpenApiUiGenerator {
                 tree.node(label, sub -> addNodes(sub, child, fullPath));
             } else {
                 tree.item(label, item -> {
-                    if (!child.operations.isEmpty()) {
-                        item.attr("hx-get", fullPath + "/index.html")
-                                .attr("hx-target", "#detail")
-                                .attr("hx-swap", "innerHTML");
-                    }
-                });
-            }
-        }
-    }
-
-    private void addNodes(Tree.Node treeNode, PathNode pathNode, String pathPrefix) {
-        for (var entry : pathNode.children.entrySet()) {
-            var segment = entry.getKey();
-            var child = entry.getValue();
-            var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
-            var label = span().content(span(segment).classes(segmentClass(segment)));
-            if (!child.operations.isEmpty()) {
-                var group = tagsAddon();
-                for (var method : child.operations.keySet()) {
-                    group.content(tag(method.name()).is(methodColor(method)));
-                }
-                label.content(group);
-            }
-            if (!child.children.isEmpty()) {
-                if (!child.operations.isEmpty()) {
-                    label.attr("hx-get", fullPath + "/index.html")
-                            .attr("hx-target", "#detail")
-                            .attr("hx-swap", "innerHTML");
-                }
-                treeNode.node(label, sub -> addNodes(sub, child, fullPath));
-            } else {
-                treeNode.item(label, item -> {
                     if (!child.operations.isEmpty()) {
                         item.attr("hx-get", fullPath + "/index.html")
                                 .attr("hx-target", "#detail")
@@ -559,6 +526,10 @@ public class OpenApiUiGenerator {
             case "uuid" -> "3fa85f64-5717-4562-b3fc-2c963f66afa6";
             default -> null;
         };
+    }
+
+    private static Consumer<Element> hxLoad(String snippet) {
+        return o -> o.attr("hx-get", snippet).attr("hx-target", "#tree-container").attr("hx-swap", "innerHTML");
     }
 
     private static Color methodColor(PathItem.HttpMethod method) {

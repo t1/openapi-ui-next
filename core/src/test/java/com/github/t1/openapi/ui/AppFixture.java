@@ -5,6 +5,8 @@ import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.ScreenshotOptions;
 import com.microsoft.playwright.options.ColorScheme;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URL;
@@ -102,50 +105,26 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     String baseUrl() {return "http://localhost:" + server.getAddress().getPort();}
 
     void mockEndpoint(String path, String contentType, String body) {
-        try {server.removeContext("/api" + path);} catch (IllegalArgumentException ignored) {}
-        server.createContext("/api" + path, exchange -> {
-            exchange.getResponseHeaders().set("Content-Type", contentType);
-            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-            var bytes = body.getBytes();
-            exchange.sendResponseHeaders(200, bytes.length);
-            exchange.getResponseBody().write(bytes);
-            exchange.close();
-        });
+        replaceContext("/api" + path, exchange -> sendResponse(exchange, 200, contentType, body));
     }
 
     void mockEndpoint(String path, String expectedMethod, String contentType, String body) {
-        try {server.removeContext("/api" + path);} catch (IllegalArgumentException ignored) {}
-        server.createContext("/api" + path, exchange -> {
+        replaceContext("/api" + path, exchange -> {
             if (!exchange.getRequestMethod().equalsIgnoreCase(expectedMethod)) {
                 exchange.sendResponseHeaders(405, 0);
                 exchange.close();
                 return;
             }
-            exchange.getResponseHeaders().set("Content-Type", contentType);
-            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-            var bytes = body.getBytes();
-            exchange.sendResponseHeaders(200, bytes.length);
-            exchange.getResponseBody().write(bytes);
-            exchange.close();
+            sendResponse(exchange, 200, contentType, body);
         });
     }
 
     void mockEndpoint(String path, String contentType, String body, int statusCode) {
-        try {server.removeContext("/api" + path);} catch (IllegalArgumentException ignored) {}
-        server.createContext("/api" + path, exchange -> {
-            exchange.getResponseHeaders().set("Content-Type", contentType);
-            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-            var bytes = body.getBytes();
-            exchange.sendResponseHeaders(statusCode, bytes.length);
-            exchange.getResponseBody().write(bytes);
-            exchange.close();
-        });
+        replaceContext("/api" + path, exchange -> sendResponse(exchange, statusCode, contentType, body));
     }
 
     void mockEndpointWithBodyEcho(String path, String expectedMethod) {
-        try {server.removeContext("/api" + path);} catch (IllegalArgumentException ignored) {}
-        server.createContext("/api" + path, exchange -> {
-            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+        replaceContext("/api" + path, exchange -> {
             exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
             exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
@@ -158,25 +137,27 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 exchange.close();
                 return;
             }
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
             var requestBody = new String(exchange.getRequestBody().readAllBytes());
-            var bytes = requestBody.getBytes();
-            exchange.sendResponseHeaders(200, bytes.length);
-            exchange.getResponseBody().write(bytes);
-            exchange.close();
+            sendResponse(exchange, 200, "application/json", requestBody);
         });
     }
 
     void mockRootEndpoint(String path, String contentType, String body) {
+        replaceContext(path, exchange -> sendResponse(exchange, 200, contentType, body));
+    }
+
+    private void replaceContext(String path, HttpHandler handler) {
         try {server.removeContext(path);} catch (IllegalArgumentException ignored) {}
-        server.createContext(path, exchange -> {
-            exchange.getResponseHeaders().set("Content-Type", contentType);
-            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-            var bytes = body.getBytes();
-            exchange.sendResponseHeaders(200, bytes.length);
-            exchange.getResponseBody().write(bytes);
-            exchange.close();
-        });
+        server.createContext(path, handler);
+    }
+
+    private void sendResponse(HttpExchange exchange, int statusCode, String contentType, String body) throws IOException {
+        exchange.getResponseHeaders().set("Content-Type", contentType);
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+        var bytes = body.getBytes();
+        exchange.sendResponseHeaders(statusCode, bytes.length);
+        exchange.getResponseBody().write(bytes);
+        exchange.close();
     }
 
     // Page interactions
@@ -232,10 +213,6 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     void clickTreeNode(String hxGetPath) {page.locator("[hx-get='" + hxGetPath + "']").click();}
-
-    void clickTreeNodeWithMethod(String hxGetPath, String method) {
-        page.locator("[hx-get='" + hxGetPath + "'][data-method='" + method + "']").click();
-    }
 
     void waitForDetailContent(String text) {page.waitForSelector("#detail :text('" + text + "')");}
 
@@ -345,11 +322,6 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 + " return label && getComputedStyle(label).boxShadow !== 'none'; }");
     }
 
-    boolean selectedItemHasBumpClass() {
-        var cls = page.locator("[aria-selected='true']").getAttribute("class");
-        return cls != null && cls.contains("bump");
-    }
-
     boolean isTreeInBox() {
         return page.locator(".box [role='tree']").count() == 1;
     }
@@ -437,8 +409,6 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
 String readClipboard() {return (String) page.evaluate("() => navigator.clipboard.readText()");}
 
-    boolean hasViewToggle() {return page.locator("[data-toggle='view']").count() == 1;}
-
     boolean isViewActive(String view) {
         return page.locator("[data-toggle-value='" + view + "'].is-active").count() == 1;
     }
@@ -447,10 +417,6 @@ String readClipboard() {return (String) page.evaluate("() => navigator.clipboard
 
     boolean isViewToggleFocused() {
         return (Boolean) page.evaluate("() => document.activeElement.matches('[data-toggle=view]')");
-    }
-
-    String focusedElementInfo() {
-        return (String) page.evaluate("() => { var el = document.activeElement; return el.tagName + '.' + el.className + '#' + el.id; }");
     }
 
     void focusViewToggle() {page.locator("[data-toggle='view']").focus();}
