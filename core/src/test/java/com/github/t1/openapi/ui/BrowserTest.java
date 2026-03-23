@@ -7,6 +7,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import static org.assertj.core.api.BDDAssertions.then;
 
 class BrowserTest {
+    private static final double MINIMUM_DRAG_DELTA = 50;
+
     @RegisterExtension static TestContext context = new TestContext();
 
     @Nested class GivenAppWithOneGet {
@@ -21,7 +23,7 @@ class BrowserTest {
             app.dragSplitHandle(100);
             var widthAfter = app.treeWidth();
 
-            then(widthAfter).isGreaterThan(widthBefore + 50);
+            then(widthAfter).isGreaterThan(widthBefore + MINIMUM_DRAG_DELTA);
         }
 
         @Test void shouldPersistTreeWidthAcrossReload() {

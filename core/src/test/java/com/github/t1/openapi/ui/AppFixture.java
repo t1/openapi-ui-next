@@ -349,6 +349,9 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.mouse().up();
     }
 
+    private static final double ALIGNMENT_TOLERANCE = 20;
+    private static final double SINGLE_ROW_MAX_HEIGHT = 30;
+
     boolean areMethodAddonsRightAligned() {
         var label = page.locator(".tree-label:has(.tags.has-addons)").first();
         var labelBox = label.boundingBox();
@@ -357,7 +360,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         if (labelBox == null || groupBox == null) return false;
         var labelRight = labelBox.x + labelBox.width;
         var groupRight = groupBox.x + groupBox.width;
-        return Math.abs(labelRight - groupRight) < 20;
+        return Math.abs(labelRight - groupRight) < ALIGNMENT_TOLERANCE;
     }
 
     boolean areMethodAddonsInSingleRow() {
@@ -366,7 +369,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
             var group = groups.nth(i);
             var groupBox = group.boundingBox();
             if (groupBox == null) return false;
-            if (groupBox.height > 30) return false;
+            if (groupBox.height > SINGLE_ROW_MAX_HEIGHT) return false;
         }
         return true;
     }
