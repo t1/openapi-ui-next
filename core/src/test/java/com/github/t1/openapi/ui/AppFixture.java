@@ -30,8 +30,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     private final Browser browser;
     private final String specFilename;
     private boolean overrideBaseUrl;
-    private Path outputDir;
-    private HttpServer server;
+    private TestServer testServer;
     private BrowserContext context;
     private Page page;
 
@@ -48,44 +47,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     @Override public void beforeAll(ExtensionContext extensionContext) {
         extensionContext.getStore(GLOBAL).computeIfAbsent(this, key -> {
             try {
-                outputDir = Files.createTempDirectory("openapi-ui-test");
-                var specPath = Optional.ofNullable(getClass().getResource("/" + specFilename))
-                        .map(URL::toString).map(URI::create).map(Path::of)
-                        .orElseThrow(() -> new RuntimeException("spec not found: " + specFilename));
-                new OpenApiUiGenerator(specPath, outputDir).generate();
-
-                server = HttpServer.create(new InetSocketAddress(0), 0);
-                server.createContext("/", exchange -> {
-                    var uriPath = exchange.getRequestURI().getPath();
-                    if (uriPath.equals("/")) uriPath = "/index.html";
-                    var file = outputDir.resolve(uriPath.substring(1));
-                    if (Files.exists(file) && Files.isRegularFile(file)) {
-                        var bytes = Files.readAllBytes(file);
-                        var contentType = uriPath.endsWith(".js") ? "application/javascript"
-                                : uriPath.endsWith(".css") ? "text/css" : "text/html";
-                        exchange.getResponseHeaders().set("Content-Type", contentType);
-                        exchange.sendResponseHeaders(200, bytes.length);
-                        exchange.getResponseBody().write(bytes);
-                    } else {
-                        exchange.sendResponseHeaders(404, 0);
-                    }
-                    exchange.close();
-                });
-                server.start();
-
-                if (overrideBaseUrl) {
-                    var indexPath = outputDir.resolve("index.html");
-                    var html = Files.readString(indexPath);
-                    html = html.replace("https://api.example.com", baseUrl() + "/api");
-                    Files.writeString(indexPath, html);
-                }
+                testServer = new TestServer(specFilename);
+                if (overrideBaseUrl) testServer.overrideBaseUrl("https://api.example.com");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            return (AutoCloseable) () -> {
-                server.stop(0);
-                deleteRecursively(outputDir);
-            };
+            return (AutoCloseable) testServer::stop;
         });
     }
 
@@ -93,72 +60,29 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         context = browser.newContext(new Browser.NewContextOptions()
                 .setPermissions(List.of("clipboard-read", "clipboard-write")));
         page = context.newPage();
-        page.navigate(baseUrl());
+        navigateHome();
     }
 
     @Override public void afterEach(@NonNull ExtensionContext extensionContext) {
-        blockFragments = false;
-        try { server.removeContext("/pets"); } catch (IllegalArgumentException ignored) {}
+        testServer.resetMocks();
         context.close();
     }
 
-    String baseUrl() {return "http://localhost:" + server.getAddress().getPort();}
+    void navigateHome() {page.navigate(testServer.baseUrl());}
 
-    void mockEndpoint(String path, String contentType, String body) {
-        replaceContext("/api" + path, exchange -> sendResponse(exchange, 200, contentType, body));
-    }
+    void mockEndpoint(String path, String contentType, String body) {testServer.mockEndpoint(path, contentType, body);}
 
-    void mockEndpoint(String path, String expectedMethod, String contentType, String body) {
-        replaceContext("/api" + path, exchange -> {
-            if (!exchange.getRequestMethod().equalsIgnoreCase(expectedMethod)) {
-                exchange.sendResponseHeaders(405, 0);
-                exchange.close();
-                return;
-            }
-            sendResponse(exchange, 200, contentType, body);
-        });
-    }
+    void mockEndpoint(String path, String expectedMethod, String contentType, String body) {testServer.mockEndpoint(path, expectedMethod, contentType, body);}
 
-    void mockEndpoint(String path, String contentType, String body, int statusCode) {
-        replaceContext("/api" + path, exchange -> sendResponse(exchange, statusCode, contentType, body));
-    }
+    void mockEndpoint(String path, String contentType, String body, int statusCode) {testServer.mockEndpoint(path, contentType, body, statusCode);}
 
-    void mockEndpointWithBodyEcho(String path, String expectedMethod) {
-        replaceContext("/api" + path, exchange -> {
-            exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
-            exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-                exchange.sendResponseHeaders(204, -1);
-                exchange.close();
-                return;
-            }
-            if (!exchange.getRequestMethod().equalsIgnoreCase(expectedMethod)) {
-                exchange.sendResponseHeaders(405, 0);
-                exchange.close();
-                return;
-            }
-            var requestBody = new String(exchange.getRequestBody().readAllBytes());
-            sendResponse(exchange, 200, "application/json", requestBody);
-        });
-    }
+    void mockEndpointWithBodyEcho(String path, String expectedMethod) {testServer.mockEndpointWithBodyEcho(path, expectedMethod);}
 
-    void mockRootEndpoint(String path, String contentType, String body) {
-        replaceContext(path, exchange -> sendResponse(exchange, 200, contentType, body));
-    }
+    void mockRootEndpoint(String path, String contentType, String body) {testServer.mockRootEndpoint(path, contentType, body);}
 
-    private void replaceContext(String path, HttpHandler handler) {
-        try {server.removeContext(path);} catch (IllegalArgumentException ignored) {}
-        server.createContext(path, handler);
-    }
+    void blockHtmxRequests() {testServer.blockHtmxRequests();}
 
-    private void sendResponse(HttpExchange exchange, int statusCode, String contentType, String body) throws IOException {
-        exchange.getResponseHeaders().set("Content-Type", contentType);
-        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-        var bytes = body.getBytes();
-        exchange.sendResponseHeaders(statusCode, bytes.length);
-        exchange.getResponseBody().write(bytes);
-        exchange.close();
-    }
+    void unblockHtmxRequests() {testServer.unblockHtmxRequests();}
 
     // Page interactions
 
@@ -438,8 +362,6 @@ String readClipboard() {return (String) page.evaluate("() => navigator.clipboard
 
     void setViewportSize(int width, int height) {page.setViewportSize(width, height);}
 
-    void navigate(String url) {page.navigate(url);}
-
     void screenshot(String name) {
         var dir = Path.of("target/screenshots");
         try {
@@ -457,7 +379,112 @@ String readClipboard() {return (String) page.evaluate("() => navigator.clipboard
         page.emulateMedia(new Page.EmulateMediaOptions().setColorScheme(ColorScheme.LIGHT));
     }
 
-    private volatile boolean blockFragments = false;
+    boolean isErrorBannerVisible() {
+        return page.locator("#error-banner").isVisible();
+    }
+
+    void waitForErrorBanner() {
+        page.waitForSelector("#error-banner:not([style*='display: none'])");
+    }
+
+    void waitForErrorBannerGone() {
+        page.waitForSelector("#error-banner", new Page.WaitForSelectorOptions()
+                .setState(com.microsoft.playwright.options.WaitForSelectorState.HIDDEN));
+    }
+}
+
+class TestServer {
+    private final HttpServer server;
+    private final Path outputDir;
+    private volatile boolean blockFragments;
+
+    TestServer(String specFilename) throws Exception {
+        outputDir = Files.createTempDirectory("openapi-ui-test");
+        var specPath = Optional.ofNullable(getClass().getResource("/" + specFilename))
+                .map(URL::toString).map(URI::create).map(Path::of)
+                .orElseThrow(() -> new RuntimeException("spec not found: " + specFilename));
+        new OpenApiUiGenerator(specPath, outputDir).generate();
+
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/", exchange -> {
+            var uriPath = exchange.getRequestURI().getPath();
+            if (uriPath.equals("/")) uriPath = "/index.html";
+            var file = outputDir.resolve(uriPath.substring(1));
+            if (Files.exists(file) && Files.isRegularFile(file)) {
+                var bytes = Files.readAllBytes(file);
+                var contentType = uriPath.endsWith(".js") ? "application/javascript"
+                        : uriPath.endsWith(".css") ? "text/css" : "text/html";
+                exchange.getResponseHeaders().set("Content-Type", contentType);
+                exchange.sendResponseHeaders(200, bytes.length);
+                exchange.getResponseBody().write(bytes);
+            } else {
+                exchange.sendResponseHeaders(404, 0);
+            }
+            exchange.close();
+        });
+        server.start();
+    }
+
+    void overrideBaseUrl(String originalBaseUrl) throws IOException {
+        var indexPath = outputDir.resolve("index.html");
+        var html = Files.readString(indexPath);
+        html = html.replace(originalBaseUrl, baseUrl() + "/api");
+        Files.writeString(indexPath, html);
+    }
+
+    void stop() {
+        server.stop(0);
+        deleteRecursively(outputDir);
+    }
+
+    void resetMocks() {
+        blockFragments = false;
+        try { server.removeContext("/pets"); } catch (IllegalArgumentException ignored) {}
+    }
+
+    String baseUrl() {return "http://localhost:" + server.getAddress().getPort();}
+
+    void mockEndpoint(String path, String contentType, String body) {
+        replaceContext("/api" + path, exchange -> sendResponse(exchange, 200, contentType, body));
+    }
+
+    void mockEndpoint(String path, String expectedMethod, String contentType, String body) {
+        replaceContext("/api" + path, exchange -> {
+            if (!exchange.getRequestMethod().equalsIgnoreCase(expectedMethod)) {
+                exchange.sendResponseHeaders(405, 0);
+                exchange.close();
+                return;
+            }
+            sendResponse(exchange, 200, contentType, body);
+        });
+    }
+
+    void mockEndpoint(String path, String contentType, String body, int statusCode) {
+        replaceContext("/api" + path, exchange -> sendResponse(exchange, statusCode, contentType, body));
+    }
+
+    void mockEndpointWithBodyEcho(String path, String expectedMethod) {
+        replaceContext("/api" + path, exchange -> {
+            exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
+            exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                exchange.close();
+                return;
+            }
+            if (!exchange.getRequestMethod().equalsIgnoreCase(expectedMethod)) {
+                exchange.sendResponseHeaders(405, 0);
+                exchange.close();
+                return;
+            }
+            var requestBody = new String(exchange.getRequestBody().readAllBytes());
+            sendResponse(exchange, 200, "application/json", requestBody);
+        });
+    }
+
+    void mockRootEndpoint(String path, String contentType, String body) {
+        replaceContext(path, exchange -> sendResponse(exchange, 200, contentType, body));
+    }
 
     void blockHtmxRequests() {
         blockFragments = true;
@@ -484,17 +511,18 @@ String readClipboard() {return (String) page.evaluate("() => navigator.clipboard
         blockFragments = false;
     }
 
-    boolean isErrorBannerVisible() {
-        return page.locator("#error-banner").isVisible();
+    private void replaceContext(String path, HttpHandler handler) {
+        try {server.removeContext(path);} catch (IllegalArgumentException ignored) {}
+        server.createContext(path, handler);
     }
 
-    void waitForErrorBanner() {
-        page.waitForSelector("#error-banner:not([style*='display: none'])");
-    }
-
-    void waitForErrorBannerGone() {
-        page.waitForSelector("#error-banner", new Page.WaitForSelectorOptions()
-                .setState(com.microsoft.playwright.options.WaitForSelectorState.HIDDEN));
+    private void sendResponse(HttpExchange exchange, int statusCode, String contentType, String body) throws IOException {
+        exchange.getResponseHeaders().set("Content-Type", contentType);
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+        var bytes = body.getBytes();
+        exchange.sendResponseHeaders(statusCode, bytes.length);
+        exchange.getResponseBody().write(bytes);
+        exchange.close();
     }
 
     private static void deleteRecursively(Path path) {

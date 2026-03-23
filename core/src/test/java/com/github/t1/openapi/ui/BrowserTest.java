@@ -30,7 +30,7 @@ class BrowserTest {
             app.dragSplitHandle(100);
             var widthAfterDrag = app.treeWidth();
 
-            app.navigate(app.baseUrl());
+            app.navigateHome();
             var widthAfterReload = app.treeWidth();
 
             then(Math.abs(widthAfterReload - widthAfterDrag)).isLessThan(10);
@@ -208,7 +208,7 @@ class BrowserTest {
 
         @Test void desktopLayoutIsSideBySide() {
             app.setViewportSize(1280, 720);
-            app.navigate(app.baseUrl());
+            app.navigateHome();
 
             then(app.treeBoundingBox()[0]).as("Tree should be left of detail pane on desktop")
                     .isLessThan(app.detailBoundingBox()[0]);
@@ -217,7 +217,7 @@ class BrowserTest {
 
         @Test void mobileLayoutIsStacked() {
             app.setViewportSize(375, 667);
-            app.navigate(app.baseUrl());
+            app.navigateHome();
 
             then(app.treeBoundingBox()[1]).as("Tree should be above detail pane on mobile")
                     .isLessThan(app.detailBoundingBox()[1]);
@@ -446,7 +446,7 @@ class BrowserTest {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
 
-            app.navigate(app.baseUrl());
+            app.navigateHome();
             app.waitForTreeContent("invoices");
 
             then(app.isViewActive("paths")).isTrue();
