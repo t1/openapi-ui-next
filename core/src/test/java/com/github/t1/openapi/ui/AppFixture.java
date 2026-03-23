@@ -29,21 +29,21 @@ import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
 class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
     private final Browser browser;
     private final String specFilename;
-    private final boolean overrideBaseUrl;
+    private boolean overrideBaseUrl;
     private Path outputDir;
     private HttpServer server;
     private BrowserContext context;
     private Page page;
 
-    AppFixture(Browser browser, String specFilename) {this(browser, specFilename, false);}
-
-    private AppFixture(Browser browser, String specFilename, boolean overrideBaseUrl) {
+    AppFixture(Browser browser, String specFilename) {
         this.browser = browser;
         this.specFilename = specFilename;
-        this.overrideBaseUrl = overrideBaseUrl;
     }
 
-    AppFixture withBaseUrlOverride() {return new AppFixture(browser, specFilename, true);}
+    AppFixture withBaseUrlOverride() {
+        overrideBaseUrl = true;
+        return this;
+    }
 
     @Override public void beforeAll(ExtensionContext extensionContext) {
         extensionContext.getStore(GLOBAL).computeIfAbsent(this, key -> {
