@@ -137,6 +137,27 @@ document.addEventListener('DOMContentLoaded', function() {
         return null;
     }
 
+    // Schema box toggle
+    detail.addEventListener('click', function(e) {
+        var toggle = e.target.closest('.schema-toggle');
+        if (toggle) {
+            var box = toggle.closest('.schema-box');
+            box.classList.toggle('is-collapsed');
+            toggle.textContent = box.classList.contains('is-collapsed') ? 'Schema ▸' : 'Schema ▾';
+            return;
+        }
+        var tab = e.target.closest('.schema-status-tab');
+        if (tab) {
+            var tabs = tab.closest('.schema-status-tabs');
+            tabs.querySelectorAll('.schema-status-tab').forEach(function(t) { t.classList.remove('is-active'); });
+            tab.classList.add('is-active');
+            var box = tab.closest('.schema-box');
+            box.querySelectorAll('.schema-status-panel').forEach(function(p) { p.style.display = 'none'; });
+            var panel = box.querySelector('.schema-status-panel[data-status="' + tab.textContent + '"]');
+            if (panel) panel.style.display = '';
+        }
+    });
+
     function clearPreviousResponse() {
         var existing = detail.querySelector('pre.response');
         if (existing) existing.remove();
@@ -190,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.querySelector('[role="tree"]').focus();
             }
         } else if (e.key === 'ArrowDown' || e.key === 'Enter') {
-            var firstInput = document.querySelector('#method-content input, #method-content select, #method-content textarea, #method-content button[data-path]');
+            var firstInput = document.querySelector('#method-content input, #method-content select, #method-content textarea, #method-content .schema-toggle, #method-content button[data-path]');
             if (firstInput) firstInput.focus();
         } else if (e.key === 'Escape') {
             document.querySelector('[role="tree"]').focus();
@@ -214,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('keydown', function(e) {
         var mc = document.getElementById('method-content') || document.getElementById('detail');
         if (!mc) return;
-        var focusables = Array.from(mc.querySelectorAll('input, select, textarea, button[data-path]'));
+        var focusables = Array.from(mc.querySelectorAll('input, select, textarea, .schema-toggle, button[data-path]'));
         var idx = focusables.indexOf(document.activeElement);
         if (idx < 0) return;
 
@@ -245,6 +266,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (tree) tree.focus();
                 }
             }
+        } else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && el.closest('.schema-box-header')) {
+            var header = el.closest('.schema-box-header');
+            var headerFocusables = Array.from(header.querySelectorAll('select, .schema-toggle'));
+            var hIdx = headerFocusables.indexOf(el);
+            if (e.key === 'ArrowRight' && hIdx < headerFocusables.length - 1) headerFocusables[hIdx + 1].focus();
+            else if (e.key === 'ArrowLeft' && hIdx > 0) headerFocusables[hIdx - 1].focus();
+            else bump(el, 'h');
+        } else if (e.key === 'Enter' && el.classList.contains('schema-toggle')) {
+            el.click();
         } else if (e.key === 'Enter' && el.tagName !== 'SELECT') {
             var sendBtn = mc.querySelector('button[data-path]');
             if (sendBtn) sendBtn.click();
@@ -324,6 +354,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
                         }
                         clearPreviousResponse();
+                        var responseBox = detail.querySelector('.schema-box[data-box="response"]');
+                        if (responseBox && !responseBox.classList.contains('is-collapsed')) {
+                            responseBox.classList.add('is-collapsed');
+                            var toggle = responseBox.querySelector('.schema-toggle');
+                            if (toggle) toggle.textContent = 'Schema ▸';
+                        }
                         if (text.trim()) {
                             var pre = document.createElement('pre');
                             pre.className = 'response';

@@ -2,7 +2,9 @@ package com.github.t1.openapi.ui.generator;
 
 import com.github.t1.htmljava.Element;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 
+import java.util.List;
 import java.util.Map;
 
 import static com.github.t1.bulmajava.basic.Color.PRIMARY;
@@ -16,7 +18,6 @@ import static com.github.t1.bulmajava.form.Input.input;
 import static com.github.t1.bulmajava.form.InputType.TEXT;
 import static com.github.t1.bulmajava.form.Select.select;
 import static com.github.t1.bulmajava.layout.Level.level;
-import static com.github.t1.htmljava.HtmlBasics.code;
 import static com.github.t1.htmljava.HtmlBasics.div;
 import static com.github.t1.htmljava.HtmlBasics.element;
 import static com.github.t1.htmljava.HtmlBasics.span;
@@ -95,7 +96,13 @@ class MethodFragmentGenerator {
             if (jsonContent != null && jsonContent.getSchema() != null) {
                 var skeleton = generateJsonSkeleton(jsonContent.getSchema());
                 if ("{}".equals(skeleton)) skeleton = mediaTypeExample(jsonContent);
-                var requestBodyField = field("Request Body (application/json)");
+
+                var bodyBox = div().classes("schema-box", "is-collapsed").attr("data-box", "body");
+                var bodyTitle = div().classes("schema-box-title")
+                        .content(span("Body").classes("schema-box-label"));
+                var bodyHeader = div().classes("schema-box-header")
+                        .content(bodyTitle, element("button").classes("schema-toggle").content("Schema ▸"));
+
                 if (jsonContent.getExamples() != null && jsonContent.getExamples().size() > 1) {
                     var exampleSelect = element("select")
                             .attr("data-example-select", "true");
@@ -109,48 +116,39 @@ class MethodFragmentGenerator {
                                 .attr("value", formatted)
                                 .content(label));
                     }
-                    requestBodyField.content(
-                            div().classes("select", "is-small")
-                                    .style("float: right; margin-top: -2rem")
-                                    .content(exampleSelect));
+                    bodyTitle.content(div().classes("select", "is-small").content(exampleSelect));
                 }
-                requestBodyField.content(
+
+                bodyBox.content(bodyHeader);
+
+                var bodyBody = div().classes("schema-box-body");
+                bodyBody.content(
                         element("textarea")
                                 .attr("data-request-body", "true")
                                 .classes("textarea", "is-family-code")
                                 .attr("rows", "6")
                                 .content(skeleton));
-                fragment.content(requestBodyField);
+
+                var schema = jsonContent.getSchema();
+                @SuppressWarnings("unchecked")
+                var required = (List<String>) (schema.getRequired() != null ? schema.getRequired() : List.<String>of());
+                @SuppressWarnings("unchecked")
+                var properties = (Map<String, Schema<?>>) schema.getProperties();
+                if (properties != null && !properties.isEmpty()) {
+                    var tree = div().classes("schema-box-tree", "schema-box-content");
+                    for (var prop : properties.entrySet()) {
+                        tree.content(buildPropertyRow(prop.getKey(), prop.getValue(), required));
+                    }
+                    bodyBody.content(tree);
+                }
+
+                bodyBox.content(bodyBody);
+                fragment.content(bodyBox);
             }
         }
         if (operation.getResponses() != null) {
-            var response200 = operation.getResponses().get("200");
-            if (response200 != null && response200.getContent() != null) {
-                var contentTypes = response200.getContent().keySet();
-                if (contentTypes.size() > 1) {
-                    var sel = select("accept").attr("data-accept", "true");
-                    for (var ct : contentTypes) sel.option(ct, ct);
-                    fragment.content(field("Response Type").content(sel));
-                }
-                var jsonMedia = response200.getContent().get("application/json");
-                if (jsonMedia != null && jsonMedia.getSchema() != null) {
-                    @SuppressWarnings("unchecked")
-                    var properties = (Map<String, Schema<?>>) jsonMedia.getSchema().getProperties();
-                    if (properties != null) {
-                        var sb = new StringBuilder();
-                        sb.append("{\n");
-                        var first = true;
-                        for (var propEntry : properties.entrySet()) {
-                            if (!first) sb.append(",\n");
-                            first = false;
-                            sb.append("  \"").append(propEntry.getKey()).append("\": ")
-                                    .append(propEntry.getValue().getType());
-                        }
-                        sb.append("\n}");
-                        fragment.content(element("pre").content(code(sb.toString())));
-                    }
-                }
-            }
+            var responseBox = buildResponseBox(operation.getResponses());
+            if (responseBox != null) fragment.content(responseBox);
         }
         var sendRow = level().content(
                 div().classes("level-left").content(
@@ -160,6 +158,99 @@ class MethodFragmentGenerator {
                 div().classes("level-right"));
         fragment.content(sendRow);
         return fragment;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Element buildResponseBox(io.swagger.v3.oas.models.responses.ApiResponses responses) {
+        // collect status codes that have content with schemas
+        var statusCodes = responses.entrySet().stream()
+                .filter(e -> e.getValue().getContent() != null)
+                .map(Map.Entry::getKey)
+                .toList();
+        if (statusCodes.isEmpty()) return null;
+
+        var box = div().classes("schema-box", "is-collapsed").attr("data-box", "response");
+
+        // header: title + Accept select + Schema toggle
+        var title = div().classes("schema-box-title")
+                .content(span("Response").classes("schema-box-label"));
+        // collect all content types across all status codes
+        var allContentTypes = responses.values().stream()
+                .filter(r -> r.getContent() != null)
+                .flatMap(r -> r.getContent().keySet().stream())
+                .distinct()
+                .toList();
+        if (allContentTypes.size() > 1) {
+            title.content(span("Accept").classes("schema-accept-label"));
+            var sel = select("accept").attr("data-accept", "true");
+            for (var ct : allContentTypes) sel.option(ct, ct);
+            title.content(sel);
+        }
+        var header = div().classes("schema-box-header")
+                .content(title, element("button").classes("schema-toggle").content("Schema ▸"));
+        box.content(header);
+
+        // content: status code tabs + property panels
+        var content = div().classes("schema-box-content");
+
+        // status code tabs
+        if (statusCodes.size() > 1) {
+            var tabs = div().classes("schema-status-tabs");
+            var isFirst = true;
+            for (var code : statusCodes) {
+                var tab = span(code).classes("schema-status-tab");
+                if (isFirst) {
+                    tab.classes("is-active");
+                    isFirst = false;
+                }
+                tabs.content(tab);
+            }
+            content.content(tabs);
+        }
+
+        // property panels per status code
+        var isFirstPanel = true;
+        for (var code : statusCodes) {
+            var response = responses.get(code);
+            var panel = div().classes("schema-status-panel").attr("data-status", code);
+            if (!isFirstPanel) panel.style("display:none");
+            isFirstPanel = false;
+
+            // use first available content type's schema
+            var mediaType = response.getContent().values().iterator().next();
+            if (mediaType.getSchema() != null) {
+                var schema = mediaType.getSchema();
+                var required = schema.getRequired() != null ? schema.getRequired() : List.<String>of();
+                var properties = (Map<String, Schema<?>>) schema.getProperties();
+                if (properties != null) {
+                    for (var prop : properties.entrySet()) {
+                        panel.content(buildPropertyRow(prop.getKey(), prop.getValue(), required));
+                    }
+                }
+            }
+            content.content(panel);
+        }
+
+        box.content(content);
+        return box;
+    }
+
+    private static Element buildPropertyRow(String name, Schema<?> propSchema, List<String> required) {
+        var row = div().classes("schema-prop").attr("data-prop", name);
+        row.content(span(name).classes("schema-prop-name"));
+        var type = propSchema.getType() != null ? propSchema.getType() : "object";
+        if (propSchema.getEnum() != null && !propSchema.getEnum().isEmpty()) type = "enum";
+        row.content(span(type).classes("schema-prop-type"));
+        if (required.contains(name)) {
+            row.content(span("required").classes("schema-prop-required"));
+        }
+        if (propSchema.getExample() != null) {
+            row.content(span("e.g. " + propSchema.getExample()).classes("schema-prop-example"));
+        } else if (propSchema.getEnum() != null && !propSchema.getEnum().isEmpty()) {
+            var values = String.join(" | ", propSchema.getEnum().stream().map(Object::toString).toList());
+            row.content(span(values).classes("schema-prop-example"));
+        }
+        return row;
     }
 
     @SuppressWarnings("rawtypes")

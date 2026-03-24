@@ -254,6 +254,42 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.locator("#detail [data-accept] select").selectOption(contentType);
     }
 
+    boolean hasResponseBox() {return page.locator("#detail .schema-box[data-box='response']").count() > 0;}
+
+    boolean hasSchemaToggle(String boxType) {
+        return page.locator("#detail .schema-box[data-box='" + boxType + "'] .schema-toggle").count() > 0;
+    }
+
+    void toggleSchema(String boxType) {
+        page.locator("#detail .schema-box[data-box='" + boxType + "'] .schema-toggle").click();
+    }
+
+    boolean isSchemaExpanded(String boxType) {
+        return page.locator("#detail .schema-box[data-box='" + boxType + "']:not(.is-collapsed)").count() > 0;
+    }
+
+    List<String> schemaPropertyNames(String boxType) {
+        return page.locator(".schema-box[data-box='" + boxType + "'] .schema-status-panel:visible .schema-prop-name").allTextContents();
+    }
+
+    String schemaPropertyType(String boxType, String propName) {
+        return page.locator(".schema-box[data-box='" + boxType + "'] .schema-status-panel:visible .schema-prop[data-prop='" + propName + "'] .schema-prop-type").textContent();
+    }
+
+    String schemaPropertyExample(String boxType, String propName) {
+        return page.locator(".schema-box[data-box='" + boxType + "'] .schema-status-panel:visible .schema-prop[data-prop='" + propName + "'] .schema-prop-example").textContent();
+    }
+
+    List<String> statusCodeTabs() {
+        return page.locator(".schema-box[data-box='response'] .schema-status-tab").allTextContents();
+    }
+
+    void clickStatusCodeTab(String code) {
+        page.locator(".schema-box[data-box='response'] .schema-status-tab:text('" + code + "')").click();
+    }
+
+    boolean hasBodyBox() {return page.locator("#detail .schema-box[data-box='body']").count() > 0;}
+
     boolean responseHasHighlighting() {
         return page.locator("#detail pre.response code.hljs span[class^='hljs-']").count() > 0;
     }

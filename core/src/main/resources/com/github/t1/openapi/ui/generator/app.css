@@ -182,6 +182,114 @@
     font-style: italic;
     margin-top: 0.75rem;
 }
+/* schema boxes */
+.schema-box {
+    border: 1px dashed var(--bulma-border);
+    border-radius: 6px;
+    padding: 0.75rem;
+    background: var(--bulma-scheme-main);
+    margin-bottom: 0.75rem;
+}
+.schema-box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.schema-box-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.schema-box-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--bulma-text-weak);
+}
+.schema-accept-label {
+    font-size: 0.6875rem;
+    color: var(--bulma-text-weak);
+}
+.schema-toggle {
+    border: none;
+    background: none;
+    font-size: 0.6875rem;
+    color: var(--bulma-text-weak);
+    cursor: pointer;
+    padding: 0.25rem;
+}
+.schema-toggle:focus-visible {
+    outline: 2px solid var(--bulma-link);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+.schema-box-content {
+    margin-top: 0.5rem;
+}
+.schema-box.is-collapsed .schema-box-content {
+    display: none;
+}
+.schema-status-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bulma-border);
+}
+.schema-status-tab {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    color: var(--bulma-text-weak);
+    cursor: pointer;
+}
+.schema-status-tab.is-active {
+    font-weight: 600;
+    color: var(--bulma-success);
+    border-bottom: 2px solid var(--bulma-success);
+}
+.schema-box-body {
+    display: flex;
+    gap: 0.75rem;
+}
+.schema-box-body > :first-child {
+    flex: 1;
+    min-width: 0;
+}
+.schema-box-tree {
+    flex: 0 0 auto;
+    border-left: 1px solid var(--bulma-border);
+    padding-left: 0.75rem;
+}
+.schema-box.is-collapsed .schema-box-tree {
+    display: none;
+}
+.schema-prop {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+    font-size: 0.75rem;
+    line-height: 1.8;
+}
+.schema-prop-name { color: var(--bulma-warning); font-weight: 500; }
+.schema-prop-type {
+    background: var(--bulma-scheme-main-bis);
+    color: var(--bulma-text-weak);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.625rem;
+}
+.schema-prop-required {
+    background: hsl(348, 86%, 93%);
+    color: hsl(348, 86%, 43%);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.5625rem;
+    font-weight: 600;
+}
+.schema-prop-example {
+    color: var(--bulma-text-weak);
+    font-style: italic;
+    font-size: 0.6875rem;
+}
 /* syntax highlighting with Bulma colors */
 pre.response code.hljs {
     background: var(--bulma-scheme-main);

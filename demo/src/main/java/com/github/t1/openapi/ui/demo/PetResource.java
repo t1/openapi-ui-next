@@ -19,7 +19,9 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.ArrayList;
@@ -39,7 +41,7 @@ public class PetResource {
 
     private static long nextId = 4;
 
-    @GET @Operation(summary = "List all pets", description = "Returns all pets from the system. "
+    @GET @Produces(APPLICATION_JSON) @Operation(summary = "List all pets", description = "Returns all pets from the system. "
             + "Supports filtering by status via the optional query parameter. "
             + "Results are sorted by ID in ascending order. "
             + "The response includes each pet's name, species, status, and owner information. "
@@ -50,7 +52,12 @@ public class PetResource {
         return PETS.stream().filter(p -> p.status() == status).toList();
     }
 
-    @GET @Path("/{id}") @Produces({APPLICATION_JSON, APPLICATION_XML}) @Operation(summary = "Get a pet by ID", description = "Returns a single pet by its unique identifier.")
+    @GET @Path("/{id}") @Produces({APPLICATION_JSON, APPLICATION_XML})
+    @Operation(summary = "Get a pet by ID", description = "Returns a single pet by its unique identifier.")
+    @APIResponse(responseCode = "200", description = "A pet",
+            content = {@Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = Pet.class)),
+                    @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = Pet.class))})
+    @APIResponse(responseCode = "404", description = "Pet not found")
     public Pet get(@PathParam("id") long id) {
         return PETS.stream()
                 .filter(p -> p.id() == id).findFirst()

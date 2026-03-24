@@ -64,6 +64,14 @@ class BrowserTest {
             then(app.hasResponseTypeSelect()).isFalse();
         }
 
+        @Test void shouldNotShowResponseBoxWithoutDocumentedContent() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+
+            then(app.hasResponseBox()).isFalse();
+        }
+
         @Test void focusedTreeScreenshot() {
             app.focusTree();
 
@@ -896,7 +904,7 @@ class BrowserTest {
 
             app.pressKey("ArrowUp");
 
-            then(app.isTabFocused()).isTrue();
+            then(app.activeElementSelector()).contains("schema-toggle");
         }
 
         @Test void tryModeSendsRequestBody() {
@@ -933,6 +941,14 @@ class BrowserTest {
             then(app.readClipboard())
                     .contains("http POST")
                     .contains("echo '{\"name\": \"Fido\"}'");
+        }
+
+        @Test void shouldShowBodyBoxWithSchemaToggle() {
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+
+            then(app.hasBodyBox()).isTrue();
+            then(app.hasSchemaToggle("body")).isTrue();
         }
     }
 
@@ -1043,6 +1059,81 @@ class BrowserTest {
                 app.waitForResponse();
 
                 then(app.responseText()).contains("json");
+            }
+        }
+    }
+
+    @Nested class GivenAppWithRichResponse {
+        @RegisterExtension static AppFixture app = context.launch("rich-response.yaml");
+
+        @Test void shouldShowResponseBoxWithSchemaToggle() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+
+            then(app.hasResponseBox()).isTrue();
+            then(app.hasSchemaToggle("response")).isTrue();
+        }
+
+        @Test void shouldShowPropertyTreeWithTypeBadges() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.toggleSchema("response");
+
+            then(app.schemaPropertyNames("response")).contains("id", "name", "status");
+            then(app.schemaPropertyType("response", "id")).isEqualTo("integer");
+            then(app.schemaPropertyExample("response", "name")).contains("Max");
+        }
+
+        @Test void shouldShowStatusCodeTabs() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.toggleSchema("response");
+
+            then(app.statusCodeTabs()).containsExactly("200", "404");
+        }
+
+        @Test void shouldSwitchSchemaOnStatusCodeTabClick() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.toggleSchema("response");
+
+            app.clickStatusCodeTab("404");
+
+            then(app.schemaPropertyNames("response")).contains("message");
+            then(app.schemaPropertyNames("response")).doesNotContain("id");
+        }
+
+        @Test void shouldShowAcceptSelectInResponseBox() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+
+            then(app.hasResponseTypeSelect()).isTrue();
+            then(app.responseTypeOptions()).containsExactly("application/json", "application/xml");
+        }
+
+        @Nested class InTryMode {
+            @RegisterExtension static AppFixture app =
+                    context.launch("rich-response.yaml").withBaseUrlOverride();
+
+            @Test void shouldAutoCollapseSchemaWhenResponseArrives() {
+                app.mockEndpoint("/pets/1", "application/json", "{\"id\":1}");
+                app.expandFirstNode();
+                app.clickTreeNode("pets/{petId}/index.html");
+                app.waitForDetailContent("Get a pet");
+                app.toggleSchema("response");
+
+                then(app.isSchemaExpanded("response")).isTrue();
+
+                app.fillInput("petId", "1");
+                app.clickSend();
+                app.waitForResponse();
+
+                then(app.isSchemaExpanded("response")).isFalse();
             }
         }
     }
