@@ -129,6 +129,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    function detectLanguage(contentType) {
+        var mime = (contentType || '').split(';')[0].trim();
+        var subtype = mime.split('/')[1] || '';
+        var suffix = subtype.includes('+') ? subtype.split('+').pop() : subtype;
+        if (typeof hljs !== 'undefined' && hljs.getLanguage(suffix)) return suffix;
+        return null;
+    }
+
     function clearPreviousResponse() {
         var existing = detail.querySelector('pre.response');
         if (existing) existing.remove();
@@ -237,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (tree) tree.focus();
                 }
             }
-        } else if (e.key === 'Enter') {
+        } else if (e.key === 'Enter' && el.tagName !== 'SELECT') {
             var sendBtn = mc.querySelector('button[data-path]');
             if (sendBtn) sendBtn.click();
         } else if (e.key === 'Escape') {
@@ -299,10 +307,14 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (mode === 'try') {
                 sendBtn.disabled = true;
                 sendBtn.textContent = 'Sending...';
-                var fetchOptions = { method: method };
+                var fetchOptions = { method: method, headers: {} };
                 if (bodyValue) {
                     fetchOptions.body = bodyValue;
-                    fetchOptions.headers = { 'Content-Type': 'application/json' };
+                    fetchOptions.headers['Content-Type'] = 'application/json';
+                }
+                var acceptSelect = detail.querySelector('[data-accept] select');
+                if (acceptSelect && acceptSelect.value) {
+                    fetchOptions.headers['Accept'] = acceptSelect.value;
                 }
                 fetch(url, fetchOptions).then(function(resp) {
                     var ct = resp.headers.get('Content-Type') || '';
@@ -314,8 +326,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         clearPreviousResponse();
                         if (text.trim()) {
                             var pre = document.createElement('pre');
-                            pre.textContent = text;
                             pre.className = 'response';
+                            var lang = detectLanguage(ct);
+                            if (lang && typeof hljs !== 'undefined') {
+                                var code = document.createElement('code');
+                                code.className = 'language-' + lang;
+                                code.textContent = text;
+                                pre.appendChild(code);
+                                hljs.highlightElement(code);
+                            } else {
+                                pre.textContent = text;
+                            }
                             detail.appendChild(pre);
                         } else {
                             var msg = document.createElement('p');

@@ -129,6 +129,7 @@ public class OpenApiUiGenerator {
                 .stylesheet("bulma.min.css")
                 .stylesheet("openapi-ui.css")
                 .script("htmx.min.js")
+                .script("highlight.min.js")
                 .javaScriptCode(Toggle.js())
                 .javaScriptCode(Tree.js())
                 .javaScriptCode(SplitPane.js())
@@ -145,13 +146,21 @@ public class OpenApiUiGenerator {
         Files.writeString(outputDir.resolve("path-tree.html"), pathTree.render());
         copyWebJarResource("bulma", "css/bulma.min.css", "bulma.min.css");
         copyWebJarResource("htmx.org", "dist/htmx.min.js", "htmx.min.js");
+        copyWebJarResource("highlightjs", "highlight.min.js", "highlight.min.js");
         log.info("Done. Output written to {}", outputDir);
     }
 
+    private String resolveWebJarGroupId(String artifactId) {
+        if (getClass().getResource("/META-INF/maven/org.webjars.npm/" + artifactId + "/pom.properties") != null)
+            return "org.webjars.npm";
+        return "org.webjars";
+    }
+
     private void copyWebJarResource(String artifactId, String resourcePath, String outputName) throws IOException {
+        var groupId = resolveWebJarGroupId(artifactId);
         var props = new Properties();
         try (var pom = getClass().getResourceAsStream(
-                "/META-INF/maven/org.webjars.npm/" + artifactId + "/pom.properties")) {
+                "/META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties")) {
             props.load(pom);
         }
         var version = props.getProperty("version");

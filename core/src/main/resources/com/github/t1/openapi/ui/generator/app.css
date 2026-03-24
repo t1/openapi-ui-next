@@ -182,3 +182,19 @@
     font-style: italic;
     margin-top: 0.75rem;
 }
+/* syntax highlighting with Bulma colors */
+pre.response code.hljs {
+    background: var(--bulma-scheme-main);
+    color: var(--bulma-text);
+}
+.hljs-attr { color: var(--bulma-warning); }
+.hljs-string { color: var(--bulma-success); }
+.hljs-number { color: var(--bulma-danger); }
+.hljs-literal { color: var(--bulma-primary); }
+.hljs-keyword { color: var(--bulma-warning); font-weight: 600; }
+.hljs-tag { color: var(--bulma-danger); }
+.hljs-name { color: var(--bulma-danger); }
+.hljs-attribute { color: var(--bulma-link); }
+.hljs-section { color: var(--bulma-link); font-weight: 600; }
+.hljs-bullet { color: var(--bulma-info); }
+.hljs-comment { color: var(--bulma-text-weak); font-style: italic; }

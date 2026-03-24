@@ -1,5 +1,7 @@
 package com.github.t1.openapi.ui.generator;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -14,9 +16,7 @@ class BrowserTest {
     @Nested class GivenAppWithOneGet {
         @RegisterExtension static AppFixture app = context.launch("one-get.yaml");
 
-        @Test void shouldHaveSplitLayout() {
-            then(app.hasSplitLayout()).isTrue();
-        }
+        @Test void shouldHaveSplitLayout() {then(app.hasSplitLayout()).isTrue();}
 
         @Test void shouldResizeOnDrag() {
             var widthBefore = app.treeWidth();
@@ -36,22 +36,16 @@ class BrowserTest {
             then(Math.abs(widthAfterReload - widthAfterDrag)).isLessThan(10);
         }
 
-        @Test void shouldShowMethodBadge() {
-            then(app.hasMethodBadge("GET")).isTrue();
-        }
+        @Test void shouldShowMethodBadge() {then(app.hasMethodBadge("GET")).isTrue();}
 
-        @Test void methodAddonsAreRightAligned() {
-            then(app.areMethodAddonsRightAligned()).isTrue();
-        }
+        @Test void methodAddonsAreRightAligned() {then(app.areMethodAddonsRightAligned()).isTrue();}
 
         @Test void treeIsInBoxAndDetailIsNot() {
             then(app.isTreeInBox()).isTrue();
             then(app.isDetailInBox()).isFalse();
         }
 
-        @Test void shouldIncludeCustomStylesheet() {
-            then(app.hasStylesheet("openapi-ui.css")).isTrue();
-        }
+        @Test void shouldIncludeCustomStylesheet() {then(app.hasStylesheet("openapi-ui.css")).isTrue();}
 
         @Test void enterKeyLoadsFragment() {
             app.focusTree();
@@ -62,8 +56,17 @@ class BrowserTest {
             app.screenshot("fragment-loaded");
         }
 
+        @Test void shouldNotShowResponseTypeSelectForSingleType() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+
+            then(app.hasResponseTypeSelect()).isFalse();
+        }
+
         @Test void focusedTreeScreenshot() {
             app.focusTree();
+
             app.screenshot("focus-tree");
         }
 
@@ -107,6 +110,7 @@ class BrowserTest {
             then(app.isModeButtonVisible("curl")).isTrue();
 
             app.clickModeButton("curl");
+
             then(app.currentMode()).isEqualTo("curl");
         }
 
@@ -238,6 +242,7 @@ class BrowserTest {
 
             @Test void tryModeSendsRequestAndShowsPrettifiedJson() {
                 app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\",\"name\":\"Fido\"}");
+
                 navigateToListPetsAndSend();
 
                 then(app.responseText())
@@ -247,8 +252,65 @@ class BrowserTest {
                 app.screenshot("try-mode-json-response");
             }
 
+            @Test void shouldHighlightJsonResponse() {
+                app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\",\"name\":\"Fido\"}");
+
+                navigateToListPetsAndSend();
+
+                then(app.responseHasHighlighting()).isTrue();
+            }
+
+            @Test void shouldHighlightXmlResponse() {
+                app.mockEndpoint("/pets", "application/xml", "<pets><pet><name>Fido</name></pet></pets>");
+
+                navigateToListPetsAndSend();
+
+                then(app.responseHasHighlighting()).isTrue();
+            }
+
+            @Test void shouldHighlightYamlResponse() {
+                app.mockEndpoint("/pets", "application/yaml", "pets:\n  - name: Fido\n    id: 1");
+
+                navigateToListPetsAndSend();
+
+                then(app.responseHasHighlighting()).isTrue();
+            }
+
+            @Test void shouldHighlightVendorJsonResponse() {
+                app.mockEndpoint("/pets", "application/vnd.api+json", "{\"id\":\"1\",\"name\":\"Fido\"}");
+
+                navigateToListPetsAndSend();
+
+                then(app.responseHasHighlighting()).isTrue();
+            }
+
+            @Test void shouldHighlightMarkdownResponse() {
+                app.mockEndpoint("/pets", "text/markdown", "# Pets\n- Fido\n- Rex");
+
+                navigateToListPetsAndSend();
+
+                then(app.responseHasHighlighting()).isTrue();
+            }
+
+            @Test void shouldHighlightHtmlResponse() {
+                app.mockEndpoint("/pets", "text/html", "<h1>Hello</h1><p>World</p>");
+
+                navigateToListPetsAndSend();
+
+                then(app.responseHasHighlighting()).isTrue();
+            }
+
+            @Test void shouldNotHighlightPlainTextResponse() {
+                app.mockEndpoint("/pets", "text/plain", "just plain text");
+
+                navigateToListPetsAndSend();
+
+                then(app.responseHasHighlighting()).isFalse();
+            }
+
             @Test void tryModeShowsHtmlResponseAsIs() {
                 app.mockEndpoint("/pets", "text/html", "<h1>Hello</h1><p>World</p>");
+
                 navigateToListPetsAndSend();
 
                 then(app.responseText()).contains("<h1>Hello</h1>");
@@ -256,6 +318,7 @@ class BrowserTest {
 
             @Test void tryModeShowsXmlResponseAsIs() {
                 app.mockEndpoint("/pets", "application/xml", "<pets><pet><name>Fido</name></pet></pets>");
+
                 navigateToListPetsAndSend();
 
                 then(app.responseText()).contains("<pets>");
@@ -263,6 +326,7 @@ class BrowserTest {
 
             @Test void tryModeSendButtonRecoversAfterResponse() {
                 app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+
                 navigateToListPetsAndSend();
 
                 then(app.sendButtonText()).isEqualTo("Send");
@@ -271,6 +335,7 @@ class BrowserTest {
 
             @Test void tryModeShowsStatusBadgeNextToSendButton() {
                 app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+
                 navigateToListPetsAndSend();
 
                 then(app.statusBadgeText()).isEqualTo("200 OK");
@@ -278,6 +343,7 @@ class BrowserTest {
 
             @Test void tryModeShowsErrorStatusBadge() {
                 app.mockEndpoint("/pets", "text/plain", "not found", 404);
+
                 navigateToListPetsAndSend();
 
                 then(app.statusBadgeText()).isEqualTo("404 Not Found");
@@ -285,6 +351,7 @@ class BrowserTest {
 
             @Test void tryModeErrorStatusNotDuplicatedInBody() {
                 app.mockEndpoint("/pets", "text/plain", "not found", 404);
+
                 navigateToListPetsAndSend();
 
                 then(app.responseText()).doesNotContain("404");
@@ -293,6 +360,7 @@ class BrowserTest {
 
             @Test void tryModeShowsNoBodyMessageForEmptyResponse() {
                 app.mockEndpoint("/pets", "application/json", "", 204);
+
                 navigateToListPetsAndSend();
 
                 then(app.statusBadgeText()).isEqualTo("204 No Content");
@@ -301,6 +369,7 @@ class BrowserTest {
 
             @Test void tryModeShowsYamlResponseAsIs() {
                 app.mockEndpoint("/pets", "application/yaml", "pets:\n  - name: Fido\n    id: 1");
+
                 navigateToListPetsAndSend();
 
                 then(app.responseText())
@@ -362,6 +431,7 @@ class BrowserTest {
             app.focusViewToggle();
             app.pressKey("ArrowLeft"); // tags is active (rightmost), ArrowLeft switches to paths
             app.waitForTreeContent("invoices");
+
             then(app.isViewActive("paths")).isTrue();
         }
 
@@ -458,6 +528,7 @@ class BrowserTest {
 
         @Test void methodAddonsShouldBeInSingleRow() {
             app.expandAllNodes();
+
             then(app.areMethodAddonsInSingleRow()).isTrue();
         }
     }
@@ -489,6 +560,7 @@ class BrowserTest {
             app.focusTree();
             app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowRight"); // enter tabs
+
             then(app.isTabFocused()).isTrue();
             app.screenshot("focus-tab");
         }
@@ -535,6 +607,7 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowRight"); // enter tabs
             app.pressKey("ArrowLeft"); // first tab → back to tree
+
             then(app.isTreeFocused()).isTrue();
         }
 
@@ -545,6 +618,7 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // switch to POST
             app.pressKey("Escape"); // back to tree
             app.pressKey("Enter"); // should re-enter on POST (current tab)
+
             then(app.isTabFocused()).isTrue();
             then(app.isTabActive(2)).isTrue();
         }
@@ -558,6 +632,7 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // switch to DELETE tab
             app.waitForDetailContent("Delete a pet"); // wait for tab swap
             app.pressKey("ArrowDown"); // enter fields
+
             then(app.activeElementTag()).isEqualTo("INPUT");
             app.screenshot("focus-field");
         }
@@ -580,12 +655,14 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // enter tabs
             app.pressKey("ArrowDown"); // enter fields
             app.pressKey("ArrowUp"); // back to tabs
+
             then(app.isTabFocused()).isTrue();
         }
 
         @Test void arrowUpAtFirstItemFocusesViewToggle() {
             app.focusTree();
             app.pressKey("ArrowUp"); // already first item → view toggle
+
             then(app.isViewToggleFocused()).isTrue();
         }
 
@@ -598,6 +675,7 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // enter tabs
             app.pressKey("ArrowDown"); // enter fields
             app.pressKey("Escape"); // back to tree
+
             then(app.isTreeFocused()).isTrue();
         }
 
@@ -644,9 +722,7 @@ class BrowserTest {
     @Nested class GivenAppWithNoSummary {
         @RegisterExtension static AppFixture app = context.launch("no-summary.yaml");
 
-        @Test void shouldNotShowEmDashWithoutSummary() {
-            then(app.selectedTreeItemText()).doesNotContain("—");
-        }
+        @Test void shouldNotShowEmDashWithoutSummary() {then(app.selectedTreeItemText()).doesNotContain("—");}
     }
 
     @Nested class GivenAppWithParams {
@@ -658,6 +734,7 @@ class BrowserTest {
             then(app.activeElementSelector()).contains("desc-toggle");
 
             app.pressKey("ArrowDown");
+
             then(app.activeElementSelector()).contains("input")
                     .doesNotContain("data-path");
         }
@@ -669,6 +746,16 @@ class BrowserTest {
             app.pressKey("2");
 
             then(app.currentMode()).isEqualTo("try");
+        }
+
+        @Test void shouldOpenSelectOnEnterInsteadOfSend() {
+            app.waitForDetailContent("Get a pet");
+            app.focusSelect("status");
+
+            app.pressKey("Enter");
+
+            then(app.activeElementTag()).isEqualTo("SELECT");
+            then(app.isSendButtonFocused()).isFalse();
         }
 
         @Nested class InTryMode {
@@ -909,6 +996,54 @@ class BrowserTest {
             app.pressKey("ArrowLeft");
             then(app.isTextVisible("{petId}")).isFalse();
             app.screenshot("tree-expanded");
+        }
+    }
+
+    @Nested class GivenAppWithMultiResponseType {
+        @RegisterExtension static AppFixture app = context.launch("multi-response-type.yaml");
+
+        @Test void shouldShowResponseTypeSelect() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+
+            then(app.hasResponseTypeSelect()).isTrue();
+            then(app.responseTypeOptions()).containsExactly("application/json", "application/xml");
+        }
+
+        @Nested class InTryMode {
+            @RegisterExtension static AppFixture app =
+                    context.launch("multi-response-type.yaml").withBaseUrlOverride();
+
+            @Test void shouldSendAcceptHeaderForSelectedXml() {
+                app.mockEndpointWithContentNegotiation("/pets", Map.of(
+                        "application/json", "{\"format\":\"json\"}",
+                        "application/xml", "<format>xml</format>"));
+                app.focusTree();
+                app.pressKey("Enter");
+                app.waitForDetailContent("List pets");
+
+                app.selectResponseType("application/xml");
+                app.clickSend();
+                app.waitForResponse();
+
+                then(app.responseText()).contains("<format>xml</format>");
+            }
+
+            @Test void shouldSendAcceptHeaderForSelectedJson() {
+                app.mockEndpointWithContentNegotiation("/pets", Map.of(
+                        "application/json", "{\"format\":\"json\"}",
+                        "application/xml", "<format>xml</format>"));
+                app.focusTree();
+                app.pressKey("Enter");
+                app.waitForDetailContent("List pets");
+
+                app.selectResponseType("application/json");
+                app.clickSend();
+                app.waitForResponse();
+
+                then(app.responseText()).contains("json");
+            }
         }
     }
 }

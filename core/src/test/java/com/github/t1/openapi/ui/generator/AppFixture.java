@@ -21,6 +21,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
@@ -57,8 +58,11 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     @Override public void beforeEach(@NonNull ExtensionContext extensionContext) {
-        context = browser.newContext(new Browser.NewContextOptions()
-                .setPermissions(List.of("clipboard-read", "clipboard-write")));
+        var options = new Browser.NewContextOptions();
+        if (!browser.browserType().name().equals("webkit")) {
+            options.setPermissions(List.of("clipboard-read", "clipboard-write"));
+        }
+        context = browser.newContext(options);
         page = context.newPage();
         navigateHome();
     }
@@ -77,6 +81,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     void mockEndpoint(String path, String contentType, String body, int statusCode) {testServer.mockEndpoint(path, contentType, body, statusCode);}
 
     void mockEndpointWithBodyEcho(String path, String expectedMethod) {testServer.mockEndpointWithBodyEcho(path, expectedMethod);}
+
+    void mockEndpointWithContentNegotiation(String path, Map<String, String> responsesByAccept) {testServer.mockEndpointWithContentNegotiation(path, responsesByAccept);}
 
     void mockRootEndpoint(String path, String contentType, String body) {testServer.mockRootEndpoint(path, contentType, body);}
 
@@ -180,6 +186,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void focusInput(String name) {page.locator("#detail input[name='" + name + "']").focus();}
 
+    void focusSelect(String name) {page.locator("#detail select[name='" + name + "']").focus();}
+
     void fillRequestBody(String body) {page.locator("#detail textarea[data-request-body]").fill(body);}
 
     void focusRequestBody() {page.locator("#detail textarea[data-request-body]").focus();}
@@ -199,6 +207,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     String sendButtonText() {return page.locator("#detail button[data-path]").textContent();}
 
     void waitForResponse() {page.waitForSelector("#detail .response-status");}
+
+    boolean hasResponseStatus() {return page.locator("#detail .response-status").count() > 0;}
 
     String statusBadgeText() {return page.locator("#detail .response-status").textContent();}
 
@@ -233,6 +243,20 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     String responseText() {return page.locator("#detail pre.response").textContent();}
+
+    boolean hasResponseTypeSelect() {return page.locator("#detail [data-accept] select").count() > 0;}
+
+    List<String> responseTypeOptions() {
+        return page.locator("#detail [data-accept] select option").allTextContents();
+    }
+
+    void selectResponseType(String contentType) {
+        page.locator("#detail [data-accept] select").selectOption(contentType);
+    }
+
+    boolean responseHasHighlighting() {
+        return page.locator("#detail pre.response code.hljs span[class^='hljs-']").count() > 0;
+    }
 
     boolean isTreeFocused() {
         return (Boolean) page.evaluate(
@@ -479,6 +503,27 @@ class TestServer {
             }
             var requestBody = new String(exchange.getRequestBody().readAllBytes());
             sendResponse(exchange, 200, "application/json", requestBody);
+        });
+    }
+
+    void mockEndpointWithContentNegotiation(String path, Map<String, String> responsesByAccept) {
+        replaceContext("/api" + path, exchange -> {
+            exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Accept");
+            exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, OPTIONS");
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                exchange.close();
+                return;
+            }
+            var accept = exchange.getRequestHeaders().getFirst("Accept");
+            for (var entry : responsesByAccept.entrySet()) {
+                if (accept != null && accept.contains(entry.getKey())) {
+                    sendResponse(exchange, 200, entry.getKey(), entry.getValue());
+                    return;
+                }
+            }
+            var first = responsesByAccept.entrySet().iterator().next();
+            sendResponse(exchange, 200, first.getKey(), first.getValue());
         });
     }
 

@@ -24,6 +24,10 @@ If you create a new file, also stage exactly this file to git, but not any other
   becomes a single commit).
 - Before committing a core change (feature or fix), verify the demo app exercises it.
 
+## Maven Central
+
+Use `central.sonatype.com` for Maven artifact searches, **not** `search.maven.org` (obsolete).
+
 ## Shell Commands
 
 - Always quote Maven `-Dtest` values containing `#` (method selectors), e.g.:
