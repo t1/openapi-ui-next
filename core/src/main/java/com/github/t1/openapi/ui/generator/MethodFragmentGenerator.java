@@ -126,6 +126,12 @@ class MethodFragmentGenerator {
         if (operation.getResponses() != null) {
             var response200 = operation.getResponses().get("200");
             if (response200 != null && response200.getContent() != null) {
+                var contentTypes = response200.getContent().keySet();
+                if (contentTypes.size() > 1) {
+                    var sel = select("accept").attr("data-accept", "true");
+                    for (var ct : contentTypes) sel.option(ct, ct);
+                    fragment.content(field("Response Type").content(sel));
+                }
                 var jsonMedia = response200.getContent().get("application/json");
                 if (jsonMedia != null && jsonMedia.getSchema() != null) {
                     @SuppressWarnings("unchecked")

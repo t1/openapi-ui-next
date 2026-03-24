@@ -14,7 +14,12 @@ class TestContext implements BeforeAllCallback {
     @Override public void beforeAll(ExtensionContext context) {
         context.getRoot().getStore(GLOBAL).computeIfAbsent(this, key -> {
             playwright = Playwright.create();
-            browser = playwright.chromium().launch();
+            var browserType = System.getProperty("playwright.browser", "chromium");
+            browser = switch (browserType) {
+                case "webkit" -> playwright.webkit().launch();
+                case "firefox" -> playwright.firefox().launch();
+                default -> playwright.chromium().launch();
+            };
             return (AutoCloseable) () -> {
                 browser.close();
                 playwright.close();

@@ -1,12 +1,14 @@
 package com.github.t1.openapi.ui.demo;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_XML;
 
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Produces;
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.PUT;
@@ -48,7 +50,7 @@ public class PetResource {
         return PETS.stream().filter(p -> p.status() == status).toList();
     }
 
-    @GET @Path("/{id}") @Operation(summary = "Get a pet by ID", description = "Returns a single pet by its unique identifier.")
+    @GET @Path("/{id}") @Produces({APPLICATION_JSON, APPLICATION_XML}) @Operation(summary = "Get a pet by ID", description = "Returns a single pet by its unique identifier.")
     public Pet get(@PathParam("id") long id) {
         return PETS.stream()
                 .filter(p -> p.id() == id).findFirst()
