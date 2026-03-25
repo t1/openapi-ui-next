@@ -33,6 +33,20 @@ class SplitPaneTest {
                 .contains("pointermove");
     }
 
+    @Test void shouldSupportMultipleSplitPanes() {
+        var js = SplitPane.js();
+
+        then(js).contains("querySelectorAll");
+        then(js).doesNotContain("document.querySelector(");
+    }
+
+    @Test void shouldReinitializeAfterHtmxSwap() {
+        var js = SplitPane.js();
+
+        then(js).contains("htmx:afterSettle");
+        then(js).contains("initSplitPanes");
+    }
+
     @Test void shouldAddPersistDataAttribute() {
         var pane = splitPane()
                 .first(div().content("left"))
@@ -42,6 +56,17 @@ class SplitPaneTest {
         var html = pane.render();
 
         then(html).contains("data-persist=\"my-key\"");
+    }
+
+    @Test void shouldApplyCustomRatio() {
+        var pane = splitPane()
+                .ratio(1, 1)
+                .first(div().content("left"))
+                .second(div().content("right"));
+
+        var html = pane.render();
+
+        then(html).contains("grid-template-columns: minmax(150px, 1fr) 0px minmax(150px, 1fr)");
     }
 
     @Test void shouldProvideSplitLayoutCss() {

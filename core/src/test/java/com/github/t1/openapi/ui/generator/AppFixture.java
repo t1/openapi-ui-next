@@ -273,11 +273,11 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     String schemaPropertyType(String boxType, String propName) {
-        return page.locator(".schema-box[data-box='" + boxType + "'] .schema-status-panel:visible .schema-prop[data-prop='" + propName + "'] .schema-prop-type").textContent();
+        return page.locator(".schema-box[data-box='" + boxType + "'] .schema-status-panel:visible .schema-prop-name[data-prop='" + propName + "'] + .schema-prop-details .schema-prop-type").textContent();
     }
 
     String schemaPropertyExample(String boxType, String propName) {
-        return page.locator(".schema-box[data-box='" + boxType + "'] .schema-status-panel:visible .schema-prop[data-prop='" + propName + "'] .schema-prop-example").textContent();
+        return page.locator(".schema-box[data-box='" + boxType + "'] .schema-status-panel:visible .schema-prop-name[data-prop='" + propName + "'] + .schema-prop-details .schema-prop-example").textContent();
     }
 
     List<String> statusCodeTabs() {

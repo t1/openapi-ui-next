@@ -210,7 +210,7 @@ public class OpenApiUiGenerator {
     }
 
     private static String segmentClass(String segment) {
-        return segment.startsWith("{") && segment.endsWith("}") ? "tree-param" : "tree-segment";
+        return PathNode.isPathParam(segment) ? "tree-param" : "tree-segment";
     }
 
     private void generateFragments(PathNode node, String pathPrefix) throws IOException {
@@ -274,8 +274,20 @@ public class OpenApiUiGenerator {
                 return;
             }
             var segment = segments.get(index);
-            children.computeIfAbsent(segment, k -> new PathNode())
+            var key = isPathParam(segment) ? existingParamKeyOrElse(segment) : segment;
+            children.computeIfAbsent(key, k -> new PathNode())
                     .add(segments, index + 1, pathItem);
+        }
+
+        private String existingParamKeyOrElse(String segment) {
+            return children.keySet().stream()
+                    .filter(PathNode::isPathParam)
+                    .findFirst()
+                    .orElse(segment);
+        }
+
+        private static boolean isPathParam(String segment) {
+            return segment.startsWith("{") && segment.endsWith("}");
         }
     }
 }

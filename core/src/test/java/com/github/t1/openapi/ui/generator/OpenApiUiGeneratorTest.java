@@ -100,6 +100,73 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("pending");
     }
 
+    @Test void shouldRenderPluralExamples() throws Exception {
+        generate("/schema-descriptions.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).contains("e.g. 1");
+    }
+
+    @Test void shouldRenderPropertyDescription() throws Exception {
+        generate("/schema-descriptions.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).contains("schema-prop-desc");
+        then(fragment).contains("Unique identifier");
+        then(fragment).contains("The display name of the pet");
+    }
+
+    @Test void shouldNotRenderDescriptionWhenMissing() throws Exception {
+        generate("/schema-descriptions.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        // status property has no description — find its details span (between this data-prop and the next)
+        int statusStart = fragment.indexOf("data-prop=\"status\"");
+        int nextProp = fragment.indexOf("data-prop=", statusStart + 1);
+        var statusSection = nextProp > 0 ? fragment.substring(statusStart, nextProp) : fragment.substring(statusStart);
+        then(statusSection).doesNotContain("schema-prop-desc");
+    }
+
+    @Test void shouldRenderSchemaTitle() throws Exception {
+        generate("/schema-descriptions.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).contains("schema-title");
+        then(fragment).contains("Pet");
+    }
+
+    @Test void shouldRenderSchemaDescription() throws Exception {
+        generate("/schema-descriptions.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).contains("schema-title-desc");
+        then(fragment).contains("Represents a pet in the store");
+    }
+
+    @Test void shouldNotRenderSchemaTitleWhenMissing() throws Exception {
+        generate("/rich-response.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).doesNotContain("schema-title");
+    }
+
+    @Test void shouldRenderRequestBodyWithSplitPane() throws Exception {
+        generate("/request-body.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/POST.html"));
+        then(fragment).contains("split-layout");
+        then(fragment).contains("split-first");
+        then(fragment).contains("split-second");
+    }
+
+    @Test void shouldNotRenderSplitPaneWhenNoSchema() throws Exception {
+        generate("/request-body-media-type-example.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{id}/PATCH.html"));
+        then(fragment).doesNotContain("split-layout");
+        then(fragment).contains("data-request-body");
+    }
+
     @Test void shouldRenderResponseSchema() throws Exception {
         generate("/params.yaml");
 
@@ -107,6 +174,16 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("id");
         then(fragment).contains("name");
         then(fragment).contains("string");
+    }
+
+    @Test void shouldGroupPathsWithDifferentParamNames() throws Exception {
+        generate("/different-param-names.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).as("should not have a separate {petId} branch")
+                .doesNotContain("{petId}");
+        then(indexHtml).contains("{id}");
+        then(indexHtml).contains("visits");
     }
 
     @Test void shouldUseParamClassForPathParameters() throws Exception {

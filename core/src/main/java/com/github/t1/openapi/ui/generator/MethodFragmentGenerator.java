@@ -1,8 +1,8 @@
 package com.github.t1.openapi.ui.generator;
 
 import com.github.t1.htmljava.Element;
+import com.github.t1.htmljava.Renderable;
 import io.swagger.v3.oas.models.media.Schema;
-import io.swagger.v3.oas.models.responses.ApiResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -10,6 +10,7 @@ import java.util.Map;
 import static com.github.t1.bulmajava.basic.Color.PRIMARY;
 import static com.github.t1.bulmajava.basic.Size.MEDIUM;
 import static com.github.t1.bulmajava.components.Message.message;
+import static com.github.t1.bulmajava.components.Panel.panel;
 import static com.github.t1.bulmajava.components.Message.messageBody;
 import static com.github.t1.bulmajava.elements.Button.button;
 import static com.github.t1.bulmajava.elements.Tag.tag;
@@ -21,6 +22,7 @@ import static com.github.t1.bulmajava.layout.Level.level;
 import static com.github.t1.htmljava.HtmlBasics.div;
 import static com.github.t1.htmljava.HtmlBasics.element;
 import static com.github.t1.htmljava.HtmlBasics.span;
+import static com.github.t1.openapi.ui.components.SplitPane.splitPane;
 import static com.github.t1.openapi.ui.generator.OpenApiUiGenerator.methodColor;
 
 class MethodFragmentGenerator {
@@ -97,10 +99,11 @@ class MethodFragmentGenerator {
                 var skeleton = generateJsonSkeleton(jsonContent.getSchema());
                 if ("{}".equals(skeleton)) skeleton = mediaTypeExample(jsonContent);
 
-                var bodyBox = div().classes("schema-box", "is-collapsed").attr("data-box", "body");
+                var bodyBox = panel();
+                bodyBox.classes("schema-box", "is-collapsed").attr("data-box", "body");
                 var bodyTitle = div().classes("schema-box-title")
                         .content(span("Body").classes("schema-box-label"));
-                var bodyHeader = div().classes("schema-box-header")
+                var bodyHeader = div().classes("schema-box-header", "panel-heading")
                         .content(bodyTitle, element("button").classes("schema-toggle").content("Schema ▸"));
 
                 if (jsonContent.getExamples() != null && jsonContent.getExamples().size() > 1) {
@@ -121,28 +124,20 @@ class MethodFragmentGenerator {
 
                 bodyBox.content(bodyHeader);
 
-                var bodyBody = div().classes("schema-box-body");
-                bodyBody.content(
-                        element("textarea")
-                                .attr("data-request-body", "true")
-                                .classes("textarea", "is-family-code")
-                                .attr("rows", "6")
-                                .content(skeleton));
+                var textarea = element("textarea")
+                        .attr("data-request-body", "true")
+                        .classes("textarea", "is-family-code")
+                        .attr("rows", "6")
+                        .content(skeleton);
 
                 var schema = jsonContent.getSchema();
-                @SuppressWarnings("unchecked")
-                var required = (List<String>) (schema.getRequired() != null ? schema.getRequired() : List.<String>of());
-                @SuppressWarnings("unchecked")
-                var properties = (Map<String, Schema<?>>) schema.getProperties();
-                if (properties != null && !properties.isEmpty()) {
+                if (schema.getProperties() != null && !schema.getProperties().isEmpty()) {
                     var tree = div().classes("schema-box-tree", "schema-box-content");
-                    for (var prop : properties.entrySet()) {
-                        tree.content(buildPropertyRow(prop.getKey(), prop.getValue(), required));
-                    }
-                    bodyBody.content(tree);
+                    addSchemaContent(tree, schema);
+                    bodyBox.content(splitPane().ratio(1, 1).first(textarea).second(tree));
+                } else {
+                    bodyBox.content(textarea);
                 }
-
-                bodyBox.content(bodyBody);
                 fragment.content(bodyBox);
             }
         }
@@ -160,16 +155,19 @@ class MethodFragmentGenerator {
         return fragment;
     }
 
-    @SuppressWarnings("unchecked")
-    private static Element buildResponseBox(io.swagger.v3.oas.models.responses.ApiResponses responses) {
-        // collect status codes that have content with schemas
+    private static Renderable buildResponseBox(io.swagger.v3.oas.models.responses.ApiResponses responses) {
+        // collect status codes that have content
         var statusCodes = responses.entrySet().stream()
                 .filter(e -> e.getValue().getContent() != null)
                 .map(Map.Entry::getKey)
                 .toList();
         if (statusCodes.isEmpty()) return null;
+        var hasSchemaProperties = statusCodes.stream()
+                .anyMatch(code -> responses.get(code).getContent().values().stream()
+                        .anyMatch(mt -> mt.getSchema() != null && mt.getSchema().getProperties() != null));
 
-        var box = div().classes("schema-box", "is-collapsed").attr("data-box", "response");
+        var box = panel();
+        box.classes("schema-box", "is-collapsed").attr("data-box", "response");
 
         // header: title + Accept select + Schema toggle
         var title = div().classes("schema-box-title")
@@ -186,9 +184,13 @@ class MethodFragmentGenerator {
             for (var ct : allContentTypes) sel.option(ct, ct);
             title.content(sel);
         }
-        var header = div().classes("schema-box-header")
-                .content(title, element("button").classes("schema-toggle").content("Schema ▸"));
+        var header = div().classes("schema-box-header").content(title);
+        if (hasSchemaProperties) {
+            header.content(element("button").classes("schema-toggle").content("Schema ▸"));
+        }
         box.content(header);
+
+        if (!hasSchemaProperties) return box;
 
         // content: status code tabs + property panels
         var content = div().classes("schema-box-content");
@@ -220,13 +222,7 @@ class MethodFragmentGenerator {
             var mediaType = response.getContent().values().iterator().next();
             if (mediaType.getSchema() != null) {
                 var schema = mediaType.getSchema();
-                var required = schema.getRequired() != null ? schema.getRequired() : List.<String>of();
-                var properties = (Map<String, Schema<?>>) schema.getProperties();
-                if (properties != null) {
-                    for (var prop : properties.entrySet()) {
-                        panel.content(buildPropertyRow(prop.getKey(), prop.getValue(), required));
-                    }
-                }
+                addSchemaContent(panel, schema);
             }
             content.content(panel);
         }
@@ -235,22 +231,50 @@ class MethodFragmentGenerator {
         return box;
     }
 
-    private static Element buildPropertyRow(String name, Schema<?> propSchema, List<String> required) {
-        var row = div().classes("schema-prop").attr("data-prop", name);
-        row.content(span(name).classes("schema-prop-name"));
+    @SuppressWarnings("rawtypes")
+    private static void addSchemaContent(Element container, Schema<?> schema) {
+        if (schema.getTitle() != null) {
+            var titleBar = div().classes("schema-title");
+            titleBar.content(span(schema.getTitle()).classes("schema-title-name"));
+            if (schema.getDescription() != null) {
+                titleBar.content(span("— " + schema.getDescription()).classes("schema-title-desc"));
+            }
+            container.content(titleBar);
+        }
+        var required = schema.getRequired() != null ? schema.getRequired() : List.<String>of();
+        Map<String, Schema> properties = schema.getProperties();
+        if (properties != null) {
+            var table = div().classes("schema-props");
+            for (var prop : properties.entrySet()) {
+                addPropertyRow(table, prop.getKey(), prop.getValue(), required);
+            }
+            container.content(table);
+        }
+    }
+
+    private static void addPropertyRow(Element table, String name, Schema<?> propSchema, List<String> required) {
+        table.content(span(name).classes("schema-prop-name").attr("data-prop", name));
+        var details = span().classes("schema-prop-details");
         var type = propSchema.getType() != null ? propSchema.getType() : "object";
         if (propSchema.getEnum() != null && !propSchema.getEnum().isEmpty()) type = "enum";
-        row.content(span(type).classes("schema-prop-type"));
+        details.content(span(type).classes("schema-prop-type"));
         if (required.contains(name)) {
-            row.content(span("required").classes("schema-prop-required"));
+            details.content(span("required").classes("schema-prop-required"));
         }
-        if (propSchema.getExample() != null) {
-            row.content(span("e.g. " + propSchema.getExample()).classes("schema-prop-example"));
+        var example = propSchema.getExample();
+        if (example == null && propSchema.getExamples() != null && !propSchema.getExamples().isEmpty()) {
+            example = propSchema.getExamples().getFirst();
+        }
+        if (example != null) {
+            details.content(span("e.g. " + example).classes("schema-prop-example"));
         } else if (propSchema.getEnum() != null && !propSchema.getEnum().isEmpty()) {
             var values = String.join(" | ", propSchema.getEnum().stream().map(Object::toString).toList());
-            row.content(span(values).classes("schema-prop-example"));
+            details.content(span(values).classes("schema-prop-example"));
         }
-        return row;
+        if (propSchema.getDescription() != null) {
+            details.content(span(propSchema.getDescription()).classes("schema-prop-desc"));
+        }
+        table.content(details);
     }
 
     @SuppressWarnings("rawtypes")
@@ -270,8 +294,12 @@ class MethodFragmentGenerator {
     }
 
     static String sampleValue(Schema<?> schema) {
-        if (schema.getExample() != null) {
-            return formatSampleValue(schema.getType(), schema.getExample());
+        var example = schema.getExample();
+        if (example == null && schema.getExamples() != null && !schema.getExamples().isEmpty()) {
+            example = schema.getExamples().getFirst();
+        }
+        if (example != null) {
+            return formatSampleValue(schema.getType(), example);
         }
         if (schema.getDefault() != null) {
             return formatSampleValue(schema.getType(), schema.getDefault());

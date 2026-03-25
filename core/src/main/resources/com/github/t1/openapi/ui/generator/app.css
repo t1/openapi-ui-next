@@ -16,24 +16,24 @@
     height: auto;
     margin-bottom: 0;
 }
-.split-first {
+section > .container > .split-layout > .split-first {
     background-color: var(--bulma-scheme-main-bis);
     padding: 1.25rem 0 1.25rem 1.25rem;
     display: flex;
     flex-direction: column;
     min-width: 0;
 }
-.split-first > .box {
+section > .container > .split-layout > .split-first > .box {
     flex: 1;
     min-width: 0;
     overflow: hidden;
     border-radius: 6px 0 0 6px;
 }
 @media screen and (min-width: 1024px) {
-    .split-first {
+    section > .container > .split-layout > .split-first {
         min-height: calc(100vh - 4rem);
     }
-    .split-second {
+    section > .container > .split-layout > .split-second {
         min-height: calc(100vh - 4rem);
     }
 }
@@ -184,10 +184,6 @@
 }
 /* schema boxes */
 .schema-box {
-    border: 1px dashed var(--bulma-border);
-    border-radius: 6px;
-    padding: 0.75rem;
-    background: var(--bulma-scheme-main);
     margin-bottom: 0.75rem;
 }
 .schema-box-header {
@@ -245,31 +241,47 @@
     color: var(--bulma-success);
     border-bottom: 2px solid var(--bulma-success);
 }
-.schema-box-body {
-    display: flex;
-    gap: 0.75rem;
-}
-.schema-box-body > :first-child {
-    flex: 1;
-    min-width: 0;
-}
 .schema-box-tree {
-    flex: 0 0 auto;
-    border-left: 1px solid var(--bulma-border);
     padding-left: 0.75rem;
 }
 .schema-box.is-collapsed .schema-box-tree {
     display: none;
 }
-.schema-prop {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
+.schema-box.is-collapsed .split-handle {
+    display: none;
+}
+.schema-box.is-collapsed .split-layout {
+    grid-template-columns: 1fr !important;
+}
+.schema-props {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.125rem 0.625rem;
     font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
     font-size: 0.75rem;
     line-height: 1.8;
 }
 .schema-prop-name { color: var(--bulma-warning); font-weight: 500; }
+.schema-prop-details {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.1875rem 0.375rem;
+}
+.schema-prop-desc {
+    color: var(--bulma-text-weak);
+    font-size: 0.6875rem;
+}
+.schema-title {
+    padding: 0.375rem 0.5rem;
+    margin-bottom: 0.5rem;
+    background: var(--bulma-info-light);
+    border-left: 3px solid var(--bulma-info);
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+}
+.schema-title-name { font-weight: 600; color: var(--bulma-info-dark); }
+.schema-title-desc { color: var(--bulma-text-weak); margin-left: 0.375rem; }
 .schema-prop-type {
     background: var(--bulma-scheme-main-bis);
     color: var(--bulma-text-weak);

@@ -30,6 +30,11 @@ public class SplitPane extends AbstractElement<SplitPane> {
         return this;
     }
 
+    public SplitPane ratio(int first, int second) {
+        style("grid-template-columns: minmax(150px, " + first + "fr) 0px minmax(150px, " + second + "fr)");
+        return this;
+    }
+
     public SplitPane persistAs(String key) {
         attr("data-persist", key);
         return this;
@@ -82,39 +87,44 @@ public class SplitPane extends AbstractElement<SplitPane> {
             """;
 
     private static final String JS = """
-            document.addEventListener('DOMContentLoaded', function() {
-                var splitHandle = document.querySelector('.split-handle');
-                var splitLayout = document.querySelector('.split-layout');
-                if (!splitHandle || !splitLayout) return;
-                var persistKey = splitLayout.getAttribute('data-persist');
-                if (persistKey) {
-                    var savedWidth = localStorage.getItem(persistKey);
-                    if (savedWidth) {
-                        splitLayout.style.gridTemplateColumns = savedWidth + 'px 0px 1fr';
-                    }
-                }
-                splitHandle.addEventListener('pointerdown', function(e) {
-                    e.preventDefault();
-                    var splitFirst = splitLayout.querySelector('.split-first');
-                    var startX = e.clientX;
-                    var startWidth = splitFirst.getBoundingClientRect().width;
-                    function onMove(e) {
-                        var newWidth = Math.max(150, startWidth + e.clientX - startX);
-                        var maxWidth = splitLayout.getBoundingClientRect().width - 150;
-                        newWidth = Math.min(newWidth, maxWidth);
-                        splitLayout.style.gridTemplateColumns = newWidth + 'px 0px 1fr';
-                    }
-                    function onUp() {
-                        document.removeEventListener('pointermove', onMove);
-                        document.removeEventListener('pointerup', onUp);
-                        if (persistKey) {
-                            var finalWidth = splitFirst.getBoundingClientRect().width;
-                            localStorage.setItem(persistKey, Math.round(finalWidth));
+            function initSplitPanes(root) {
+                (root || document).querySelectorAll('.split-layout').forEach(function(splitLayout) {
+                    if (splitLayout.dataset.splitInit) return;
+                    splitLayout.dataset.splitInit = 'true';
+                    var splitHandle = splitLayout.querySelector('.split-handle');
+                    if (!splitHandle) return;
+                    var persistKey = splitLayout.getAttribute('data-persist');
+                    if (persistKey) {
+                        var savedWidth = localStorage.getItem(persistKey);
+                        if (savedWidth) {
+                            splitLayout.style.gridTemplateColumns = savedWidth + 'px 0px 1fr';
                         }
                     }
-                    document.addEventListener('pointermove', onMove);
-                    document.addEventListener('pointerup', onUp);
+                    splitHandle.addEventListener('pointerdown', function(e) {
+                        e.preventDefault();
+                        var splitFirst = splitLayout.querySelector('.split-first');
+                        var startX = e.clientX;
+                        var startWidth = splitFirst.getBoundingClientRect().width;
+                        function onMove(e) {
+                            var newWidth = Math.max(150, startWidth + e.clientX - startX);
+                            var maxWidth = splitLayout.getBoundingClientRect().width - 150;
+                            newWidth = Math.min(newWidth, maxWidth);
+                            splitLayout.style.gridTemplateColumns = newWidth + 'px 0px 1fr';
+                        }
+                        function onUp() {
+                            document.removeEventListener('pointermove', onMove);
+                            document.removeEventListener('pointerup', onUp);
+                            if (persistKey) {
+                                var finalWidth = splitFirst.getBoundingClientRect().width;
+                                localStorage.setItem(persistKey, Math.round(finalWidth));
+                            }
+                        }
+                        document.addEventListener('pointermove', onMove);
+                        document.addEventListener('pointerup', onUp);
+                    });
                 });
-            });
+            }
+            document.addEventListener('DOMContentLoaded', function() { initSplitPanes(); });
+            document.body.addEventListener('htmx:afterSettle', function(e) { initSplitPanes(e.detail.elt); });
             """;
 }

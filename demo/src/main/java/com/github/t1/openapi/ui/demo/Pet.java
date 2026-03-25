@@ -4,8 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+@Schema(description = "A pet registered in the store")
 public record Pet(
-        @Schema(examples = "1") long id,
-        @NotBlank @Schema(examples = "Max") String name,
-        @NotNull @Schema(examples = "available") PetStatus status,
-        @Schema(examples = "42") long ownerId) {}
+        @Schema(description = "Unique identifier", examples = "1") long id,
+        @NotBlank @Schema(description = "Display name of the pet", examples = "Max") String name,
+        @NotNull @Schema(description = "Current adoption status", examples = "available") PetStatus status,
+        @Schema(description = "ID of the owning customer", examples = "42") long ownerId) {}

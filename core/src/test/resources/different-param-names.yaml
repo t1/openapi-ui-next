@@ -1,0 +1,33 @@
+openapi: 3.0.3
+info:
+  title: Pet Store
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets/{id}:
+    get:
+      summary: Get a pet
+      operationId: getPet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A pet
+  /pets/{petId}/visits:
+    get:
+      summary: List visits
+      operationId: listVisits
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of visits
