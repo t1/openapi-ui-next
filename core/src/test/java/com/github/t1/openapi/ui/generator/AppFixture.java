@@ -288,6 +288,14 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.locator(".schema-box[data-box='response'] .schema-status-tab:text('" + code + "')").click();
     }
 
+    void focusStatusCodeTab(String code) {
+        page.locator(".schema-box[data-box='response'] .schema-status-tab:text('" + code + "')").focus();
+    }
+
+    String activeStatusCodeTab() {
+        return page.locator(".schema-box[data-box='response'] .schema-status-tab.is-active").textContent();
+    }
+
     boolean hasBodyBox() {return page.locator("#detail .schema-box[data-box='body']").count() > 0;}
 
     boolean responseHasHighlighting() {

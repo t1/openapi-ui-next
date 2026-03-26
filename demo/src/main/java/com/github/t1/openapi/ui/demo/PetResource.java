@@ -1,19 +1,16 @@
 package com.github.t1.openapi.ui.demo;
 
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static jakarta.ws.rs.core.MediaType.APPLICATION_XML;
-
+import jakarta.json.JsonObject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Produces;
-import jakarta.json.JsonObject;
 import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -29,6 +26,8 @@ import java.util.List;
 
 import static com.github.t1.openapi.ui.demo.PetStatus.adopted;
 import static com.github.t1.openapi.ui.demo.PetStatus.available;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_XML;
 
 @Path("/pets")
 @Tag(name = "pets")
@@ -41,12 +40,13 @@ public class PetResource {
 
     private static long nextId = 4;
 
-    @GET @Produces(APPLICATION_JSON) @Operation(summary = "List all pets", description = "Returns all pets from the system. "
-            + "Supports filtering by status via the optional query parameter. "
-            + "Results are sorted by ID in ascending order. "
-            + "The response includes each pet's name, species, status, and owner information. "
-            + "Pagination is not yet supported; all matching records are returned in a single response. "
-            + "For large datasets, consider using the status filter to reduce the result set.")
+    @GET @Produces(APPLICATION_JSON)
+    @Operation(summary = "List all pets", description = "Returns all pets from the system. "
+                                                        + "Supports filtering by status via the optional query parameter. "
+                                                        + "Results are sorted by ID in ascending order. "
+                                                        + "The response includes each pet's name, species, status, and owner information. "
+                                                        + "Pagination is not yet supported; all matching records are returned in a single response. "
+                                                        + "For large datasets, consider using the status filter to reduce the result set.")
     public List<Pet> list(@QueryParam("status") PetStatus status) {
         if (status == null) return PETS;
         return PETS.stream().filter(p -> p.status() == status).toList();
@@ -57,7 +57,8 @@ public class PetResource {
     @APIResponse(responseCode = "200", description = "A pet",
             content = {@Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = Pet.class)),
                     @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = Pet.class))})
-    @APIResponse(responseCode = "404", description = "Pet not found")
+    @APIResponse(responseCode = "404", description = "Pet not found",
+            content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
     public Pet get(@PathParam("id") long id) {
         return PETS.stream()
                 .filter(p -> p.id() == id).findFirst()

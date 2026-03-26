@@ -147,16 +147,37 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         var tab = e.target.closest('.schema-status-tab');
-        if (tab) {
-            var tabs = tab.closest('.schema-status-tabs');
-            tabs.querySelectorAll('.schema-status-tab').forEach(function(t) { t.classList.remove('is-active'); });
-            tab.classList.add('is-active');
-            var box = tab.closest('.schema-box');
-            box.querySelectorAll('.schema-status-panel').forEach(function(p) { p.style.display = 'none'; });
-            var panel = box.querySelector('.schema-status-panel[data-status="' + tab.textContent + '"]');
-            if (panel) panel.style.display = '';
-        }
+        if (tab) activateStatusTab(tab);
     });
+
+    function activateStatusTab(tab) {
+        var tabs = tab.closest('.schema-status-tabs');
+        tabs.querySelectorAll('.schema-status-tab').forEach(function(t) { t.classList.remove('is-active'); });
+        tab.classList.add('is-active');
+        tab.focus();
+        var box = tab.closest('.schema-box');
+        box.querySelectorAll('.schema-status-panel').forEach(function(p) { p.style.display = 'none'; });
+        var panel = box.querySelector('.schema-status-panel[data-status="' + tab.textContent + '"]');
+        if (panel) panel.style.display = '';
+    }
+
+    // Status code tab keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        var focused = document.activeElement;
+        if (!focused || !focused.classList.contains('schema-status-tab')) return;
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (e.key === 'ArrowRight') {
+            var next = focused.nextElementSibling;
+            if (next) activateStatusTab(next);
+            else bump(focused, 'h');
+        } else {
+            var prev = focused.previousElementSibling;
+            if (prev) activateStatusTab(prev);
+            else bump(focused, 'h');
+        }
+    }, true);
 
     function clearPreviousResponse() {
         var existing = detail.querySelector('pre.response');

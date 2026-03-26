@@ -949,6 +949,8 @@ class BrowserTest {
 
             then(app.hasBodyBox()).isTrue();
             then(app.hasSchemaToggle("body")).isTrue();
+            app.toggleSchema("body");
+            app.screenshot("request-body-schema");
         }
     }
 
@@ -1063,6 +1065,32 @@ class BrowserTest {
         }
     }
 
+    @Nested class GivenAppWithSchemaDescriptions {
+        @RegisterExtension static AppFixture app = context.launch("schema-descriptions.yaml");
+
+        @Test void shouldShowStatusCodeTabForSingleResponse() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.toggleSchema("response");
+
+            then(app.statusCodeTabs()).containsExactly("200");
+        }
+    }
+
+    @Nested class GivenAppWithUnsortedStatusCodes {
+        @RegisterExtension static AppFixture app = context.launch("unsorted-status-codes.yaml");
+
+        @Test void shouldSortStatusCodeTabsNumerically() {
+            app.expandFirstNode();
+            app.clickTreeNode("items/{id}/index.html");
+            app.waitForDetailContent("Get an item");
+            app.toggleSchema("response");
+
+            then(app.statusCodeTabs()).containsExactly("200", "404", "500");
+        }
+    }
+
     @Nested class GivenAppWithRichResponse {
         @RegisterExtension static AppFixture app = context.launch("rich-response.yaml");
 
@@ -1093,6 +1121,7 @@ class BrowserTest {
             app.toggleSchema("response");
 
             then(app.statusCodeTabs()).containsExactly("200", "404");
+            app.screenshot("response-schema-tabs");
         }
 
         @Test void shouldSwitchSchemaOnStatusCodeTabClick() {
@@ -1114,6 +1143,30 @@ class BrowserTest {
 
             then(app.hasResponseTypeSelect()).isTrue();
             then(app.responseTypeOptions()).containsExactly("application/json", "application/xml");
+        }
+
+        @Test void shouldSwitchStatusCodeTabWithArrowRight() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.toggleSchema("response");
+
+            app.focusStatusCodeTab("200");
+            app.pressKey("ArrowRight");
+
+            then(app.activeStatusCodeTab()).isEqualTo("404");
+        }
+
+        @Test void shouldSwitchStatusCodeTabWithArrowLeft() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.toggleSchema("response");
+
+            app.focusStatusCodeTab("404");
+            app.pressKey("ArrowLeft");
+
+            then(app.activeStatusCodeTab()).isEqualTo("200");
         }
 
         @Nested class InTryMode {

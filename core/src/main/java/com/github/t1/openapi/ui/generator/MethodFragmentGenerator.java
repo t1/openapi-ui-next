@@ -10,9 +10,10 @@ import java.util.Map;
 import static com.github.t1.bulmajava.basic.Color.PRIMARY;
 import static com.github.t1.bulmajava.basic.Size.MEDIUM;
 import static com.github.t1.bulmajava.components.Message.message;
-import static com.github.t1.bulmajava.components.Panel.panel;
 import static com.github.t1.bulmajava.components.Message.messageBody;
+import static com.github.t1.bulmajava.elements.Box.box;
 import static com.github.t1.bulmajava.elements.Button.button;
+import static com.github.t1.bulmajava.elements.Title.subtitle;
 import static com.github.t1.bulmajava.elements.Tag.tag;
 import static com.github.t1.bulmajava.form.Field.field;
 import static com.github.t1.bulmajava.form.Input.input;
@@ -99,11 +100,11 @@ class MethodFragmentGenerator {
                 var skeleton = generateJsonSkeleton(jsonContent.getSchema());
                 if ("{}".equals(skeleton)) skeleton = mediaTypeExample(jsonContent);
 
-                var bodyBox = panel();
+                var bodyBox = box();
                 bodyBox.classes("schema-box", "is-collapsed").attr("data-box", "body");
                 var bodyTitle = div().classes("schema-box-title")
-                        .content(span("Body").classes("schema-box-label"));
-                var bodyHeader = div().classes("schema-box-header", "panel-heading")
+                        .content(subtitle(6, "Request Body"));
+                var bodyHeader = div().classes("schema-box-header")
                         .content(bodyTitle, element("button").classes("schema-toggle").content("Schema ▸"));
 
                 if (jsonContent.getExamples() != null && jsonContent.getExamples().size() > 1) {
@@ -132,8 +133,9 @@ class MethodFragmentGenerator {
 
                 var schema = jsonContent.getSchema();
                 if (schema.getProperties() != null && !schema.getProperties().isEmpty()) {
-                    var tree = div().classes("schema-box-tree", "schema-box-content");
-                    addSchemaContent(tree, schema);
+                    var treeContent = div();
+                    addSchemaContent(treeContent, schema);
+                    var tree = div().classes("schema-box-tree", "schema-box-content").content(treeContent);
                     bodyBox.content(splitPane().ratio(1, 1).first(textarea).second(tree));
                 } else {
                     bodyBox.content(textarea);
@@ -160,55 +162,55 @@ class MethodFragmentGenerator {
         var statusCodes = responses.entrySet().stream()
                 .filter(e -> e.getValue().getContent() != null)
                 .map(Map.Entry::getKey)
+                .sorted()
                 .toList();
         if (statusCodes.isEmpty()) return null;
         var hasSchemaProperties = statusCodes.stream()
                 .anyMatch(code -> responses.get(code).getContent().values().stream()
                         .anyMatch(mt -> mt.getSchema() != null && mt.getSchema().getProperties() != null));
 
-        var box = panel();
-        box.classes("schema-box", "is-collapsed").attr("data-box", "response");
+        var responseBox = box().classes("schema-box", "is-collapsed").attr("data-box", "response");
 
-        // header: title + Accept select + Schema toggle
+        // header: title on the left, Accept select + Schema toggle on the right
         var title = div().classes("schema-box-title")
-                .content(span("Response").classes("schema-box-label"));
+                .content(subtitle(6, "Response Body"));
+        var header = div().classes("schema-box-header").content(title);
         // collect all content types across all status codes
         var allContentTypes = responses.values().stream()
                 .filter(r -> r.getContent() != null)
                 .flatMap(r -> r.getContent().keySet().stream())
                 .distinct()
                 .toList();
+        var controls = div().classes("schema-box-controls");
         if (allContentTypes.size() > 1) {
-            title.content(span("Accept").classes("schema-accept-label"));
+            controls.content(span("Accept").classes("schema-accept-label"));
             var sel = select("accept").attr("data-accept", "true");
             for (var ct : allContentTypes) sel.option(ct, ct);
-            title.content(sel);
+            controls.content(sel);
         }
-        var header = div().classes("schema-box-header").content(title);
         if (hasSchemaProperties) {
-            header.content(element("button").classes("schema-toggle").content("Schema ▸"));
+            controls.content(element("button").classes("schema-toggle").content("Schema ▸"));
         }
-        box.content(header);
+        header.content(controls);
+        responseBox.content(header);
 
-        if (!hasSchemaProperties) return box;
+        if (!hasSchemaProperties) return responseBox;
 
         // content: status code tabs + property panels
         var content = div().classes("schema-box-content");
 
         // status code tabs
-        if (statusCodes.size() > 1) {
-            var tabs = div().classes("schema-status-tabs");
-            var isFirst = true;
-            for (var code : statusCodes) {
-                var tab = span(code).classes("schema-status-tab");
-                if (isFirst) {
-                    tab.classes("is-active");
-                    isFirst = false;
-                }
-                tabs.content(tab);
+        var tabs = div().classes("schema-status-tabs");
+        var isFirst = true;
+        for (var code : statusCodes) {
+            var tab = span(code).classes("schema-status-tab").attr("tabindex", "0");
+            if (isFirst) {
+                tab.classes("is-active");
+                isFirst = false;
             }
-            content.content(tabs);
+            tabs.content(tab);
         }
+        content.content(tabs);
 
         // property panels per status code
         var isFirstPanel = true;
@@ -227,8 +229,8 @@ class MethodFragmentGenerator {
             content.content(panel);
         }
 
-        box.content(content);
-        return box;
+        responseBox.content(content);
+        return responseBox;
     }
 
     @SuppressWarnings("rawtypes")

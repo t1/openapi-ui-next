@@ -101,6 +101,11 @@ by carefully inspecting the screenshots. Don't assume a change worked just becau
 tests verify behavior, not visual correctness. Look at the specific pixels/spacing/alignment
 that was supposed to change and verify it matches the intent.
 
+**Known limitation**: Playwright dark-mode screenshots (via `emulateMedia(ColorScheme.DARK)`) may
+render colors differently from real browsers — e.g. textarea backgrounds can appear lighter than
+they do in Chrome/Safari. Do not flag color issues from dark-mode screenshots without verifying
+in a real browser first.
+
 **VERY IMPORTANT**: Never claim interactive behavior (keyboard navigation, click handlers, focus
 management, expand/collapse) works without a browser test that exercises the exact interaction.
 Screenshots are static and cannot validate dynamic behavior. Write the test *before* claiming

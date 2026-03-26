@@ -1,5 +1,15 @@
 {
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.user_prompt // \"\"' | grep -q '?' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"REMINDER: The user asked a question. Per CLAUDE.md: when asked a question, it is just a question, not a suggestion. Think about it and discuss — do NOT start working.\"}}' || true"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write",

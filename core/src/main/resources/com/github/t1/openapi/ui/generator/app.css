@@ -17,7 +17,6 @@
     margin-bottom: 0;
 }
 section > .container > .split-layout > .split-first {
-    background-color: var(--bulma-scheme-main-bis);
     padding: 1.25rem 0 1.25rem 1.25rem;
     display: flex;
     flex-direction: column;
@@ -56,9 +55,11 @@ section > .container > .split-layout > .split-first > .box {
     margin-bottom: 0;
 }
 .split-second {
+    padding-left: 1rem;
+}
+section > .container > .split-layout > .split-second {
     padding-left: 2rem;
     padding-right: 2rem;
-    background-color: var(--bulma-scheme-main-bis);
 }
 #detail .endpoint-path {
     font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
@@ -185,21 +186,23 @@ section > .container > .split-layout > .split-first > .box {
 /* schema boxes */
 .schema-box {
     margin-bottom: 0.75rem;
+    overflow: visible;
 }
 .schema-box-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 0.5rem;
 }
 .schema-box-title {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
-.schema-box-label {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--bulma-text-weak);
+.schema-box-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 .schema-accept-label {
     font-size: 0.6875rem;
@@ -236,13 +239,15 @@ section > .container > .split-layout > .split-first > .box {
     color: var(--bulma-text-weak);
     cursor: pointer;
 }
+.schema-status-tab:focus {
+    outline: 2px solid var(--bulma-focus-shadow-color, hsl(217, 71%, 53%));
+    outline-offset: -2px;
+    border-radius: 2px;
+}
 .schema-status-tab.is-active {
     font-weight: 600;
     color: var(--bulma-success);
     border-bottom: 2px solid var(--bulma-success);
-}
-.schema-box-tree {
-    padding-left: 0.75rem;
 }
 .schema-box.is-collapsed .schema-box-tree {
     display: none;
