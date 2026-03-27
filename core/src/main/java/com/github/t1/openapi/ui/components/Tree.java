@@ -121,8 +121,6 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                 list-style: none;
                 margin: 0;
                 padding: 0 0 0 1.25rem;
-                border-left: 2px solid var(--bulma-border);
-                margin-left: 0.5rem;
             }
             [role="treeitem"] {
                 padding: 6px 0 6px 8px;
