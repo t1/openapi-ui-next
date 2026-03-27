@@ -21,16 +21,24 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
 
 ## Features
 
-- Parses OpenAPI 3.0/3.1 specs into interactive static HTML
-- Hierarchical, keyboard-navigable path tree with method tag addons
-- Method tabs in detail pane: switching between operations on the same path
-- Enriched method fragments: description, deprecated badge, tags, external docs
-- Three interaction modes: Try (fetch), curl, httpie
+**Navigation & Layout**
+- Path-based and tag-based tree views with method badges
+- Resizable split pane with persistent width
+- Method tabs for switching operations on the same path
 - Three-level keyboard navigation: tree → method tabs → content fields
-- Boundary bump animation at navigation limits
 - Responsive layout (desktop: side-by-side; mobile: stacked)
-- Parameter inputs (path and query)
-- Response rendering with content-type awareness (JSON prettification, HTML/XML/YAML)
+- Dark mode support
+
+**API Documentation**
+- Operation summary, description, deprecated badge, tags, external docs
+- Parameter inputs with type (path/query) and required badges
+- Request body editor with JSON skeleton and schema documentation
+- Response schema with status code tabs, property types, required markers, and examples
+- Accept header select for multi-content-type endpoints
+
+**Try It Out**
+- Three modes: Try (fetch), httpie, curl
+- Response rendering with syntax highlighting (JSON, HTML, XML, YAML)
 
 ## Modules
 
@@ -96,16 +104,20 @@ Then open http://localhost:8080/openapi-ui/index.html.
 - [bulma-java](https://github.com/t1/bulma-java) for HTML generation
 - [Bulma](https://bulma.io/) CSS framework (via webjars)
 - [HTMX](https://htmx.org/) for dynamic fragment loading (via webjars)
+- [highlight.js](https://highlightjs.org/) for response syntax highlighting (via webjars)
 - [Playwright](https://playwright.dev/) for browser integration tests
 
 ## Generated Output
 
 ```
 output/
-├── index.html          # Path tree + layout + keyboard navigation
+├── index.html          # Layout + keyboard navigation
+├── path-tree.html      # Path-based tree view
+├── tag-tree.html       # Tag-based tree view
 ├── openapi-ui.css
 ├── bulma.min.css
 ├── htmx.min.js
+├── highlight.min.js
 ├── owners/
 │   ├── index.html       # Path fragment: tab bar + first method
 │   ├── GET.html         # Fragment for GET /owners
