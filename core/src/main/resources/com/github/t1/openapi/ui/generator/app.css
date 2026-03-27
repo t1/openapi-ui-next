@@ -316,8 +316,8 @@ pre.response code.hljs {
 .hljs-number { color: var(--bulma-danger); }
 .hljs-literal { color: var(--bulma-primary); }
 .hljs-keyword { color: var(--bulma-warning); font-weight: 600; }
-.hljs-tag { color: var(--bulma-danger); }
-.hljs-name { color: var(--bulma-danger); }
+.hljs-tag { color: var(--bulma-warning); }
+.hljs-name { color: var(--bulma-warning); }
 .hljs-attribute { color: var(--bulma-link); }
 .hljs-section { color: var(--bulma-link); font-weight: 600; }
 .hljs-bullet { color: var(--bulma-info); }
