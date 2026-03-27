@@ -1,12 +1,29 @@
-# OpenAPI UI
+# OpenAPI UI Next
 
 Generates static, keyboard-navigable HTML UIs from OpenAPI specifications.
+
+## Why?
+
+When Swagger came out, I loved it! Esp. the "Try it out" was a real game changer. But APIs keep getting bigger and
+more complex, yet Swagger didn't grow alongside UX-wise. I absolutely want to be able to quickly navigate APIs with the
+keyboard and have not only a nice-looking, but a clear and usage oriented view on the API.
+
+In contrast, Swagger tends to show everything at once: `curl` commands you didn't ask for, response schemas that look
+just like actual responses, and deeply nested sections that bury the information you need. And schema objects cluttered
+at the end. _OpenAPI UI Next_ keeps the UI clean by showing details on demand: schema documentation, response types,
+and code snippets are there when you want them, hidden when you don't.
+
+The OpenAPI UI tools I know (Swagger UI, Redoc (even the generated variant), Rapidoc) are slow by design:
+they are JavaScript-heavy SPAs that parse the spec at runtime in the browser. This means slow initial loads on large
+specs. _OpenAPI UI Next_ takes a different approach: it generates plain HTML + CSS at build time. The result is a set of
+static files that can be served from any web server or embedded in any backend, so they load instantly. The dynamic UX
+is provided mainly by HTMX, e.g. loading method fragments on click.
 
 ## Features
 
 - Parses OpenAPI 3.0/3.1 specs into interactive static HTML
 - Hierarchical, keyboard-navigable path tree with method tag addons
-- Method tabs in detail pane — switching between operations on the same path
+- Method tabs in detail pane: switching between operations on the same path
 - Enriched method fragments: description, deprecated badge, tags, external docs
 - Three interaction modes: Try (fetch), curl, httpie
 - Three-level keyboard navigation: tree → method tabs → content fields
@@ -17,12 +34,12 @@ Generates static, keyboard-navigable HTML UIs from OpenAPI specifications.
 
 ## Modules
 
-| Module | Description |
-|--------|-------------|
-| `core` | Generator library — parses specs and produces HTML + CSS + JS |
-| `cli` | Command-line tool — executable fat jar with shell header |
-| `maven-plugin` | Maven plugin — integrates generation into build pipelines |
-| `demo` | Quarkus petstore app — exercises the plugin end-to-end |
+| Module         | Description                                                  |
+|----------------|--------------------------------------------------------------|
+| `core`         | Generator library: parses specs and produces HTML + CSS + JS |
+| `cli`          | Command-line tool: executable fat jar with shell header      |
+| `maven-plugin` | Maven plugin: integrates generation into build pipelines     |
+| `demo`         | Quarkus petstore app: exercises the plugin end-to-end        |
 
 ## Build
 
@@ -42,6 +59,7 @@ mvn -pl cli package
 ### Maven Plugin
 
 ```xml
+
 <plugin>
     <groupId>com.github.t1</groupId>
     <artifactId>openapi-ui-maven-plugin</artifactId>

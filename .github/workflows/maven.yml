@@ -3,7 +3,7 @@ name: Java CI
 on:
   push:
   pull_request:
-  schedule: [ cron: '17 1 * * 5' ] # weekly: At 01:17 on Friday
+  schedule: [ cron: '38 16 * * 5' ]
 
 jobs:
   build:
@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: 21
+          java-version: 25
           cache: 'maven'
 
       - run: mvn --batch-mode --show-version --no-transfer-progress -DCI=GitHub install
