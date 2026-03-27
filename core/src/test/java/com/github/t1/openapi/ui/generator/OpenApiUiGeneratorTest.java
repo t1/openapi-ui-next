@@ -89,6 +89,22 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("Comma-separated list of fields");
     }
 
+    @Test void shouldRenderParameterTypeBadge() throws Exception {
+        generate("/params.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).contains("has-addons");
+        then(fragment).contains(">path<");
+        then(fragment).contains(">query<");
+    }
+
+    @Test void shouldRenderRequiredBadgeForMandatoryParam() throws Exception {
+        generate("/params.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).contains("required");
+    }
+
     @Test void shouldRenderEnumParameterAsSelect() throws Exception {
         generate("/params.yaml");
 
@@ -167,6 +183,13 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("data-request-body");
     }
 
+    @Test void shouldNotRenderResponseBoxWithoutSchema() throws Exception {
+        generate("/response-no-schema.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).doesNotContain("data-box=\"response\"");
+    }
+
     @Test void shouldRenderResponseSchema() throws Exception {
         generate("/params.yaml");
 
@@ -184,6 +207,14 @@ class OpenApiUiGeneratorTest {
                 .doesNotContain("{petId}");
         then(indexHtml).contains("{id}");
         then(indexHtml).contains("visits");
+    }
+
+    @Test void shouldUseActualParamNameInFragment() throws Exception {
+        generate("/different-param-names.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{id}/visits/GET.html"));
+        then(fragment).contains("petId");
+        then(fragment).contains("/pets/{petId}/visits");
     }
 
     @Test void shouldUseParamClassForPathParameters() throws Exception {

@@ -68,7 +68,6 @@ section > .container > .split-layout > .split-second {
 }
 .op-description-wrapper {
     position: relative;
-    margin-bottom: 1rem;
 }
 #detail .op-description {
     color: var(--bulma-text-weak);

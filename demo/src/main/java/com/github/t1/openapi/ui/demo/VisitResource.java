@@ -7,6 +7,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ public class VisitResource {
     }
 
     @POST @Operation(summary = "Record a visit")
-    public Visit create(@PathParam("petId") long petId, @Valid Visit visit) {
+    public Visit create(@PathParam("petId") long petId, @RequestBody @Valid Visit visit) {
         var petExists = PetResource.PETS.stream().anyMatch(p -> p.id() == petId);
         if (!petExists) throw new PetNotFoundException(petId);
         var created = new Visit(VISITS.size() + 1, petId, visit.date(), visit.reason());

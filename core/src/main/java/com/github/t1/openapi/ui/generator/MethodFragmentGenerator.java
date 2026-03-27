@@ -14,7 +14,9 @@ import static com.github.t1.bulmajava.components.Message.messageBody;
 import static com.github.t1.bulmajava.elements.Box.box;
 import static com.github.t1.bulmajava.elements.Button.button;
 import static com.github.t1.bulmajava.elements.Title.subtitle;
+import static com.github.t1.bulmajava.basic.Color.DANGER;
 import static com.github.t1.bulmajava.elements.Tag.tag;
+import static com.github.t1.bulmajava.elements.Tag.tagsAddon;
 import static com.github.t1.bulmajava.form.Field.field;
 import static com.github.t1.bulmajava.form.Input.input;
 import static com.github.t1.bulmajava.form.InputType.TEXT;
@@ -31,12 +33,13 @@ class MethodFragmentGenerator {
         var method = ctx.method();
         var operation = ctx.operation();
         var fullPath = ctx.fullPath();
+        var displayPath = resolveDisplayPath(fullPath, operation);
         var summary = operation.getSummary() != null ? operation.getSummary() : "";
         var headingBadge = tag(method.name()).is(methodColor(method), MEDIUM);
         var headerRow = div().classes("is-flex", "is-align-items-center", "mb-5").style("gap:0.75rem").content(
                 headingBadge,
                 element("h2").classes("title", "is-4", "mb-0", "endpoint-path")
-                        .content("/" + fullPath));
+                        .content("/" + displayPath));
         var hasTags = operation.getTags() != null && !operation.getTags().isEmpty();
         var isDeprecated = Boolean.TRUE.equals(operation.getDeprecated());
         if (hasTags || isDeprecated) {
@@ -76,7 +79,11 @@ class MethodFragmentGenerator {
             for (var param : operation.getParameters()) {
                 var schema = param.getSchema();
                 var enumValues = (schema != null) ? schema.getEnum() : null;
-                var inputField = field(param.getName());
+                var badges = tagsAddon().content(tag(param.getIn())).classes("is-inline-flex", "ml-2");
+                if (Boolean.TRUE.equals(param.getRequired())) {
+                    badges.content(tag("required").is(DANGER));
+                }
+                var inputField = field().label(span(param.getName()), badges);
                 if (enumValues != null && !enumValues.isEmpty()) {
                     var sel = select(param.getName()).option("", "(any)");
                     for (var value : enumValues) {
@@ -104,8 +111,7 @@ class MethodFragmentGenerator {
                 bodyBox.classes("schema-box", "is-collapsed").attr("data-box", "body");
                 var bodyTitle = div().classes("schema-box-title")
                         .content(subtitle(6, "Request Body"));
-                var bodyHeader = div().classes("schema-box-header")
-                        .content(bodyTitle, element("button").classes("schema-toggle").content("Schema ▸"));
+                var bodyControls = div().classes("schema-box-controls");
 
                 if (jsonContent.getExamples() != null && jsonContent.getExamples().size() > 1) {
                     var exampleSelect = element("select")
@@ -120,8 +126,12 @@ class MethodFragmentGenerator {
                                 .attr("value", formatted)
                                 .content(label));
                     }
-                    bodyTitle.content(div().classes("select", "is-small").content(exampleSelect));
+                    bodyControls.content(span("Example").classes("schema-accept-label"));
+                    bodyControls.content(div().classes("select", "is-small").content(exampleSelect));
                 }
+                bodyControls.content(element("button").classes("schema-toggle").content("Schema ▸"));
+                var bodyHeader = div().classes("schema-box-header")
+                        .content(bodyTitle, bodyControls);
 
                 bodyBox.content(bodyHeader);
 
@@ -150,7 +160,7 @@ class MethodFragmentGenerator {
         var sendRow = level().content(
                 div().classes("level-left").content(
                         button("Send").is(PRIMARY)
-                                .attr("data-path", "/" + fullPath)
+                                .attr("data-path", "/" + displayPath)
                                 .attr("data-method", method.name())),
                 div().classes("level-right"));
         fragment.content(sendRow);
@@ -168,6 +178,13 @@ class MethodFragmentGenerator {
         var hasSchemaProperties = statusCodes.stream()
                 .anyMatch(code -> responses.get(code).getContent().values().stream()
                         .anyMatch(mt -> mt.getSchema() != null && mt.getSchema().getProperties() != null));
+        // collect all content types across all status codes
+        var allContentTypes = responses.values().stream()
+                .filter(r -> r.getContent() != null)
+                .flatMap(r -> r.getContent().keySet().stream())
+                .distinct()
+                .toList();
+        if (!hasSchemaProperties && allContentTypes.size() <= 1) return null;
 
         var responseBox = box().classes("schema-box", "is-collapsed").attr("data-box", "response");
 
@@ -175,12 +192,6 @@ class MethodFragmentGenerator {
         var title = div().classes("schema-box-title")
                 .content(subtitle(6, "Response Body"));
         var header = div().classes("schema-box-header").content(title);
-        // collect all content types across all status codes
-        var allContentTypes = responses.values().stream()
-                .filter(r -> r.getContent() != null)
-                .flatMap(r -> r.getContent().keySet().stream())
-                .distinct()
-                .toList();
         var controls = div().classes("schema-box-controls");
         if (allContentTypes.size() > 1) {
             controls.content(span("Accept").classes("schema-accept-label"));
@@ -349,5 +360,22 @@ class MethodFragmentGenerator {
             case "uuid" -> "3fa85f64-5717-4562-b3fc-2c963f66afa6";
             default -> null;
         };
+    }
+
+    /** Replace unified path param segments with actual parameter names from the operation. */
+    private static String resolveDisplayPath(String fullPath, io.swagger.v3.oas.models.Operation operation) {
+        if (operation.getParameters() == null) return fullPath;
+        var pathParams = operation.getParameters().stream()
+                .filter(p -> "path".equals(p.getIn()))
+                .toList();
+        var segments = fullPath.split("/");
+        var paramIndex = 0;
+        for (var i = 0; i < segments.length; i++) {
+            if (segments[i].startsWith("{") && segments[i].endsWith("}") && paramIndex < pathParams.size()) {
+                segments[i] = "{" + pathParams.get(paramIndex).getName() + "}";
+                paramIndex++;
+            }
+        }
+        return String.join("/", segments);
     }
 }
