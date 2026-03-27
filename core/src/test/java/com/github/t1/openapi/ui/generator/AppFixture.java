@@ -202,9 +202,9 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void waitForInput(String name) {page.waitForSelector("#detail input[name='" + name + "']");}
 
-    void clickSend() {page.locator("#detail button[data-path]").click();}
+    void clickSend() {page.locator("#detail button[type=submit]").click();}
 
-    String sendButtonText() {return page.locator("#detail button[data-path]").textContent();}
+    String sendButtonText() {return page.locator("#detail button[type=submit]").textContent();}
 
     void waitForResponse() {page.waitForSelector("#detail .response-status");}
 
@@ -234,12 +234,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean isSendButtonEnabled() {
         return (Boolean) page.evaluate(
-                "() => !document.querySelector('#detail button[data-path]').disabled");
+                "() => !document.querySelector('#detail button[type=submit]').disabled");
     }
 
     boolean isSendButtonFocused() {
         return (Boolean) page.evaluate(
-                "() => document.activeElement === document.querySelector('#detail button[data-path]')");
+                "() => document.activeElement === document.querySelector('#detail button[type=submit]')");
     }
 
     String responseText() {return page.locator("#detail pre.response").textContent();}
@@ -385,7 +385,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                     if (!el) return '';
                     var s = el.tagName.toLowerCase();
                     if (el.classList.length > 0) s += '.' + Array.from(el.classList).join('.');
-                    if (el.getAttribute('data-path')) s += '[data-path]';
+                    if (el.getAttribute('type') === 'submit') s += '[type=submit]';
                     return s;
                 }""");
     }
@@ -402,7 +402,9 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void clickDescriptionToggle() {page.locator(".desc-toggle").click();}
 
-String readClipboard() {return (String) page.evaluate("() => navigator.clipboard.readText()");}
+void clearClipboard() {page.evaluate("() => navigator.clipboard.writeText('')");}
+
+    String readClipboard() {return (String) page.evaluate("() => navigator.clipboard.readText()");}
 
     boolean isViewActive(String view) {
         return page.locator("[data-toggle-value='" + view + "'].is-active").count() == 1;

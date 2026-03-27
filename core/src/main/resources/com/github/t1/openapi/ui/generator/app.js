@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (modeContainer) {
         modeContainer.addEventListener('toggle', function(e) {
             modeContainer.setAttribute('data-mode', e.detail.value);
-            var sendBtns = document.querySelectorAll('#detail button[data-path]');
+            var sendBtns = document.querySelectorAll('#detail button[type=submit]');
             sendBtns.forEach(function(b) { b.textContent = e.detail.value === 'try' ? 'Send' : 'Copy'; });
         });
         modeContainer.addEventListener('keydown', function(e) {
@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.addEventListener('htmx:afterSwap', function(e) {
         var currentMode = modeContainer ? modeContainer.getAttribute('data-mode') : 'try';
         if (currentMode !== 'try') {
-            var sendBtns = document.querySelectorAll('#detail button[data-path]');
+            var sendBtns = document.querySelectorAll('#detail button[type=submit]');
             sendBtns.forEach(function(b) { b.textContent = 'Copy'; });
         }
         initDescriptionToggle();
@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.querySelector('[role="tree"]').focus();
             }
         } else if (e.key === 'ArrowDown' || e.key === 'Enter') {
-            var firstInput = document.querySelector('#method-content input, #method-content select, #method-content textarea, #method-content .schema-toggle, #method-content button[data-path]');
+            var firstInput = document.querySelector('#method-content input, #method-content select, #method-content textarea, #method-content .schema-toggle, #method-content button[type=submit]');
             if (firstInput) firstInput.focus();
         } else if (e.key === 'Escape') {
             document.querySelector('[role="tree"]').focus();
@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('keydown', function(e) {
         var mc = document.getElementById('method-content') || document.getElementById('detail');
         if (!mc) return;
-        var focusables = Array.from(mc.querySelectorAll('input, select, textarea, .schema-toggle, button[data-path]'));
+        var focusables = Array.from(mc.querySelectorAll('input, select, textarea, .schema-toggle, button[type=submit]'));
         var idx = focusables.indexOf(document.activeElement);
         if (idx < 0) return;
 
@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (e.key === 'Enter' && el.classList.contains('schema-toggle')) {
             el.click();
         } else if (e.key === 'Enter' && el.tagName !== 'SELECT') {
-            var sendBtn = mc.querySelector('button[data-path]');
+            var sendBtn = mc.querySelector('button[type=submit]');
             if (sendBtn) sendBtn.click();
         } else if (e.key === 'Escape') {
             document.querySelector('[role="tree"]').focus();
@@ -313,18 +313,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Send button handler (delegated from detail pane)
     if (detail) {
-        detail.addEventListener('click', function(e) {
-            var sendBtn = e.target.closest('button[data-path]');
-            if (!sendBtn) return;
+        detail.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.target.closest('form[data-path]') && e.target.tagName !== 'BUTTON') {
+                e.preventDefault();
+            }
+        });
+        detail.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var sendForm = e.target.closest('form[data-path]');
+            if (!sendForm) return;
+            var sendBtn = sendForm.querySelector('button[type=submit]');
 
-            var pathTemplate = sendBtn.getAttribute('data-path');
-            var method = sendBtn.getAttribute('data-method');
+            var pathTemplate = sendForm.getAttribute('data-path');
+            var method = sendForm.getAttribute('data-method');
             var modeEl = document.querySelector('[data-toggle="mode"]');
             var mode = modeEl ? modeEl.getAttribute('data-mode') : 'try';
             var baseUrl = modeEl ? (modeEl.getAttribute('data-base-url') || '') : '';
 
             // Collect input values
-            var inputs = detail.querySelectorAll('input[name], select[name]');
+            var inputs = sendForm.querySelectorAll('input[name], select[name]');
             var resolvedPath = pathTemplate;
             var queryParams = [];
             inputs.forEach(function(inp) {
@@ -340,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     : new URL((baseUrl + resolvedPath).replace(/\/+/g, '/'), window.location.origin).href;
             if (queryParams.length > 0) url += '?' + queryParams.join('&');
 
-            var bodyTextarea = detail.querySelector('textarea[data-request-body]');
+            var bodyTextarea = sendForm.querySelector('textarea[data-request-body]');
             var bodyValue = bodyTextarea ? bodyTextarea.value : '';
 
             if (mode === 'curl') {
@@ -375,12 +382,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
                         }
                         clearPreviousResponse();
-                        var responseBox = detail.querySelector('.schema-box[data-box="response"]');
-                        if (responseBox && !responseBox.classList.contains('is-collapsed')) {
-                            responseBox.classList.add('is-collapsed');
-                            var toggle = responseBox.querySelector('.schema-toggle');
-                            if (toggle) toggle.textContent = 'Schema ▸';
-                        }
                         if (text.trim()) {
                             var pre = document.createElement('pre');
                             pre.className = 'response';

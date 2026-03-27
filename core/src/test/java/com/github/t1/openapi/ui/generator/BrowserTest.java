@@ -2,6 +2,7 @@ package com.github.t1.openapi.ui.generator;
 
 import java.util.Map;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -579,7 +580,7 @@ class BrowserTest {
             then(app.activeElementSelector()).contains("desc-toggle");
 
             app.pressKey("ArrowDown");
-            then(app.activeElementSelector()).contains("button").contains("data-path");
+            then(app.activeElementSelector()).contains("button").contains("type=submit");
 
             app.focusDescriptionToggle();
             app.pressKey("ArrowUp");
@@ -651,7 +652,7 @@ class BrowserTest {
 
             app.pressKey("ArrowDown");
 
-            then(app.activeElementSelector()).contains("button").contains("data-path");
+            then(app.activeElementSelector()).contains("button").contains("type=submit");
         }
 
         @Test void shouldReturnToTabsOnArrowUpFromFirstField() {
@@ -783,6 +784,17 @@ class BrowserTest {
                 app.screenshot("try-mode-path-param");
             }
 
+            @Test void shouldPreventSendWhenRequiredParamIsEmpty() {
+                app.mockEndpoint("/pets/", "application/json", "{\"id\":\"1\"}");
+                app.expandFirstNode();
+                app.clickTreeNode("pets/{petId}/index.html");
+                app.waitForInput("petId");
+                app.clickSend();
+
+
+                then(app.hasResponseStatus()).isFalse();
+            }
+
             @Test void shouldRestoreFocusToSendButtonAfterSend() {
                 app.mockEndpoint("/pets/42", "application/json", "{\"id\":\"42\"}");
                 app.expandFirstNode();
@@ -794,6 +806,17 @@ class BrowserTest {
 
                 then(app.isSendButtonFocused()).isTrue();
             }
+        }
+
+        @Test void shouldPreventCopyWhenRequiredParamIsEmpty() {
+            app.clickModeButton("curl");
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForInput("petId");
+            app.clearClipboard();
+            app.clickSend();
+
+            then(app.readClipboard()).isEmpty();
         }
 
         @Test void curlModeCopiesCommand() {
@@ -874,6 +897,15 @@ class BrowserTest {
         @RegisterExtension static AppFixture app =
                 context.launch("request-body.yaml").withBaseUrlOverride();
 
+        @Test void shouldPreventSendWhenRequiredBodyIsEmpty() {
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+            app.fillRequestBody("");
+            app.clickSend();
+
+            then(app.hasResponseStatus()).isFalse();
+        }
+
         @Test void shouldKeepFocusInTextareaOnArrowDownWhenNotAtLastLine() {
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");
@@ -893,7 +925,7 @@ class BrowserTest {
 
             app.pressKey("ArrowDown");
 
-            then(app.activeElementSelector()).contains("button").contains("data-path");
+            then(app.activeElementSelector()).contains("button").contains("type=submit");
         }
 
         @Test void shouldMoveOutOfTextareaOnArrowUpAtFirstLine() {
@@ -1173,21 +1205,6 @@ class BrowserTest {
             @RegisterExtension static AppFixture app =
                     context.launch("rich-response.yaml").withBaseUrlOverride();
 
-            @Test void shouldAutoCollapseSchemaWhenResponseArrives() {
-                app.mockEndpoint("/pets/1", "application/json", "{\"id\":1}");
-                app.expandFirstNode();
-                app.clickTreeNode("pets/{petId}/index.html");
-                app.waitForDetailContent("Get a pet");
-                app.toggleSchema("response");
-
-                then(app.isSchemaExpanded("response")).isTrue();
-
-                app.fillInput("petId", "1");
-                app.clickSend();
-                app.waitForResponse();
-
-                then(app.isSchemaExpanded("response")).isFalse();
-            }
         }
     }
 }

@@ -133,7 +133,7 @@ section > .container > .split-layout > .split-second {
     font-size: 0.875rem;
     resize: vertical;
 }
-#detail button[data-path] {
+#detail button[type=submit] {
     margin-top: 0.75rem;
 }
 @keyframes bump-vertical {

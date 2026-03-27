@@ -328,7 +328,7 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                 function focusFirstDetailField() {
                     var detail = document.getElementById('detail');
                     if (!detail) return;
-                    var first = detail.querySelector('input, select, textarea, button[data-path]');
+                    var first = detail.querySelector('input, select, textarea, button[type=submit]');
                     if (first) first.focus();
                 }
             

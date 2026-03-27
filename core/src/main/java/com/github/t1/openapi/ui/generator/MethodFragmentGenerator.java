@@ -18,6 +18,7 @@ import static com.github.t1.bulmajava.basic.Color.DANGER;
 import static com.github.t1.bulmajava.elements.Tag.tag;
 import static com.github.t1.bulmajava.elements.Tag.tagsAddon;
 import static com.github.t1.bulmajava.form.Field.field;
+import static com.github.t1.bulmajava.form.Form.form;
 import static com.github.t1.bulmajava.form.Input.input;
 import static com.github.t1.bulmajava.form.InputType.TEXT;
 import static com.github.t1.bulmajava.form.Select.select;
@@ -75,28 +76,31 @@ class MethodFragmentGenerator {
                             .attr("target", "_blank")
                             .content("External docs")));
         }
+        var sendForm = form().attr("data-path", "/" + displayPath).attr("data-method", method.name());
         if (operation.getParameters() != null) {
             for (var param : operation.getParameters()) {
                 var schema = param.getSchema();
                 var enumValues = (schema != null) ? schema.getEnum() : null;
+                var required = Boolean.TRUE.equals(param.getRequired());
                 var badges = tagsAddon().content(tag(param.getIn())).classes("is-inline-flex", "ml-2");
-                if (Boolean.TRUE.equals(param.getRequired())) {
-                    badges.content(tag("required").is(DANGER));
-                }
+                if (required) badges.content(tag("required").is(DANGER));
                 var inputField = field().label(span(param.getName()), badges);
                 if (enumValues != null && !enumValues.isEmpty()) {
                     var sel = select(param.getName()).option("", "(any)");
+                    if (required) sel.attr("required", "");
                     for (var value : enumValues) {
                         sel.option(value.toString(), value.toString());
                     }
                     inputField.content(sel);
                 } else {
-                    inputField.content(input(TEXT).attr("name", param.getName()));
+                    var inp = input(TEXT).attr("name", param.getName());
+                    if (required) inp.attr("required", "");
+                    inputField.content(inp);
                 }
                 if (param.getDescription() != null) {
                     inputField.help(param.getDescription());
                 }
-                fragment.content(inputField);
+                sendForm.content(inputField);
             }
         }
         if (operation.getRequestBody() != null && operation.getRequestBody().getContent() != null) {
@@ -129,7 +133,7 @@ class MethodFragmentGenerator {
                     bodyControls.content(span("Example").classes("schema-accept-label"));
                     bodyControls.content(div().classes("select", "is-small").content(exampleSelect));
                 }
-                bodyControls.content(element("button").classes("schema-toggle").content("Schema ▸"));
+                bodyControls.content(element("button").attr("type", "button").classes("schema-toggle").content("Schema ▸"));
                 var bodyHeader = div().classes("schema-box-header")
                         .content(bodyTitle, bodyControls);
 
@@ -138,7 +142,9 @@ class MethodFragmentGenerator {
                 var textarea = element("textarea")
                         .attr("data-request-body", "true")
                         .classes("textarea", "is-family-code")
-                        .attr("rows", "6")
+                        .attr("rows", "6");
+                if (Boolean.TRUE.equals(operation.getRequestBody().getRequired())) textarea.attr("required", "");
+                textarea
                         .content(skeleton);
 
                 var schema = jsonContent.getSchema();
@@ -150,20 +156,19 @@ class MethodFragmentGenerator {
                 } else {
                     bodyBox.content(textarea);
                 }
-                fragment.content(bodyBox);
+                sendForm.content(bodyBox);
             }
         }
         if (operation.getResponses() != null) {
             var responseBox = buildResponseBox(operation.getResponses());
-            if (responseBox != null) fragment.content(responseBox);
+            if (responseBox != null) sendForm.content(responseBox);
         }
         var sendRow = level().content(
                 div().classes("level-left").content(
-                        button("Send").is(PRIMARY)
-                                .attr("data-path", "/" + displayPath)
-                                .attr("data-method", method.name())),
+                        button("Send").is(PRIMARY).attr("type", "submit")),
                 div().classes("level-right"));
-        fragment.content(sendRow);
+        sendForm.content(sendRow);
+        fragment.content(sendForm);
         return fragment;
     }
 
@@ -200,7 +205,7 @@ class MethodFragmentGenerator {
             controls.content(sel);
         }
         if (hasSchemaProperties) {
-            controls.content(element("button").classes("schema-toggle").content("Schema ▸"));
+            controls.content(element("button").attr("type", "button").classes("schema-toggle").content("Schema ▸"));
         }
         header.content(controls);
         responseBox.content(header);
