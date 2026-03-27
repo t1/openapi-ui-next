@@ -49,7 +49,7 @@ public class PetResource {
                                                         + "For large datasets, consider using the status filter to reduce the result set.")
     public List<Pet> list(@QueryParam("status") PetStatus status) {
         if (status == null) return PETS;
-        return PETS.stream().filter(p -> p.status() == status).toList();
+        return PETS.stream().filter(p -> p.status == status).toList();
     }
 
     @GET @Path("/{id}") @Produces({APPLICATION_JSON, APPLICATION_XML})
@@ -61,25 +61,25 @@ public class PetResource {
             content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
     public Pet get(@PathParam("id") long id) {
         return PETS.stream()
-                .filter(p -> p.id() == id).findFirst()
+                .filter(p -> p.id == id).findFirst()
                 .orElseThrow(() -> new PetNotFoundException(id));
     }
 
-    @POST @Operation(summary = "Add a new pet")
+    @POST @Produces(APPLICATION_JSON) @Operation(summary = "Add a new pet")
     public Response create(@RequestBody @Valid Pet pet) {
-        validateOwner(pet.ownerId());
-        var created = new Pet(nextId++, pet.name(), pet.status(), pet.ownerId());
+        validateOwner(pet.ownerId);
+        var created = new Pet(nextId++, pet.name, pet.status, pet.ownerId);
         PETS.add(created);
         return Response.status(201).entity(created).build();
     }
 
-    @PUT @Path("/{id}") @Operation(summary = "Update a pet", deprecated = true)
+    @PUT @Path("/{id}") @Produces(APPLICATION_JSON) @Operation(summary = "Update a pet", deprecated = true)
     @Deprecated
     public Pet update(@PathParam("id") long id, @RequestBody @Valid Pet pet) {
-        validateOwner(pet.ownerId());
+        validateOwner(pet.ownerId);
         for (int i = 0; i < PETS.size(); i++) {
-            if (PETS.get(i).id() == id) {
-                var updated = new Pet(id, pet.name(), pet.status(), pet.ownerId());
+            if (PETS.get(i).id == id) {
+                var updated = new Pet(id, pet.name, pet.status, pet.ownerId);
                 PETS.set(i, updated);
                 return updated;
             }
@@ -87,7 +87,7 @@ public class PetResource {
         throw new PetNotFoundException(id);
     }
 
-    @PATCH @Path("/{id}") @Consumes(APPLICATION_JSON) @Operation(summary = "Partially update a pet")
+    @PATCH @Path("/{id}") @Consumes(APPLICATION_JSON) @Produces(APPLICATION_JSON) @Operation(summary = "Partially update a pet")
     public Pet patch(@PathParam("id") long id, @RequestBody(content = @Content(
             mediaType = APPLICATION_JSON,
             examples = {
@@ -96,12 +96,12 @@ public class PetResource {
             })) JsonObject patch) {
         for (int i = 0; i < PETS.size(); i++) {
             var existing = PETS.get(i);
-            if (existing.id() == id) {
+            if (existing.id == id) {
                 if (patch.containsKey("ownerId")) validateOwner(patch.getJsonNumber("ownerId").longValue());
                 var updated = new Pet(id,
-                        patch.containsKey("name") ? patch.getString("name") : existing.name(),
-                        patch.containsKey("status") ? PetStatus.valueOf(patch.getString("status")) : existing.status(),
-                        patch.containsKey("ownerId") ? patch.getJsonNumber("ownerId").longValue() : existing.ownerId());
+                        patch.containsKey("name") ? patch.getString("name") : existing.name,
+                        patch.containsKey("status") ? PetStatus.valueOf(patch.getString("status")) : existing.status,
+                        patch.containsKey("ownerId") ? patch.getJsonNumber("ownerId").longValue() : existing.ownerId);
                 PETS.set(i, updated);
                 return updated;
             }
@@ -117,7 +117,7 @@ public class PetResource {
     @DELETE @Path("/{id}") @Operation(summary = "Delete a pet")
     @Tag(name = "admin")
     public Response delete(@PathParam("id") long id) {
-        var removed = PETS.removeIf(p -> p.id() == id);
+        var removed = PETS.removeIf(p -> p.id == id);
         if (!removed) throw new PetNotFoundException(id);
         return Response.noContent().build();
     }

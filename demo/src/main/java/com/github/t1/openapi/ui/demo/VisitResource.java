@@ -30,7 +30,7 @@ public class VisitResource {
 
     @POST @Operation(summary = "Record a visit")
     public Visit create(@PathParam("petId") long petId, @RequestBody @Valid Visit visit) {
-        var petExists = PetResource.PETS.stream().anyMatch(p -> p.id() == petId);
+        var petExists = PetResource.PETS.stream().anyMatch(p -> p.id == petId);
         if (!petExists) throw new PetNotFoundException(petId);
         var created = new Visit(VISITS.size() + 1, petId, visit.date(), visit.reason());
         VISITS.add(created);

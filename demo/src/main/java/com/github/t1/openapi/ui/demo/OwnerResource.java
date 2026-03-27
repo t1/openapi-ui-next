@@ -32,6 +32,6 @@ public class OwnerResource {
     @GET @Path("/{ownerId}/pets") @Operation(summary = "List pets for an owner")
     public List<Pet> listPets(@PathParam("ownerId") long ownerId) {
         return PetResource.PETS.stream()
-                .filter(p -> p.ownerId() == ownerId).toList();
+                .filter(p -> p.ownerId == ownerId).toList();
     }
 }
