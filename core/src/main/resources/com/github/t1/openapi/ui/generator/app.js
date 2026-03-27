@@ -129,6 +129,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    function prettyPrintXml(xml) {
+        var doc = new DOMParser().parseFromString(xml, 'application/xml');
+        if (doc.querySelector('parsererror')) return xml;
+        var xslt = new DOMParser().parseFromString(
+            '<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">' +
+            '<xsl:output method="xml" indent="yes"/>' +
+            '<xsl:template match="@*|node()"><xsl:copy><xsl:apply-templates select="@*|node()"/></xsl:copy></xsl:template>' +
+            '</xsl:stylesheet>', 'application/xml');
+        var processor = new XSLTProcessor();
+        processor.importStylesheet(xslt);
+        var result = processor.transformToDocument(doc);
+        return new XMLSerializer().serializeToString(result);
+    }
+
     function detectLanguage(contentType) {
         var mime = (contentType || '').split(';')[0].trim();
         var subtype = mime.split('/')[1] || '';
@@ -380,6 +394,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         showResponseStatus(sendBtn, resp.status, resp.statusText);
                         if (ct.includes('json')) {
                             try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
+                        } else if (ct.includes('xml')) {
+                            try { text = prettyPrintXml(text); } catch(e) {}
                         }
                         clearPreviousResponse();
                         if (text.trim()) {
