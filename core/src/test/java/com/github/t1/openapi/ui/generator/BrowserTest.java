@@ -1186,6 +1186,16 @@ class BrowserTest {
             then(app.hasSchemaToggle("response")).isTrue();
         }
 
+        @Test void shouldFocusSchemaToggleOnClick() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+
+            app.toggleSchema("response");
+
+            then(app.isSchemaToggleFocused("response")).isTrue();
+        }
+
         @Test void shouldShowPropertyTreeWithTypeBadges() {
             app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");
