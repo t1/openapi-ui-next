@@ -583,6 +583,19 @@ class BrowserTest {
     @ResourceLock("multi-method") @Nested class GivenMultiMethodApp {
         @RegisterExtension static AppFixture app = launch("multi-method.yaml");
 
+        @Test void shouldNavigateToTabWhenClickingMethodBadge() {
+            app.waitForDetailContent("List pets");
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get pet by ID");
+
+            app.clickMethodBadge("pets/index.html", "POST");
+            app.waitForDetailContent("Create a pet");
+
+            then(app.isTabActive(2)).isTrue();
+            then(app.detailText()).contains("Create a pet");
+        }
+
         @Test void shouldSwitchMethodTabOnClick() {
             app.waitForDetailContent("List pets");
             then(app.detailText()).contains("List pets");

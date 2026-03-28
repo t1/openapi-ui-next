@@ -103,6 +103,15 @@ document.addEventListener('DOMContentLoaded', function() {
             viewToggle.focus();
         }
     });
+    document.body.addEventListener('htmx:load', function(e) {
+        if (!pendingMethod || !detail || !detail.contains(e.target)) return;
+        var method = pendingMethod;
+        pendingMethod = null;
+        var tabLinks = detail.querySelectorAll('.tabs li a');
+        tabLinks.forEach(function(a) {
+            if (a.textContent.trim() === method) a.click();
+        });
+    });
     document.body.addEventListener('htmx:afterSwap', function(e) {
         var currentMode = modeContainer ? modeContainer.getAttribute('data-mode') : 'try';
         if (currentMode !== 'try') {
@@ -118,15 +127,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         // After detail content swaps, check if a specific method tab should be activated
         var trigger = e.detail.elt;
-        if (trigger && trigger.getAttribute && trigger.getAttribute('data-method')) {
-            var method = trigger.getAttribute('data-method');
-            var tabLinks = document.querySelectorAll('.tabs li a');
-            tabLinks.forEach(function(a) {
-                if (a.textContent.trim() === method) {
-                    a.click();
-                }
-            });
-        }
     });
 
     function prettyPrintXml(xml) {
@@ -370,6 +370,14 @@ document.addEventListener('DOMContentLoaded', function() {
             handled = false;
         }
         if (handled) { e.preventDefault(); e.stopPropagation(); }
+    }, true);
+
+    // When clicking a method badge in the tree, navigate to that tab
+    var pendingMethod = null;
+    document.addEventListener('click', function(e) {
+        var badge = e.target.closest('[role="treeitem"] .tag');
+        if (!badge) return;
+        pendingMethod = badge.textContent.trim();
     }, true);
 
     // Auto-load the first operation

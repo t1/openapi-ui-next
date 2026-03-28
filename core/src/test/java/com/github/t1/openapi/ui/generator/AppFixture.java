@@ -156,6 +156,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void clickTreeNode(String hxGetPath) {page.locator("[hx-get='" + hxGetPath + "']").click();}
 
+    void clickMethodBadge(String hxGetPath, String method) {
+        page.locator("[hx-get='" + hxGetPath + "'] .tag:text('" + method + "')").click();
+    }
+
     void waitForDetailContent(String text) {page.waitForSelector("#detail :text('" + text + "')");}
 
     String detailText() {return page.locator("#detail").textContent();}
