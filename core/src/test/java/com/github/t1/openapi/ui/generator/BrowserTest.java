@@ -6,16 +6,17 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import static org.assertj.core.api.BDDAssertions.then;
 
 class BrowserTest {
     private static final double MINIMUM_DRAG_DELTA = 50;
 
-    @RegisterExtension static TestContext context = new TestContext();
+    private static AppFixture launch(String specFilename) {return new AppFixture(specFilename);}
 
-    @Nested class GivenAppWithOneGet {
-        @RegisterExtension static AppFixture app = context.launch("one-get.yaml");
+    @ResourceLock("one-get") @Nested class GivenAppWithOneGet {
+        @RegisterExtension static AppFixture app = launch("one-get.yaml");
 
         @Test void shouldHaveSplitLayout() {then(app.hasSplitLayout()).isTrue();}
 
@@ -237,9 +238,9 @@ class BrowserTest {
             app.screenshot("layout-mobile");
         }
 
-        @Nested class InTryMode {
+        @ResourceLock("one-get-try") @Nested class InTryMode {
             @RegisterExtension static AppFixture app =
-                    context.launch("one-get.yaml").withBaseUrlOverride();
+                    launch("one-get.yaml").withBaseUrlOverride();
 
             private void navigateToListPetsAndSend() {
                 app.focusTree();
@@ -388,8 +389,8 @@ class BrowserTest {
         }
     }
 
-    @Nested class GivenErrorBanner {
-        @RegisterExtension static AppFixture app = context.launch("one-get.yaml");
+    @ResourceLock("error-banner") @Nested class GivenErrorBanner {
+        @RegisterExtension static AppFixture app = launch("one-get.yaml");
 
         @Test void shouldShowBannerWhenHtmxRequestFails() {
             app.waitForDetailContent("List pets");
@@ -414,8 +415,8 @@ class BrowserTest {
         }
     }
 
-    @Nested class GivenFlatTaggedApp {
-        @RegisterExtension static AppFixture app = context.launch("tagged-flat.yaml");
+    @ResourceLock("tagged-flat") @Nested class GivenFlatTaggedApp {
+        @RegisterExtension static AppFixture app = launch("tagged-flat.yaml");
 
         @Test void shouldSwitchToPathViewOnClick() {
             then(app.isViewActive("tags")).isTrue();
@@ -532,8 +533,8 @@ class BrowserTest {
         }
     }
 
-    @Nested class GivenAppWithDeepPaths {
-        @RegisterExtension static AppFixture app = context.launch("deep-paths.yaml");
+    @ResourceLock("deep-paths") @Nested class GivenAppWithDeepPaths {
+        @RegisterExtension static AppFixture app = launch("deep-paths.yaml");
 
         @Test void methodAddonsShouldBeInSingleRow() {
             app.expandAllNodes();
@@ -542,8 +543,8 @@ class BrowserTest {
         }
     }
 
-    @Nested class GivenMultiMethodApp {
-        @RegisterExtension static AppFixture app = context.launch("multi-method.yaml");
+    @ResourceLock("multi-method") @Nested class GivenMultiMethodApp {
+        @RegisterExtension static AppFixture app = launch("multi-method.yaml");
 
         @Test void shouldSwitchMethodTabOnClick() {
             app.waitForDetailContent("List pets");
@@ -701,8 +702,8 @@ class BrowserTest {
         }
     }
 
-    @Nested class GivenAppWithRelativeBase {
-        @RegisterExtension static AppFixture app = context.launch("relative-base.yaml");
+    @ResourceLock("relative-base") @Nested class GivenAppWithRelativeBase {
+        @RegisterExtension static AppFixture app = launch("relative-base.yaml");
 
         @Test void tryModeShouldResolveRelativeBaseUrl() {
             app.focusTree();
@@ -728,14 +729,14 @@ class BrowserTest {
         }
     }
 
-    @Nested class GivenAppWithNoSummary {
-        @RegisterExtension static AppFixture app = context.launch("no-summary.yaml");
+    @ResourceLock("no-summary") @Nested class GivenAppWithNoSummary {
+        @RegisterExtension static AppFixture app = launch("no-summary.yaml");
 
         @Test void shouldNotShowEmDashWithoutSummary() {then(app.selectedTreeItemText()).doesNotContain("—");}
     }
 
-    @Nested class GivenAppWithParams {
-        @RegisterExtension static AppFixture app = context.launch("params.yaml");
+    @ResourceLock("params") @Nested class GivenAppWithParams {
+        @RegisterExtension static AppFixture app = launch("params.yaml");
 
         @Test void shouldNavigateArrowDownFromChevronToField() {
             app.waitForDetailContent("Get a pet");
@@ -767,9 +768,9 @@ class BrowserTest {
             then(app.isSendButtonFocused()).isFalse();
         }
 
-        @Nested class InTryMode {
+        @ResourceLock("params-try") @Nested class InTryMode {
             @RegisterExtension static AppFixture app =
-                    context.launch("params.yaml").withBaseUrlOverride();
+                    launch("params.yaml").withBaseUrlOverride();
 
             @Test void tryModeSendsRequestWithPathParam() {
                 app.mockEndpoint("/pets/42", "application/json", "{\"id\":\"42\",\"name\":\"Fido\"}");
@@ -878,9 +879,9 @@ class BrowserTest {
         }
     }
 
-    @Nested class GivenAppWithPostEndpoint {
+    @ResourceLock("post-endpoint") @Nested class GivenAppWithPostEndpoint {
         @RegisterExtension static AppFixture app =
-                context.launch("post-endpoint.yaml").withBaseUrlOverride();
+                launch("post-endpoint.yaml").withBaseUrlOverride();
 
         @Test void tryModeSendsPostRequest() {
             app.mockEndpoint("/pets", "POST", "application/json", "{\"id\":1}");
@@ -893,9 +894,9 @@ class BrowserTest {
         }
     }
 
-    @Nested class GivenAppWithRequestBody {
+    @ResourceLock("request-body") @Nested class GivenAppWithRequestBody {
         @RegisterExtension static AppFixture app =
-                context.launch("request-body.yaml").withBaseUrlOverride();
+                launch("request-body.yaml").withBaseUrlOverride();
 
         @Test void shouldPreventSendWhenRequiredBodyIsEmpty() {
             app.clickTreeNode("pets/index.html");
@@ -986,8 +987,8 @@ class BrowserTest {
         }
     }
 
-    @Nested class GivenAppWithNestedPaths {
-        @RegisterExtension static AppFixture app = context.launch("nested-paths.yaml");
+    @ResourceLock("nested-paths") @Nested class GivenAppWithNestedPaths {
+        @RegisterExtension static AppFixture app = launch("nested-paths.yaml");
 
         @Test void arrowKeysNavigateTree() {
             app.focusTree();
@@ -1049,8 +1050,8 @@ class BrowserTest {
         }
     }
 
-    @Nested class GivenAppWithMultiResponseType {
-        @RegisterExtension static AppFixture app = context.launch("multi-response-type.yaml");
+    @ResourceLock("multi-response-type") @Nested class GivenAppWithMultiResponseType {
+        @RegisterExtension static AppFixture app = launch("multi-response-type.yaml");
 
         @Test void shouldShowResponseTypeSelect() {
             app.focusTree();
@@ -1061,9 +1062,9 @@ class BrowserTest {
             then(app.responseTypeOptions()).containsExactly("application/json", "application/xml");
         }
 
-        @Nested class InTryMode {
+        @ResourceLock("multi-response-type-try") @Nested class InTryMode {
             @RegisterExtension static AppFixture app =
-                    context.launch("multi-response-type.yaml").withBaseUrlOverride();
+                    launch("multi-response-type.yaml").withBaseUrlOverride();
 
             @Test void shouldSendAcceptHeaderForSelectedXml() {
                 app.mockEndpointWithContentNegotiation("/pets", Map.of(
@@ -1097,8 +1098,8 @@ class BrowserTest {
         }
     }
 
-    @Nested class GivenAppWithSchemaDescriptions {
-        @RegisterExtension static AppFixture app = context.launch("schema-descriptions.yaml");
+    @ResourceLock("schema-descriptions") @Nested class GivenAppWithSchemaDescriptions {
+        @RegisterExtension static AppFixture app = launch("schema-descriptions.yaml");
 
         @Test void shouldShowStatusCodeTabForSingleResponse() {
             app.expandFirstNode();
@@ -1110,8 +1111,8 @@ class BrowserTest {
         }
     }
 
-    @Nested class GivenAppWithUnsortedStatusCodes {
-        @RegisterExtension static AppFixture app = context.launch("unsorted-status-codes.yaml");
+    @ResourceLock("unsorted-status-codes") @Nested class GivenAppWithUnsortedStatusCodes {
+        @RegisterExtension static AppFixture app = launch("unsorted-status-codes.yaml");
 
         @Test void shouldSortStatusCodeTabsNumerically() {
             app.expandFirstNode();
@@ -1123,8 +1124,8 @@ class BrowserTest {
         }
     }
 
-    @Nested class GivenAppWithRichResponse {
-        @RegisterExtension static AppFixture app = context.launch("rich-response.yaml");
+    @ResourceLock("rich-response") @Nested class GivenAppWithRichResponse {
+        @RegisterExtension static AppFixture app = launch("rich-response.yaml");
 
         @Test void shouldShowResponseBoxWithSchemaToggle() {
             app.expandFirstNode();
@@ -1201,9 +1202,9 @@ class BrowserTest {
             then(app.activeStatusCodeTab()).isEqualTo("200");
         }
 
-        @Nested class InTryMode {
+        @ResourceLock("rich-response-try") @Nested class InTryMode {
             @RegisterExtension static AppFixture app =
-                    context.launch("rich-response.yaml").withBaseUrlOverride();
+                    launch("rich-response.yaml").withBaseUrlOverride();
 
         }
     }

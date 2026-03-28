@@ -4,6 +4,7 @@ import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.ScreenshotOptions;
+import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.ColorScheme;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -28,15 +29,15 @@ import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
 
 @SuppressWarnings("SameParameterValue")
 class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
-    private final Browser browser;
     private final String specFilename;
     private boolean overrideBaseUrl;
+    private Playwright playwright;
+    private Browser browser;
     private TestServer testServer;
     private BrowserContext context;
     private Page page;
 
-    AppFixture(Browser browser, String specFilename) {
-        this.browser = browser;
+    AppFixture(String specFilename) {
         this.specFilename = specFilename;
     }
 
@@ -47,13 +48,24 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     @Override public void beforeAll(ExtensionContext extensionContext) {
         extensionContext.getStore(GLOBAL).computeIfAbsent(this, key -> {
+            playwright = Playwright.create();
+            var browserType = System.getProperty("playwright.browser", "chromium");
+            browser = switch (browserType) {
+                case "webkit" -> playwright.webkit().launch();
+                case "firefox" -> playwright.firefox().launch();
+                default -> playwright.chromium().launch();
+            };
             try {
                 testServer = new TestServer(specFilename);
                 if (overrideBaseUrl) testServer.overrideBaseUrl("https://api.example.com");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            return (AutoCloseable) testServer::stop;
+            return (AutoCloseable) () -> {
+                testServer.stop();
+                browser.close();
+                playwright.close();
+            };
         });
     }
 

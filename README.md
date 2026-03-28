@@ -1,6 +1,6 @@
 # OpenAPI UI Next
 
-Generates static, keyboard-navigable HTML UIs from OpenAPI specifications.
+Generates static, keyboard-navigable HTML UIs from OpenAPI specifications; via cli or maven plugin.
 
 ## Why?
 
@@ -39,6 +39,13 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
 **Try It Out**
 - Three modes: Try (fetch), httpie, curl
 - Response rendering with syntax highlighting (JSON, HTML, XML, YAML)
+
+## Status
+
+I haven't released a version, yet, because I want a few more features that I consider essential for an MVP.
+But it's already quite usable already.
+
+BTW: this is my playground for learning how to vibe-code at the Harness Engineering level.
 
 ## Modules
 
