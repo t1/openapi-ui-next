@@ -12,6 +12,7 @@ import java.util.Set;
 
 import static com.github.t1.bulmajava.basic.Color.PRIMARY;
 import static com.github.t1.bulmajava.basic.Size.MEDIUM;
+import static com.github.t1.bulmajava.basic.Size.SMALL;
 import static com.github.t1.bulmajava.components.Message.message;
 import static com.github.t1.bulmajava.components.Message.messageBody;
 import static com.github.t1.bulmajava.elements.Box.box;
@@ -206,7 +207,7 @@ class MethodFragmentGenerator {
         var controls = div().classes("schema-box-controls");
         if (allContentTypes.size() > 1) {
             controls.content(span("Accept").classes("schema-accept-label"));
-            var sel = select("accept").attr("data-accept", "true");
+            var sel = select("accept").is(SMALL).attr("data-accept", "true");
             for (var ct : allContentTypes) sel.option(ct, ct);
             controls.content(sel);
         }
