@@ -84,12 +84,6 @@ deep nesting, many methods) needs demo data that triggers it.
 
 Always use the visual companion for brainstorming — no need to ask for consent.
 
-Start the brainstorm server for visual mockups during design discussions:
-
-```bash
-/Users/rdohna/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.0/lib/brainstorm-server/start-server.sh --project-dir /Users/rdohna/workspace/t1/openapi-ui-next
-```
-
 ### UI Review
 
 After changing UI generation code (in `core`), run the tests (`mvn test -pl core`) and review

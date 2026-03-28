@@ -377,6 +377,43 @@ class BrowserTest {
                 then(app.noBodyMessageText()).isEqualTo("no body");
             }
 
+            @Test void shouldShowHeadersToggleAfterSend() {
+                app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+
+                navigateToListPetsAndSend();
+
+                then(app.hasResponseHeadersToggle()).isTrue();
+                then(app.responseHeadersToggleText()).contains("headers").endsWith("▸");
+            }
+
+            @Test void shouldHideHeadersByDefault() {
+                app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+
+                navigateToListPetsAndSend();
+
+                then(app.responseHeadersVisible()).isFalse();
+            }
+
+            @Test void shouldExpandHeadersOnToggleClick() {
+                app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+                navigateToListPetsAndSend();
+
+                app.toggleResponseHeaders();
+
+                then(app.responseHeadersVisible()).isTrue();
+                then(app.responseHeaderText("content-type")).contains("application/json");
+            }
+
+            @Test void shouldCollapseHeadersOnSecondClick() {
+                app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+                navigateToListPetsAndSend();
+                app.toggleResponseHeaders();
+
+                app.toggleResponseHeaders();
+
+                then(app.responseHeadersVisible()).isFalse();
+            }
+
             @Test void tryModeShowsYamlResponseAsIs() {
                 app.mockEndpoint("/pets", "application/yaml", "pets:\n  - name: Fido\n    id: 1");
 

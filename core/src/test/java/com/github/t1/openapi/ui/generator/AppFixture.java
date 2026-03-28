@@ -326,6 +326,18 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean hasBodyBox() {return page.locator("#detail .schema-box[data-box='body']").count() > 0;}
 
+    boolean hasResponseHeadersToggle() {return page.locator("#detail .response-headers-toggle").count() > 0;}
+
+    String responseHeadersToggleText() {return page.locator("#detail .response-headers-toggle").textContent();}
+
+    void toggleResponseHeaders() {page.locator("#detail .response-headers-toggle").click();}
+
+    boolean responseHeadersVisible() {return page.locator("#detail .response-headers.is-visible").count() > 0;}
+
+    String responseHeaderText(String name) {
+        return page.locator("#detail .response-headers .response-header-value[data-header='" + name + "']").textContent();
+    }
+
     boolean responseHasHighlighting() {
         return page.locator("#detail pre.response code.hljs span[class^='hljs-']").count() > 0;
     }

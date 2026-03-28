@@ -211,9 +211,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (existing) existing.remove();
         var noBody = detail.querySelector('.response-no-body');
         if (noBody) noBody.remove();
+        var headersToggle = detail.querySelector('.response-headers-toggle');
+        if (headersToggle) headersToggle.remove();
+        var headers = detail.querySelector('.response-headers');
+        if (headers) headers.remove();
     }
 
-    function showResponseStatus(btn, status, statusText) {
+    function showResponseStatus(btn, status, statusText, headers) {
         var levelRight = btn.closest('.level').querySelector('.level-right');
         levelRight.textContent = '';
         var badge = document.createElement('span');
@@ -222,6 +226,38 @@ document.addEventListener('DOMContentLoaded', function() {
         if (status >= 200 && status < 300) badge.classList.add('is-success');
         else badge.classList.add('is-error');
         levelRight.appendChild(badge);
+        if (headers && headers.length > 0) {
+            var toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.className = 'response-headers-toggle';
+            toggle.textContent = 'headers (' + headers.length + ') \u25B8';
+            toggle.addEventListener('click', function() {
+                var container = detail.querySelector('.response-headers');
+                if (container) {
+                    var visible = container.classList.toggle('is-visible');
+                    toggle.textContent = 'headers (' + headers.length + ') ' + (visible ? '\u25BE' : '\u25B8');
+                }
+            });
+            levelRight.appendChild(toggle);
+            var container = document.createElement('div');
+            container.className = 'response-headers';
+            var grid = document.createElement('div');
+            grid.className = 'response-header-rows';
+            headers.forEach(function(h) {
+                var name = document.createElement('span');
+                name.className = 'response-header-name';
+                name.textContent = h.name;
+                var value = document.createElement('span');
+                value.className = 'response-header-value';
+                value.setAttribute('data-header', h.name);
+                value.textContent = h.value;
+                grid.appendChild(name);
+                grid.appendChild(value);
+            });
+            container.appendChild(grid);
+            var level = btn.closest('.level');
+            level.parentNode.insertBefore(container, level.nextSibling);
+        }
     }
 
     function showCopied(btn) {
@@ -404,14 +440,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 fetch(url, fetchOptions).then(function(resp) {
                     var ct = resp.headers.get('Content-Type') || '';
+                    var headers = [];
+                    resp.headers.forEach(function(value, name) {
+                        headers.push({name: name, value: value});
+                    });
                     return resp.text().then(function(text) {
-                        showResponseStatus(sendBtn, resp.status, resp.statusText);
+                        clearPreviousResponse();
+                        showResponseStatus(sendBtn, resp.status, resp.statusText, headers);
                         if (ct.includes('json')) {
                             try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
                         } else if (ct.includes('xml')) {
                             try { text = prettyPrintXml(text); } catch(e) {}
                         }
-                        clearPreviousResponse();
                         if (text.trim()) {
                             var pre = document.createElement('pre');
                             pre.className = 'response';
@@ -434,8 +474,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
                 }).catch(function(err) {
-                    showResponseStatus(sendBtn, 0, 'Network error');
                     clearPreviousResponse();
+                    showResponseStatus(sendBtn, 0, 'Network error');
                     var pre = document.createElement('pre');
                     pre.textContent = err.message;
                     pre.className = 'response';

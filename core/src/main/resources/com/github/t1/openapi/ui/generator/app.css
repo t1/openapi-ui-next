@@ -177,6 +177,44 @@ section > .container > .split-layout > .split-second {
 .response-status.is-error {
     color: var(--bulma-danger);
 }
+.response-headers-toggle {
+    display: block;
+    margin-left: auto;
+    border: none;
+    background: none;
+    font-size: 0.6875rem;
+    color: var(--bulma-text-weak);
+    cursor: pointer;
+    padding: 0.25rem;
+}
+.response-headers-toggle:focus-visible {
+    outline: 2px solid var(--bulma-link);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+.response-headers {
+    display: none;
+    font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+    font-size: 0.75rem;
+    color: var(--bulma-text);
+    border: 1px solid var(--bulma-border);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    background: var(--bulma-scheme-main-bis);
+    margin-top: 0.5rem;
+}
+.response-headers.is-visible {
+    display: block;
+}
+.response-header-rows {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0 0.75rem;
+    line-height: 1.6;
+}
+.response-header-name {
+    color: var(--bulma-text-weak);
+}
 .response-no-body {
     color: var(--bulma-text-weak);
     font-style: italic;
