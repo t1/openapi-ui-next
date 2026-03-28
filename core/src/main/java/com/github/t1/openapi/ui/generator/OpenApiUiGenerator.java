@@ -8,6 +8,7 @@ import com.github.t1.openapi.ui.components.Toggle;
 import com.github.t1.openapi.ui.components.Tree;
 import com.github.t1.openapi.ui.components.TreeContainer;
 import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import org.slf4j.Logger;
@@ -85,6 +86,7 @@ public class OpenApiUiGenerator {
 
     private io.swagger.v3.oas.models.OpenAPI parseSpec() {
         log.info("Parsing {}", specFile);
+        System.setProperty(Schema.BIND_TYPE_AND_TYPES, "true"); // make getType() work for OpenAPI 3.1 schemas
         var parseOptions = new ParseOptions();
         parseOptions.setResolveFully(true);
         return new OpenAPIV3Parser().read(specFile.toString(), null, parseOptions);

@@ -34,7 +34,11 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
 - Parameter inputs with type (path/query) and required badges
 - Request body editor with JSON skeleton and schema documentation
 - Response schema with status code tabs, property types, required markers, and examples
+- Collapsible nested object and array properties in schema views
 - Accept header select for multi-content-type endpoints
+- Boolean parameters rendered as checkboxes (two-state: omit or send `true`; explicitly
+  sending `false` is not supported — a three-state control would add UX complexity for a
+  rare need, since most boolean query params are opt-in flags with a `false` default)
 
 **Try It Out**
 - Three modes: Try (fetch), httpie, curl

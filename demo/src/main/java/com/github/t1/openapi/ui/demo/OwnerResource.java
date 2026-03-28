@@ -23,10 +23,15 @@ public class OwnerResource {
     }
 
     @GET @Path("/{id}") @Operation(summary = "Get an owner by ID")
-    public Owner get(@PathParam("id") long id) {
-        return OWNERS.stream()
+    public OwnerResponse get(@PathParam("id") long id) {
+        var owner = OWNERS.stream()
                 .filter(o -> o.id() == id).findFirst()
                 .orElseThrow(() -> new OwnerNotFoundException(id));
+        var pets = PetResource.PETS.stream()
+                .filter(p -> p.ownerId == owner.id())
+                .map(p -> new PetSummary(p.id, p.name, p.status))
+                .toList();
+        return new OwnerResponse(owner.id(), owner.name(), owner.email(), pets);
     }
 
     @GET @Path("/{ownerId}/pets") @Operation(summary = "List pets for an owner")

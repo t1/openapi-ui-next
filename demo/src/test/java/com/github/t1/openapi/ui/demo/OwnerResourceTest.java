@@ -23,7 +23,10 @@ class OwnerResourceTest {
                 .then()
                 .statusCode(200)
                 .body("name", is("Alice"))
-                .body("email", is("alice@example.com"));
+                .body("email", is("alice@example.com"))
+                .body("pets.size()", is(2))
+                .body("pets[0].name", is("Max"))
+                .body("pets[1].name", is("Bella"));
     }
     @Test void shouldReturnProblemDetailsForUnknownOwner() {
         given()

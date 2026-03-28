@@ -308,6 +308,22 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator(".schema-box[data-box='response'] .schema-status-tab.is-active").textContent();
     }
 
+    boolean hasNestedToggle(String boxType) {
+        return page.locator(".schema-box[data-box='" + boxType + "'] .schema-nested-toggle:visible").count() > 0;
+    }
+
+    void clickNestedToggle(String boxType) {
+        page.locator(".schema-box[data-box='" + boxType + "'] .schema-nested-toggle:visible").first().click();
+    }
+
+    boolean isNestedExpanded(String boxType) {
+        return page.locator(".schema-box[data-box='" + boxType + "'] .schema-nested-toggle[aria-expanded='true']").count() > 0;
+    }
+
+    List<String> nestedPropertyNames(String boxType) {
+        return page.locator(".schema-box[data-box='" + boxType + "'] .schema-nested.is-expanded .schema-prop-name").allTextContents();
+    }
+
     boolean hasBodyBox() {return page.locator("#detail .schema-box[data-box='body']").count() > 0;}
 
     boolean responseHasHighlighting() {

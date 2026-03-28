@@ -159,6 +159,47 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("Represents a pet in the store");
     }
 
+    @Test void shouldRenderPropertyTypesFromOpenApi31() throws Exception {
+        generate("/schema-descriptions.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).contains(">integer<"); // id type
+        then(fragment).contains(">string<"); // name type
+        then(fragment).doesNotContain(">object<"); // no property should fall back to "object"
+    }
+
+    @Test void shouldRenderBooleanParameterAsCheckbox() throws Exception {
+        generate("/nested-schema.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).contains("type=\"checkbox\"");
+        then(fragment).contains("name=\"showVisits\"");
+    }
+
+    @Test void shouldRenderNestedObjectProperties() throws Exception {
+        generate("/nested-schema.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).contains("schema-nested");
+        then(fragment).contains("data-prop=\"id\""); // nested owner.id
+        then(fragment).contains("data-prop=\"name\""); // nested owner.name (appears twice: pet + owner)
+    }
+
+    @Test void shouldRenderArrayItemProperties() throws Exception {
+        generate("/nested-schema.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("owners/{ownerId}/GET.html"));
+        then(fragment).contains("schema-nested");
+        then(fragment).contains("data-prop=\"status\""); // nested pet item status
+    }
+
+    @Test void shouldMarkNestedSectionAsCollapsed() throws Exception {
+        generate("/nested-schema.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        then(fragment).contains("aria-expanded=\"false\"");
+    }
+
     @Test void shouldNotRenderSchemaTitleWhenMissing() throws Exception {
         generate("/rich-response.yaml");
 

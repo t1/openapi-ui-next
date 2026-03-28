@@ -160,6 +160,19 @@ document.addEventListener('DOMContentLoaded', function() {
             toggle.textContent = box.classList.contains('is-collapsed') ? 'Schema ▸' : 'Schema ▾';
             return;
         }
+        var nestedToggle = e.target.closest('.schema-nested-toggle');
+        if (nestedToggle) {
+            var expanded = nestedToggle.getAttribute('aria-expanded') === 'true';
+            nestedToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+            // find the .schema-nested sibling: it's in the same grid, after the details span
+            var propName = nestedToggle.closest('.schema-prop-name');
+            var row = propName;
+            while (row && !(row.nextElementSibling && row.nextElementSibling.classList.contains('schema-nested'))) {
+                row = row.nextElementSibling;
+            }
+            if (row && row.nextElementSibling) row.nextElementSibling.classList.toggle('is-expanded');
+            return;
+        }
         var tab = e.target.closest('.schema-status-tab');
         if (tab) activateStatusTab(tab);
     });
@@ -350,7 +363,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var queryParams = [];
             inputs.forEach(function(inp) {
                 var name = inp.getAttribute('name');
-                var val = inp.value;
+                var isCheckbox = inp.type === 'checkbox';
+                var val = isCheckbox ? (inp.checked ? 'true' : '') : inp.value;
                 if (pathTemplate.includes('{' + name + '}')) {
                     resolvedPath = resolvedPath.replace('{' + name + '}', encodeURIComponent(val));
                 } else if (val) {

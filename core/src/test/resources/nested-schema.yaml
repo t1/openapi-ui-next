@@ -1,0 +1,82 @@
+openapi: 3.1.0
+info:
+  title: Test API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets/{petId}:
+    get:
+      summary: Get a pet
+      operationId: getPet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: showVisits
+          in: query
+          schema:
+            type: boolean
+          description: Include visit history
+      responses:
+        '200':
+          description: A pet with owner details
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, name]
+                properties:
+                  id:
+                    type: integer
+                    examples:
+                      - 1
+                  name:
+                    type: string
+                    examples:
+                      - Max
+                  owner:
+                    type: object
+                    description: The pet's owner
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+  /owners/{ownerId}:
+    get:
+      summary: Get an owner
+      operationId: getOwner
+      parameters:
+        - name: ownerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: An owner with their pets
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, name]
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  pets:
+                    type: array
+                    description: Pets owned by this person
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        status:
+                          type: string

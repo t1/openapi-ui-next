@@ -1208,4 +1208,57 @@ class BrowserTest {
 
         }
     }
+
+    @ResourceLock("nested-schema") @Nested class GivenAppWithNestedSchema {
+        @RegisterExtension static AppFixture app = launch("nested-schema.yaml");
+
+        @Test void shouldShowNestedPropertiesCollapsedByDefault() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.toggleSchema("response");
+
+            then(app.hasNestedToggle("response")).isTrue();
+            then(app.isNestedExpanded("response")).isFalse();
+        }
+
+        @Test void shouldExpandNestedPropertiesOnClick() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.toggleSchema("response");
+
+            app.clickNestedToggle("response");
+
+            then(app.isNestedExpanded("response")).isTrue();
+            then(app.nestedPropertyNames("response")).contains("id", "name");
+            app.screenshot("nested-schema-expanded");
+        }
+
+        @Test void shouldCollapseNestedPropertiesOnSecondClick() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.toggleSchema("response");
+            app.clickNestedToggle("response");
+
+            app.clickNestedToggle("response");
+
+            then(app.isNestedExpanded("response")).isFalse();
+        }
+
+        @Test void shouldShowArrayItemPropertiesWhenExpanded() {
+            app.focusTree();
+            app.pressKey("ArrowDown"); // move to owners/
+            app.pressKey("ArrowRight"); // expand owners/
+            app.clickTreeNode("owners/{ownerId}/index.html");
+            app.waitForDetailContent("Get an owner");
+            app.toggleSchema("response");
+
+            app.clickNestedToggle("response");
+
+            then(app.isNestedExpanded("response")).isTrue();
+            then(app.nestedPropertyNames("response")).contains("id", "name", "status");
+        }
+    }
 }

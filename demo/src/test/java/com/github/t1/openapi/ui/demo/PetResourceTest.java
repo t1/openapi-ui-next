@@ -18,14 +18,28 @@ class PetResourceTest {
                 .body("name", hasItems("Max", "Bella", "Charlie"));
     }
 
-    @Test
-    void shouldGetPetById() {
+    @Test void shouldGetPetById() {
         given()
                 .when().get("/pets/1")
                 .then()
                 .statusCode(200)
                 .body("name", is("Max"))
-                .body("status", is("available"));
+                .body("status", is("available"))
+                .body("owner.id", is(1))
+                .body("owner.name", is("Alice"))
+                .body("visits", is(nullValue()));
+    }
+
+    @Test void shouldGetPetByIdWithVisits() {
+        given()
+                .queryParam("showVisits", true)
+                .when().get("/pets/1")
+                .then()
+                .statusCode(200)
+                .body("name", is("Max"))
+                .body("visits.size()", is(2))
+                .body("visits[0].date", is("2024-01-15"))
+                .body("visits[0].reason", is("Annual checkup"));
     }
 
     @Test void shouldFilterPetsByStatus() {

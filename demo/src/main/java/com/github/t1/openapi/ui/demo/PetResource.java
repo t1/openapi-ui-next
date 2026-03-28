@@ -55,14 +55,25 @@ public class PetResource {
     @GET @Path("/{id}") @Produces({APPLICATION_JSON, APPLICATION_XML})
     @Operation(summary = "Get a pet by ID", description = "Returns a single pet by its unique identifier.")
     @APIResponse(responseCode = "200", description = "A pet",
-            content = {@Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = Pet.class)),
-                    @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = Pet.class))})
+            content = {@Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = PetResponse.class)),
+                    @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = PetResponse.class))})
     @APIResponse(responseCode = "404", description = "Pet not found",
             content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
-    public Pet get(@PathParam("id") long id) {
-        return PETS.stream()
+    public PetResponse get(@PathParam("id") long id, @QueryParam("showVisits") boolean showVisits) {
+        var pet = PETS.stream()
                 .filter(p -> p.id == id).findFirst()
                 .orElseThrow(() -> new PetNotFoundException(id));
+        var owner = OwnerResource.OWNERS.stream()
+                .filter(o -> o.id() == pet.ownerId).findFirst()
+                .map(o -> new OwnerSummary(o.id(), o.name()))
+                .orElse(null);
+        var visits = showVisits
+                ? VisitResource.VISITS.stream()
+                .filter(v -> v.petId() == pet.id)
+                .map(v -> new VisitSummary(v.id(), v.date(), v.reason()))
+                .toList()
+                : null;
+        return new PetResponse(pet.id, pet.name, pet.status, owner, visits);
     }
 
     @POST @Produces(APPLICATION_JSON) @Operation(summary = "Add a new pet")

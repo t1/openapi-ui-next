@@ -306,6 +306,38 @@ section > .container > .split-layout > .split-second {
     font-style: italic;
     font-size: 0.6875rem;
 }
+.schema-nested {
+    grid-column: 1 / -1;
+    display: none;
+}
+.schema-nested.is-expanded {
+    display: contents;
+}
+.schema-nested .schema-props {
+    display: contents;
+}
+.schema-nested .schema-prop-name {
+    padding-left: 1rem;
+}
+.schema-nested-toggle {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.5rem;
+    padding: 0 0.25rem;
+    margin-left: 0.25rem;
+    color: var(--bulma-text-weak);
+    transition: transform 0.15s ease;
+    vertical-align: middle;
+}
+.schema-nested-toggle:focus-visible {
+    outline: 2px solid var(--bulma-link);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+.schema-nested-toggle[aria-expanded="true"] {
+    transform: rotate(90deg);
+}
 /* syntax highlighting with Bulma colors */
 pre.response code.hljs {
     background: var(--bulma-scheme-main);

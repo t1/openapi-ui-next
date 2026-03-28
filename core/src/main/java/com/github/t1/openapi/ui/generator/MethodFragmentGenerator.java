@@ -4,8 +4,11 @@ import com.github.t1.htmljava.Element;
 import com.github.t1.htmljava.Renderable;
 import io.swagger.v3.oas.models.media.Schema;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.github.t1.bulmajava.basic.Color.PRIMARY;
 import static com.github.t1.bulmajava.basic.Size.MEDIUM;
@@ -20,6 +23,7 @@ import static com.github.t1.bulmajava.elements.Tag.tagsAddon;
 import static com.github.t1.bulmajava.form.Field.field;
 import static com.github.t1.bulmajava.form.Form.form;
 import static com.github.t1.bulmajava.form.Input.input;
+import static com.github.t1.bulmajava.form.Checkbox.checkbox;
 import static com.github.t1.bulmajava.form.InputType.TEXT;
 import static com.github.t1.bulmajava.form.Select.select;
 import static com.github.t1.bulmajava.layout.Level.level;
@@ -92,6 +96,8 @@ class MethodFragmentGenerator {
                         sel.option(value.toString(), value.toString());
                     }
                     inputField.content(sel);
+                } else if ("boolean".equals(schema != null ? schema.getType() : null)) {
+                    inputField.content(checkbox().name(param.getName()));
                 } else {
                     var inp = input(TEXT).attr("name", param.getName());
                     if (required) inp.attr("required", "");
@@ -251,6 +257,12 @@ class MethodFragmentGenerator {
 
     @SuppressWarnings("rawtypes")
     private static void addSchemaContent(Element container, Schema<?> schema) {
+        addSchemaContent(container, schema, Collections.newSetFromMap(new IdentityHashMap<>()));
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static void addSchemaContent(Element container, Schema<?> schema, Set<Schema<?>> visited) {
+        if (!visited.add(schema)) return; // cycle detection
         if (schema.getTitle() != null) {
             var titleBar = div().classes("schema-title");
             titleBar.content(span(schema.getTitle()).classes("schema-title-name"));
@@ -264,17 +276,33 @@ class MethodFragmentGenerator {
         if (properties != null) {
             var table = div().classes("schema-props");
             for (var prop : properties.entrySet()) {
-                addPropertyRow(table, prop.getKey(), prop.getValue(), required);
+                addPropertyRow(table, prop.getKey(), prop.getValue(), required, visited);
             }
             container.content(table);
         }
     }
 
-    private static void addPropertyRow(Element table, String name, Schema<?> propSchema, List<String> required) {
-        table.content(span(name).classes("schema-prop-name").attr("data-prop", name));
-        var details = span().classes("schema-prop-details");
+    @SuppressWarnings("rawtypes")
+    private static void addPropertyRow(Element table, String name, Schema<?> propSchema, List<String> required, Set<Schema<?>> visited) {
         var type = propSchema.getType() != null ? propSchema.getType() : "object";
         if (propSchema.getEnum() != null && !propSchema.getEnum().isEmpty()) type = "enum";
+
+        // determine if this property has nested sub-properties
+        Schema<?> nestedSchema = null;
+        if ("object".equals(type) && propSchema.getProperties() != null) {
+            nestedSchema = propSchema;
+        } else if ("array".equals(type) && propSchema.getItems() != null && propSchema.getItems().getProperties() != null) {
+            nestedSchema = propSchema.getItems();
+        }
+        var hasNested = nestedSchema != null && !visited.contains(nestedSchema);
+
+        var nameSpan = span(name).classes("schema-prop-name").attr("data-prop", name);
+        if (hasNested) {
+            nameSpan.content(element("button").attr("type", "button").classes("schema-nested-toggle").attr("aria-expanded", "false").content("\u25B6"));
+        }
+        table.content(nameSpan);
+
+        var details = span().classes("schema-prop-details");
         details.content(span(type).classes("schema-prop-type"));
         if (required.contains(name)) {
             details.content(span("required").classes("schema-prop-required"));
@@ -293,6 +321,12 @@ class MethodFragmentGenerator {
             details.content(span(propSchema.getDescription()).classes("schema-prop-desc"));
         }
         table.content(details);
+
+        if (hasNested) {
+            var nestedContent = div().classes("schema-nested");
+            addSchemaContent(nestedContent, nestedSchema, visited);
+            table.content(nestedContent);
+        }
     }
 
     @SuppressWarnings("rawtypes")
