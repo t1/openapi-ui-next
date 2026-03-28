@@ -286,6 +286,13 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 boxType);
     }
 
+    boolean schemaToggleHasFocusRing(String boxType) {
+        return (Boolean) page.evaluate(
+                "boxType => { var el = document.querySelector('.schema-box[data-box=\"' + boxType + '\"] .schema-toggle');"
+                + " return el && getComputedStyle(el).outlineStyle !== 'none'; }",
+                boxType);
+    }
+
     boolean isSchemaExpanded(String boxType) {
         return page.locator("#detail .schema-box[data-box='" + boxType + "']:not(.is-collapsed)").count() > 0;
     }
