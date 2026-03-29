@@ -43,6 +43,7 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
 **Try It Out**
 - Three modes: Try (fetch), httpie, curl
 - Response rendering with syntax highlighting (JSON, HTML, XML, YAML)
+- Collapsible response headers display
 
 ## Status
 
@@ -64,6 +65,13 @@ BTW: this is my playground for learning how to vibe-code at the Harness Engineer
 
 ```bash
 mvn verify
+```
+
+Browser tests run in Chromium by default. To test with WebKit (Safari) or Firefox:
+
+```bash
+mvn test -pl core -Dplaywright.browser=webkit
+mvn test -pl core -Dplaywright.browser=firefox
 ```
 
 ## Usage

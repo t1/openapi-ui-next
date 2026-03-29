@@ -1,12 +1,11 @@
 package com.github.t1.openapi.ui.generator;
 
-import java.util.Map;
-
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.ResourceLock;
+
+import java.util.Map;
 
 import static org.assertj.core.api.BDDAssertions.then;
 
