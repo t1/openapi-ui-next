@@ -22,7 +22,7 @@ public class VisitResource {
             new Visit(3, 2, "2024-03-10", "Dental cleaning")
     ));
 
-    @GET @Operation(summary = "List visits for a pet")
+    @GET @Tag(name = "visits") @Tag(name = "pets") @Operation(summary = "List visits for a pet")
     public List<Visit> list(@PathParam("petId") long petId) {
         return VISITS.stream()
                 .filter(v -> v.petId() == petId).toList();
@@ -37,7 +37,7 @@ public class VisitResource {
         return created;
     }
 
-    @GET @Path("/{visitId}") @Operation(summary = "Get a visit by ID")
+    @GET @Path("/{visitId}") @Tag(name = "visits") @Tag(name = "pets") @Operation(summary = "Get a visit by ID")
     public Visit get(@PathParam("petId") long petId, @PathParam("visitId") long visitId) {
         return VISITS.stream()
                 .filter(v -> v.petId() == petId && v.id() == visitId).findFirst()

@@ -26,6 +26,7 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
 - Resizable split pane with persistent width
 - Method tabs for switching operations on the same path
 - Three-level keyboard navigation: tree → method tabs → content fields
+- URL hash navigation: bookmarkable deep links (`#pets/GET`, `#[billing]invoices/GET`), browser back/forward
 - Responsive layout (desktop: side-by-side; mobile: stacked)
 - Dark mode support
 

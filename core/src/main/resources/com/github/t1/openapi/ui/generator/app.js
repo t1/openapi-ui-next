@@ -61,6 +61,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Override persisted view when URL hash specifies a view
+    if (decodeURIComponent(location.hash).match(/^#\[/)) localStorage.setItem('openapi-ui-view', 'tags');
+
     // Restore persisted toggle state (after consumers registered)
     document.querySelectorAll('.toggle[data-persist]').forEach(function(container) {
         var saved = localStorage.getItem(container.getAttribute('data-persist'));
@@ -76,6 +79,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var tabs = tabLink.closest('.tabs');
             tabs.querySelectorAll('li').forEach(function(li) { li.classList.remove('is-active'); });
             tabLink.closest('li').classList.add('is-active');
+            var hxGet = tabLink.getAttribute('hx-get');
+            if (hxGet) history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
         }
     });
 
@@ -99,8 +104,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     document.body.addEventListener('htmx:afterSettle', function(e) {
-        if (e.detail.target && e.detail.target.id === 'tree-container' && viewToggle) {
-            viewToggle.focus();
+        if (e.detail.target && e.detail.target.id === 'tree-container') {
+            if (window._hashNavPending) {
+                window._hashNavPending = false;
+                navigateFromHash();
+            } else if (viewToggle) {
+                viewToggle.focus();
+            }
         }
     });
     document.body.addEventListener('htmx:load', function(e) {
@@ -109,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pendingMethod = null;
         var tabLinks = detail.querySelectorAll('.tabs li a');
         tabLinks.forEach(function(a) {
-            if (a.textContent.trim() === method) a.click();
+            if (a.textContent.trim() === method) { a.click(); a.focus(); }
         });
     });
     document.body.addEventListener('htmx:afterSwap', function(e) {
@@ -125,8 +135,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (textarea) textarea.value = sel.value;
             });
         });
-        // After detail content swaps, check if a specific method tab should be activated
-        var trigger = e.detail.elt;
     });
 
     function prettyPrintXml(xml) {
@@ -281,7 +289,9 @@ document.addEventListener('DOMContentLoaded', function() {
             li.classList.add('is-active');
             var link = li.querySelector('a');
             link.focus();
-            htmx.ajax('GET', link.getAttribute('hx-get'), link.getAttribute('hx-target'));
+            var hxGet = link.getAttribute('hx-get');
+            htmx.ajax('GET', hxGet, link.getAttribute('hx-target'));
+            history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
         }
         if (e.key === 'ArrowRight') {
             var nextLi = focused.closest('li').nextElementSibling;
@@ -380,9 +390,71 @@ document.addEventListener('DOMContentLoaded', function() {
         pendingMethod = badge.textContent.trim();
     }, true);
 
-    // Auto-load the first operation
-    var firstHxEl = document.querySelector('#tree-container [hx-get]');
-    if (firstHxEl) htmx.ajax('GET', firstHxEl.getAttribute('hx-get'), '#detail');
+    // Navigate from URL hash or auto-load first operation
+    var HTTP_METHODS = ['GET','POST','PUT','DELETE','PATCH','HEAD','OPTIONS','TRACE'];
+    window._hashNavPending = false;
+    function navigateFromHash() {
+        var route = decodeURIComponent(location.hash.replace(/^#/, ''));
+        if (!route) return false;
+        // Parse [tag] prefix for tag tree navigation
+        var tagFromHash = null;
+        var tagMatch = route.match(/^\[([^\]]+)\](.*)/);
+        if (tagMatch) {
+            tagFromHash = tagMatch[1];
+            route = tagMatch[2];
+        }
+        var parts = route.split('/');
+        var last = parts[parts.length - 1];
+        var methodFromHash = null;
+        var treePath = route;
+        if (HTTP_METHODS.indexOf(last) >= 0) {
+            methodFromHash = last;
+            treePath = parts.slice(0, -1).join('/');
+        }
+        var hxGet, hxEl;
+        if (tagFromHash) {
+            // Tag tree: hx-get is "path/METHOD.html", find by data-tag + hx-get
+            hxGet = route + '.html';
+            hxEl = document.querySelector('[data-tag="' + tagFromHash + '"][hx-get="' + hxGet + '"]');
+            if (!hxEl) {
+                // Tag tree may not be loaded yet — switch to tags view; afterSettle will retry
+                window._hashNavPending = true;
+                var vt = document.querySelector('[data-toggle="view"]');
+                if (vt) {
+                    var tagsBtn = document.querySelector('[data-toggle-value="tags"]');
+                    if (tagsBtn && !tagsBtn.classList.contains('is-active')) vt._select('tags');
+                }
+                return true;
+            }
+        } else {
+            // Path tree: hx-get is "path/index.html"
+            hxGet = treePath + '/index.html';
+            hxEl = document.querySelector('[hx-get="' + hxGet + '"]');
+            if (!hxEl) return false;
+        }
+        var item = hxEl.closest('[role="treeitem"]');
+        var tree = document.querySelector('[role="tree"]');
+        if (item && tree) {
+            tree._expandParentsOf(item);
+            tree.querySelectorAll('[aria-selected="true"]').forEach(function(el) { el.removeAttribute('aria-selected'); });
+            item.setAttribute('aria-selected', 'true');
+        }
+        if (methodFromHash && !tagFromHash) pendingMethod = methodFromHash;
+        htmx.ajax('GET', hxGet, {target: '#detail', swap: 'innerHTML'});
+        return true;
+    }
+    if (!navigateFromHash()) {
+        var firstHxEl = document.querySelector('#tree-container [hx-get]');
+        if (firstHxEl) {
+            var hxGet = firstHxEl.getAttribute('hx-get');
+            htmx.ajax('GET', hxGet, '#detail');
+            var route = hxGetToRoute(hxGet);
+            var tag = firstHxEl.getAttribute('data-tag');
+            var hash = tag ? '#[' + tag + ']' + route : '#' + route;
+            history.replaceState(null, '', hash);
+        }
+    }
+    window.addEventListener('popstate', function() { navigateFromHash(); });
 
     // Send button handler (delegated from detail pane)
     if (detail) {

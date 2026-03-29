@@ -3,6 +3,7 @@ info:
   title: Nested Tagged API
   version: "1.0"
 tags:
+  - name: admin
   - name: pets
   - name: owners
 paths:
@@ -16,6 +17,31 @@ paths:
   /pets/{petId}:
     get:
       summary: Get a pet
+      tags: [pets]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+    delete:
+      summary: Delete a pet
+      tags: [admin]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+  /pets/{petId}/visits:
+    get:
+      summary: List visits for a pet
       tags: [pets]
       parameters:
         - name: petId

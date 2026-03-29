@@ -187,6 +187,9 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
             """;
 
     private static final String JS = """
+            function hxGetToRoute(hxGet) {
+                return hxGet.replace(/\\/index\\.html$/, '').replace(/\\.html$/, '');
+            }
             function bump(el, dir) {
                 var cls = dir === 'h' ? 'bump-h' : 'bump-v';
                 el.classList.remove(cls);
@@ -275,7 +278,11 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                                 toggleNode(current, true);
                             } else {
                                 var firstTabLink = document.querySelector('.tabs li:first-child a');
-                                if (firstTabLink) { firstTabLink.focus(); }
+                                if (firstTabLink) {
+                                    firstTabLink.focus();
+                                    var tabHxGet = firstTabLink.getAttribute('hx-get');
+                                    if (tabHxGet) history.replaceState(null, '', '#' + hxGetToRoute(tabHxGet));
+                                }
                                 else { focusFirstDetailField(); }
                             }
                             break;
@@ -339,9 +346,52 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                     }
                     item.setAttribute('aria-selected', 'true');
                     var hxEl = item.querySelector('[hx-get]') || item;
-                    if (hxEl.getAttribute('hx-get')) htmx.ajax('GET', hxEl.getAttribute('hx-get'), '#detail');
+                    var hxGet = hxEl.getAttribute('hx-get');
+                    if (hxGet) {
+                        var route = hxGetToRoute(hxGet);
+                        var tag = hxEl.getAttribute('data-tag');
+                        var hash = tag ? '#[' + tag + ']' + route : '#' + route;
+                        htmx.ajax('GET', hxGet, {target: '#detail', swap: 'innerHTML'});
+                        history.pushState(null, '', hash);
+                    }
                 }
-            
+
+                function expandParentsOf(item) {
+                    var parent = item.parentElement;
+                    while (parent) {
+                        var parentItem = parent.closest('[role="treeitem"]');
+                        if (parentItem && parentItem.getAttribute('aria-expanded') === 'false') {
+                            toggleNode(parentItem, true);
+                        }
+                        parent = parentItem ? parentItem.parentElement : null;
+                    }
+                }
+
+                // Expose tree API for app.js (hash navigation)
+                function attachTreeApi() {
+                    var tree = getTree();
+                    if (!tree || tree._selectItem) return;
+                    tree._selectItem = selectItem;
+                    tree._expandParentsOf = expandParentsOf;
+                    tree.addEventListener('focus', function() {
+                        if (window._hashNavPending) return;
+                        var t = getTree();
+                        var selected = t ? t.querySelector('[aria-selected="true"]') : null;
+                        if (!selected) return;
+                        var hxEl = selected.querySelector('[hx-get]') || selected;
+                        var hxGet = hxEl.getAttribute('hx-get');
+                        if (!hxGet) return;
+                        var tag = hxEl.getAttribute('data-tag');
+                        var route = hxGetToRoute(hxGet);
+                        var hash = tag ? '#[' + tag + ']' + route : '#' + route;
+                        history.replaceState(null, '', hash);
+                    });
+                }
+                attachTreeApi();
+                document.body.addEventListener('htmx:afterSwap', function(e) {
+                    if (e.detail.target && e.detail.target.id === 'tree-container') attachTreeApi();
+                });
+
                 document.addEventListener('keydown', function(e) {
                     if (e.key === 'Escape' && !e.target.closest('[role="tree"]')) {
                         e.preventDefault();

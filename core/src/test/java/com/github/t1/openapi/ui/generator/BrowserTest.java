@@ -558,6 +558,26 @@ class BrowserTest {
             app.screenshot("tag-view");
         }
 
+        @Test void shouldUpdateHashWithTagPrefixWhenClickingTagTreeItem() {
+            app.expandFirstNode();
+            app.clickTreeNode("invoices/GET.html");
+            app.waitForDetailContent("List invoices");
+
+            then(app.locationHash()).isEqualTo("#[billing]invoices/GET");
+        }
+
+        @Test void shouldNavigateToTagTreeItemFromHash() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+
+            app.navigateTo("#[billing]payments/GET");
+            app.waitForDetailContent("List payments");
+
+            then(app.detailText()).contains("List payments");
+            then(app.isViewActive("tags")).isTrue();
+            then(app.isTreeItemSelected("payments/GET.html")).isTrue();
+        }
+
         @Test void shouldPersistViewChoiceAcrossReload() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
@@ -1266,6 +1286,94 @@ class BrowserTest {
             @RegisterExtension static AppFixture app =
                     launch("rich-response.yaml").withBaseUrlOverride();
 
+        }
+    }
+
+    @ResourceLock("url-nav") @Nested class GivenUrlNavigation {
+        @RegisterExtension static AppFixture app = launch("multi-method.yaml");
+
+        @Test void shouldUpdateHashWhenClickingTreeItem() {
+            app.waitForDetailContent("List pets");
+
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get pet by ID");
+
+            then(app.locationHash()).isEqualTo("#pets/{petId}");
+        }
+
+        @Test void shouldUpdateHashWhenSwitchingMethodTab() {
+            app.waitForDetailContent("List pets");
+
+            app.clickMethodTab(2);
+            app.waitForDetailContent("Create a pet");
+
+            then(app.locationHash()).isEqualTo("#pets/POST");
+        }
+
+        @Test void shouldNavigateToTreeItemFromHash() {
+            app.navigateTo("#pets/{petId}");
+            app.waitForDetailContent("Get pet by ID");
+
+            then(app.detailText()).contains("Get pet by ID");
+            then(app.isTreeItemSelected("pets/{petId}/index.html")).isTrue();
+        }
+
+        @Test void shouldNavigateToMethodTabFromHash() {
+            app.navigateTo("#pets/POST");
+            app.waitForDetailContent("Create a pet");
+
+            then(app.detailText()).contains("Create a pet");
+            then(app.isTabActive(2)).isTrue();
+            then(app.isTabFocused()).isTrue();
+        }
+
+        @Test void shouldIncludeMethodInHashWhenEnteringTabs() {
+            app.waitForDetailContent("List pets");
+            app.focusTree();
+            app.pressKey("ArrowRight"); // expand
+            app.pressKey("ArrowRight"); // enter tabs
+
+            then(app.locationHash()).isEqualTo("#pets/GET");
+        }
+
+        @Test void shouldRemoveMethodFromHashWhenReturningToTree() {
+            app.waitForDetailContent("List pets");
+            app.focusTree();
+            app.pressKey("ArrowRight"); // expand
+            app.pressKey("ArrowRight"); // enter tabs
+            then(app.locationHash()).isEqualTo("#pets/GET");
+
+            app.pressKey("Escape"); // back to tree
+
+            then(app.locationHash()).isEqualTo("#pets");
+        }
+
+        @Test void shouldNavigateBackWithBrowserHistory() {
+            app.waitForDetailContent("List pets");
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get pet by ID");
+
+            app.goBack();
+            app.waitForDetailContent("List pets");
+
+            then(app.detailText()).contains("List pets");
+        }
+    }
+
+    @ResourceLock("tagged-nested") @Nested class GivenTaggedNestedApp {
+        @RegisterExtension static AppFixture app = launch("tagged-nested.yaml");
+
+        @Test void shouldRestoreTagHashWhenDefaultViewIsPaths() {
+            then(app.isViewActive("paths")).isTrue();
+
+            app.navigateTo("#[pets]pets/GET");
+            app.waitForDetailContent("List pets");
+
+            then(app.detailText()).contains("List pets");
+            then(app.isViewActive("tags")).isTrue();
+            then(app.isTreeItemSelected("pets/GET.html")).isTrue();
         }
     }
 

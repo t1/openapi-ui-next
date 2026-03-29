@@ -56,6 +56,7 @@ class TagTreeGenerator {
                         label.content(span("also in: " + String.join(", ", otherTags)).classes("also-in"));
                     }
                     node.item(label, item -> item
+                            .attr("data-tag", tagName)
                             .attr("hx-get", op.path + "/" + op.method.name() + ".html")
                             .attr("hx-target", "#detail")
                             .attr("hx-swap", "innerHTML"));

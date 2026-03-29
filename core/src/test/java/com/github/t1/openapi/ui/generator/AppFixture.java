@@ -506,6 +506,12 @@ void clearClipboard() {page.evaluate("() => navigator.clipboard.writeText('')");
         page.emulateMedia(new Page.EmulateMediaOptions().setColorScheme(ColorScheme.LIGHT));
     }
 
+    String locationHash() {return (String) page.evaluate("() => location.hash");}
+
+    void goBack() {page.goBack();}
+
+    void navigateTo(String hash) {page.navigate(testServer.baseUrl() + "/index.html" + hash);}
+
     boolean isErrorBannerVisible() {
         return page.locator("#error-banner").isVisible();
     }
