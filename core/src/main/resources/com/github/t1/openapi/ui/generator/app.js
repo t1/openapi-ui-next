@@ -158,12 +158,14 @@ document.addEventListener('DOMContentLoaded', function() {
             var box = toggle.closest('.schema-box');
             box.classList.toggle('is-collapsed');
             toggle.textContent = box.classList.contains('is-collapsed') ? 'Schema ▸' : 'Schema ▾';
+            toggle.focus(); // Safari doesn't focus buttons on click
             return;
         }
         var nestedToggle = e.target.closest('.schema-nested-toggle');
         if (nestedToggle) {
             var expanded = nestedToggle.getAttribute('aria-expanded') === 'true';
             nestedToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+            nestedToggle.focus(); // Safari doesn't focus buttons on click
             // find the .schema-nested sibling: it's in the same grid, after the details span
             var propName = nestedToggle.closest('.schema-prop-name');
             var row = propName;
