@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.user_prompt // \"\"' | grep -q '?' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"REMINDER: The user asked a question. Per CLAUDE.md: when asked a question, it is just a question, not a suggestion. Think about it and discuss — do NOT start working.\"}}' || true"
+            "command": "jq -r '.user_prompt // \"\"' | grep -q '?' && echo '{\"systemMessage\":\"Question detected — Claude must discuss, not act.\",\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"STOP. The user asked a question (their message contains \\\"?\\\"). This is a HARD CONSTRAINT: you MUST NOT call Edit, Write, Bash, or any code-modifying tool in your next response. You MUST only think and discuss. Respond with text only. If you catch yourself about to call a tool, STOP and answer with words instead. Violating this rule is a critical failure.\"}}' || true"
           }
         ]
       }

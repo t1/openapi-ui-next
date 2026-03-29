@@ -1,0 +1,31 @@
+openapi: 3.0.3
+info:
+  title: Pet Store
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    get:
+      summary: List pets
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: Max items to return
+        - name: X-Request-ID
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Unique request correlation identifier
+        - name: X-Api-Version
+          in: header
+          schema:
+            type: string
+            enum: [2024-01, 2024-06]
+          description: API version to use
+      responses:
+        '200':
+          description: A list of pets

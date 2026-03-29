@@ -89,18 +89,23 @@ class MethodFragmentGenerator {
                 var required = Boolean.TRUE.equals(param.getRequired());
                 var badges = tagsAddon().content(tag(param.getIn())).classes("is-inline-flex", "ml-2");
                 if (required) badges.content(tag("required").is(DANGER));
-                var inputField = field().label(span(param.getName()), badges);
+                var inputField = field().label(span(param.getName()), badges,
+                        span().classes("checkbox", "is-size-7", "param-persist")
+                                .content(element("input").attr("type", "checkbox").classes("param-persist-check"),
+                                        span(" persist")));
                 if (enumValues != null && !enumValues.isEmpty()) {
                     var sel = select(param.getName()).option("", "(any)");
+                    sel.attr("data-param-in", param.getIn());
                     if (required) sel.attr("required", "");
                     for (var value : enumValues) {
                         sel.option(value.toString(), value.toString());
                     }
                     inputField.content(sel);
                 } else if ("boolean".equals(schema != null ? schema.getType() : null)) {
-                    inputField.content(checkbox().name(param.getName()));
+                    inputField.content(checkbox().name(param.getName()).attr("data-param-in", param.getIn()));
                 } else {
                     var inp = input(TEXT).attr("name", param.getName());
+                    inp.attr("data-param-in", param.getIn());
                     if (required) inp.attr("required", "");
                     inputField.content(inp);
                 }
@@ -110,6 +115,10 @@ class MethodFragmentGenerator {
                 sendForm.content(inputField);
             }
         }
+        var customHeaders = div().classes("custom-headers")
+                .content(element("button").attr("type", "button").classes("custom-header-add")
+                        .content("+ Add custom header"));
+        sendForm.content(customHeaders);
         if (operation.getRequestBody() != null && operation.getRequestBody().getContent() != null) {
             var content = operation.getRequestBody().getContent();
             var jsonContent = content.get("application/json");
@@ -226,7 +235,7 @@ class MethodFragmentGenerator {
         var tabs = div().classes("schema-status-tabs");
         var isFirst = true;
         for (var code : statusCodes) {
-            var tab = span(code).classes("schema-status-tab").attr("tabindex", "0");
+            var tab = span(code).classes("schema-status-tab").attr("tabindex", "0").attr("data-status", code);
             if (isFirst) {
                 tab.classes("is-active");
                 isFirst = false;

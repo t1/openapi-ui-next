@@ -19,6 +19,7 @@ class PathFragmentGenerator {
             if (first) li.classes("is-active");
             li.content(element("a").content(method.name())
                     .attr("tabindex", "0")
+                    .attr("data-method", method.name())
                     .attr("hx-get", fullPath + "/" + method.name() + ".html")
                     .attr("hx-target", "#method-content")
                     .attr("hx-swap", "innerHTML"));

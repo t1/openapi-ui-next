@@ -11,9 +11,11 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -47,7 +49,9 @@ public class PetResource {
                                                         + "The response includes each pet's name, species, status, and owner information. "
                                                         + "Pagination is not yet supported; all matching records are returned in a single response. "
                                                         + "For large datasets, consider using the status filter to reduce the result set.")
-    public List<Pet> list(@QueryParam("status") PetStatus status) {
+    public List<Pet> list(
+            @QueryParam("status") PetStatus status,
+            @HeaderParam("X-Request-ID") @Parameter(description = "Unique request correlation identifier") String requestId) {
         if (status == null) return PETS;
         return PETS.stream().filter(p -> p.status == status).toList();
     }
@@ -58,6 +62,8 @@ public class PetResource {
             content = {@Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = PetResponse.class)),
                     @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = PetResponse.class))})
     @APIResponse(responseCode = "404", description = "Pet not found",
+            content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
+    @APIResponse(responseCode = "500", description = "Internal server error",
             content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
     public PetResponse get(@PathParam("id") long id, @QueryParam("showVisits") boolean showVisits) {
         var pet = PETS.stream()

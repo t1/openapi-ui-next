@@ -323,6 +323,13 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("&quot;withUuidFormat&quot;: &quot;3fa85f64-5717-4562-b3fc-2c963f66afa6&quot;");
     }
 
+    @Test void shouldColorPatchSameAsPut() throws Exception {
+        generate("/request-body-media-type-example.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{id}/PATCH.html"));
+        then(fragment).contains("tag is-warning is-medium\">PATCH");
+    }
+
     @Test void shouldUseMediaTypeExampleWhenSchemaHasNoProperties() throws Exception {
         generate("/request-body-media-type-example.yaml");
 
@@ -373,6 +380,23 @@ class OpenApiUiGeneratorTest {
         then(pathFragment).contains("hx-get=\"pets/POST.html\"");
         then(pathFragment).contains("id=\"method-content\"");
         then(pathFragment).contains("List pets");
+    }
+
+    @Test void shouldColorCodeMethodTabs() throws Exception {
+        generate("/multi-method.yaml");
+
+        var pathFragment = Files.readString(outputDir.resolve("pets/index.html"));
+        then(pathFragment).contains("data-method=\"GET\"");
+        then(pathFragment).contains("data-method=\"POST\"");
+    }
+
+    @Test void shouldColorCodeStatusCodeTabs() throws Exception {
+        generate("/unsorted-status-codes.yaml");
+
+        var methodFragment = Files.readString(outputDir.resolve("items/{id}/GET.html"));
+        then(methodFragment).contains("class=\"schema-status-tab is-active\" tabindex=\"0\" data-status=\"200\"");
+        then(methodFragment).contains("class=\"schema-status-tab\" tabindex=\"0\" data-status=\"404\"");
+        then(methodFragment).contains("class=\"schema-status-tab\" tabindex=\"0\" data-status=\"500\"");
     }
 
     @Test void shouldStillGenerateMethodFragments() throws Exception {
@@ -622,6 +646,47 @@ class OpenApiUiGeneratorTest {
 
         var css = Files.readString(outputDir.resolve("openapi-ui.css"));
         then(css).contains("also-in");
+    }
+
+    @Test void shouldRenderDataParamInAttribute() throws Exception {
+        generate("/header-params.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("data-param-in=\"query\"");
+        then(fragment).contains("data-param-in=\"header\"");
+    }
+
+    @Test void shouldRenderHeaderParameterBadge() throws Exception {
+        generate("/header-params.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains(">header<");
+    }
+
+    @Test void shouldRenderHeaderEnumParameterAsSelect() throws Exception {
+        generate("/header-params.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("name=\"X-Api-Version\"");
+        then(fragment).contains("data-param-in=\"header\"");
+        then(fragment).contains("2024-01");
+        then(fragment).contains("2024-06");
+    }
+
+    @Test void shouldRenderCustomHeaderArea() throws Exception {
+        generate("/header-params.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("custom-headers");
+        then(fragment).contains("Add custom header");
+    }
+
+    @Test void shouldRenderGlobalHeadersPanel() throws Exception {
+        generate("/one-get.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("global-headers");
+        then(indexHtml).contains("Global Headers");
     }
 
     @Test void shouldNotIncludeDataMethodOnTagTreeOperations() throws Exception {

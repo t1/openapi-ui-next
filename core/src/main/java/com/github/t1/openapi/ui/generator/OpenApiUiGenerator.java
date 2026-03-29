@@ -116,6 +116,14 @@ public class OpenApiUiGenerator {
                 element("h1").classes("title").content(pageTitle),
                 modeToggle
         );
+        var globalHeaders = div().id("global-headers").classes("global-headers", "is-collapsed")
+                .content(
+                        element("button").attr("type", "button").classes("global-headers-toggle")
+                                .content(span("Global Headers"), span("0").classes("global-headers-count")),
+                        div().classes("global-headers-body")
+                                .content(element("button").attr("type", "button").classes("custom-header-add")
+                                        .content("+ Add global header"))
+                );
         var splitLayout = splitPane()
                 .first(box().content(viewToggle, treeContainer))
                 .second(detail)
@@ -125,6 +133,7 @@ public class OpenApiUiGenerator {
                 .content("Backend not reachable — retrying...");
         var body = section().content(container().content(
                 detailHeader,
+                globalHeaders,
                 splitLayout
         ), errorBanner);
         return html(pageTitle)
@@ -251,7 +260,7 @@ public class OpenApiUiGenerator {
             case POST -> LINK;
             case PUT -> WARNING;
             case DELETE -> DANGER;
-            case PATCH -> PRIMARY;
+            case PATCH -> WARNING;
             default -> INFO;
         };
     }

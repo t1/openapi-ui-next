@@ -459,7 +459,28 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void clickDescriptionToggle() {page.locator(".desc-toggle").click();}
 
-void clearClipboard() {page.evaluate("() => navigator.clipboard.writeText('')");}
+    void clickButton(String text) {
+        page.locator("#detail button:text('" + text + "')").click();
+    }
+
+    int customHeaderRowCount() {
+        return page.locator("#detail .custom-header-row").count();
+    }
+
+    void fillCustomHeader(int index, String name, String value) {
+        page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-name").fill(name);
+        page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-value").fill(value);
+    }
+
+    void fillCustomHeaderName(int index, String name) {
+        page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-name").fill(name);
+    }
+
+    void removeCustomHeader(int index) {
+        page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-remove").click();
+    }
+
+    void clearClipboard() {page.evaluate("() => navigator.clipboard.writeText('')");}
 
     String readClipboard() {return (String) page.evaluate("() => navigator.clipboard.readText()");}
 
@@ -511,6 +532,71 @@ void clearClipboard() {page.evaluate("() => navigator.clipboard.writeText('')");
     void goBack() {page.goBack();}
 
     void navigateTo(String hash) {page.navigate(testServer.baseUrl() + "/index.html" + hash);}
+
+    boolean isGlobalHeadersCollapsed() {
+        return page.locator("#global-headers.is-collapsed").count() > 0;
+    }
+
+    void clickGlobalHeadersToggle() {
+        page.locator(".global-headers-toggle").click();
+    }
+
+    void clickGlobalHeaderButton(String text) {
+        page.locator("#global-headers button:text('" + text + "')").click();
+    }
+
+    void fillGlobalHeader(int index, String name, String value) {
+        page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-name").fill(name);
+        page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-value").fill(value);
+    }
+
+    void fillGlobalHeaderName(int index, String name) {
+        page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-name").fill(name);
+    }
+
+    int globalHeaderRowCount() {
+        return page.locator("#global-headers .custom-header-row").count();
+    }
+
+    void checkGlobalHeaderPersist(int index) {
+        page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-persist-check").check();
+    }
+
+    void uncheckGlobalHeaderPersist(int index) {
+        page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-persist-check").uncheck();
+    }
+
+    void removeGlobalHeader(int index) {
+        page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-remove").click();
+    }
+
+    String globalHeaderName(int index) {
+        return page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-name").inputValue();
+    }
+
+    String globalHeaderValue(int index) {
+        return page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-value").inputValue();
+    }
+
+    void checkParamPersist(String paramName) {
+        page.locator("#detail .field:has(input[name='" + paramName + "']) .param-persist-check").check();
+    }
+
+    String inputValue(String name) {
+        return page.locator("#detail input[name='" + name + "']").inputValue();
+    }
+
+    void checkCustomHeaderPersist(int index) {
+        page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-persist-check").check();
+    }
+
+    String customHeaderName(int index) {
+        return page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-name").inputValue();
+    }
+
+    String customHeaderValue(int index) {
+        return page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-value").inputValue();
+    }
 
     boolean isErrorBannerVisible() {
         return page.locator("#error-banner").isVisible();

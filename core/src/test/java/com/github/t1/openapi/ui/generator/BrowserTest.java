@@ -108,6 +108,73 @@ class BrowserTest {
             then(app.selectedItemHasFocusRing()).isTrue();
         }
 
+        @Test void shouldToggleGlobalHeadersPanel() {
+            then(app.isGlobalHeadersCollapsed()).isTrue();
+            app.clickGlobalHeadersToggle();
+            then(app.isGlobalHeadersCollapsed()).isFalse();
+            app.clickGlobalHeadersToggle();
+            then(app.isGlobalHeadersCollapsed()).isTrue();
+        }
+
+        @Test void shouldPersistGlobalHeader() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.fillGlobalHeader(0, "Authorization", "Bearer secret");
+            app.checkGlobalHeaderPersist(0);
+            app.navigateHome();
+            app.clickGlobalHeadersToggle();
+            then(app.globalHeaderName(0)).isEqualTo("Authorization");
+            then(app.globalHeaderValue(0)).isEqualTo("Bearer secret");
+        }
+
+        @Test void shouldCleanUpOldKeyWhenRenamingPersistedGlobalHeader() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.fillGlobalHeader(0, "Authorization", "Bearer secret");
+            app.checkGlobalHeaderPersist(0);
+            app.fillGlobalHeaderName(0, "X-Auth");
+            app.navigateHome();
+            app.clickGlobalHeadersToggle();
+            then(app.globalHeaderRowCount()).isEqualTo(1);
+            then(app.globalHeaderName(0)).isEqualTo("X-Auth");
+        }
+
+        @Test void shouldRemovePersistedGlobalHeaderFromStorageOnDelete() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.fillGlobalHeader(0, "Authorization", "Bearer secret");
+            app.checkGlobalHeaderPersist(0);
+            app.navigateHome();
+            app.clickGlobalHeadersToggle();
+            then(app.globalHeaderRowCount()).isEqualTo(1);
+
+            app.removeGlobalHeader(0);
+            app.navigateHome();
+            app.clickGlobalHeadersToggle();
+            then(app.globalHeaderRowCount()).isEqualTo(0);
+        }
+
+        @Test void shouldRemovePersistedHeaderWhenUnchecked() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.fillGlobalHeader(0, "X-Temp", "val");
+            app.checkGlobalHeaderPersist(0);
+            app.uncheckGlobalHeaderPersist(0);
+            app.navigateHome();
+            app.clickGlobalHeadersToggle();
+            then(app.globalHeaderRowCount()).isEqualTo(0);
+        }
+
+        @Test void shouldIncludeGlobalHeaderInCurlCommand() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.fillGlobalHeader(0, "Authorization", "Bearer token123");
+            app.clickModeButton("curl");
+            app.clickSend();
+            var clipboard = app.readClipboard();
+            then(clipboard).contains("-H 'Authorization: Bearer token123'");
+        }
+
         @Test void modeToggleIsSegmentedControl() {
             then(app.hasSegmentedControl()).isTrue();
             then(app.isSegmentActive("try")).isTrue();
@@ -650,7 +717,7 @@ class BrowserTest {
             then(app.activeElementSelector()).contains("desc-toggle");
 
             app.pressKey("ArrowDown");
-            then(app.activeElementSelector()).contains("button").contains("type=submit");
+            then(app.activeElementSelector()).contains("custom-header-add");
 
             app.focusDescriptionToggle();
             app.pressKey("ArrowUp");
@@ -1374,6 +1441,110 @@ class BrowserTest {
             then(app.detailText()).contains("List pets");
             then(app.isViewActive("tags")).isTrue();
             then(app.isTreeItemSelected("pets/GET.html")).isTrue();
+        }
+    }
+
+    @ResourceLock("header-params") @Nested class GivenAppWithHeaderParams {
+        @RegisterExtension static AppFixture app = launch("header-params.yaml");
+
+        @Test void shouldIncludeHeaderParamInCurlCommand() {
+            app.clickModeButton("curl");
+            app.fillInput("X-Request-ID", "test-123");
+            app.clickSend();
+
+            var clipboard = app.readClipboard();
+            then(clipboard).contains("-H 'X-Request-ID: test-123'");
+        }
+
+        @Test void shouldAddCustomHeaderRow() {
+            app.clickButton("+ Add custom header");
+            then(app.customHeaderRowCount()).isEqualTo(1);
+        }
+
+        @Test void shouldIncludeCustomHeaderInCurlCommand() {
+            app.clickModeButton("curl");
+            app.fillInput("X-Request-ID", "req-1");
+            app.clickButton("+ Add custom header");
+            app.fillCustomHeader(0, "X-Debug", "true");
+            app.clickSend();
+            var clipboard = app.readClipboard();
+            then(clipboard).contains("-H 'X-Debug: true'");
+        }
+
+        @Test void shouldRemoveCustomHeaderRow() {
+            app.clickButton("+ Add custom header");
+            then(app.customHeaderRowCount()).isEqualTo(1);
+            app.removeCustomHeader(0);
+            then(app.customHeaderRowCount()).isEqualTo(0);
+        }
+
+        @Test void perOperationHeaderShouldOverrideGlobalHeader() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.fillGlobalHeader(0, "X-Debug", "global");
+            app.clickModeButton("curl");
+            app.fillInput("X-Request-ID", "req-1");
+            app.clickButton("+ Add custom header");
+            app.fillCustomHeader(0, "X-Debug", "per-op");
+            app.clickSend();
+            var clipboard = app.readClipboard();
+            then(clipboard).contains("-H 'X-Debug: per-op'");
+            then(clipboard).doesNotContain("global");
+        }
+
+        @Test void shouldPersistSpecDefinedHeaderValue() {
+            app.fillInput("X-Request-ID", "persist-me");
+            app.checkParamPersist("X-Request-ID");
+            app.navigateHome();
+            then(app.inputValue("X-Request-ID")).isEqualTo("persist-me");
+        }
+
+        @Test void shouldPersistQueryParamValue() {
+            app.fillInput("limit", "25");
+            app.checkParamPersist("limit");
+            app.navigateHome();
+            then(app.inputValue("limit")).isEqualTo("25");
+        }
+
+        @Test void shouldCleanUpOldKeyWhenRenamingPersistedCustomHeader() {
+            app.clickButton("+ Add custom header");
+            app.fillCustomHeader(0, "X-Debug", "verbose");
+            app.checkCustomHeaderPersist(0);
+            app.fillCustomHeaderName(0, "X-Test");
+            app.navigateHome();
+            then(app.customHeaderRowCount()).isEqualTo(1);
+            then(app.customHeaderName(0)).isEqualTo("X-Test");
+        }
+
+        @Test void shouldPersistPerOperationCustomHeader() {
+            app.clickButton("+ Add custom header");
+            app.fillCustomHeader(0, "X-Debug", "verbose");
+            app.checkCustomHeaderPersist(0);
+            app.navigateHome();
+            then(app.customHeaderRowCount()).isEqualTo(1);
+            then(app.customHeaderName(0)).isEqualTo("X-Debug");
+            then(app.customHeaderValue(0)).isEqualTo("verbose");
+        }
+
+        @Test void shouldRemovePersistedCustomHeaderFromStorageOnDelete() {
+            app.clickButton("+ Add custom header");
+            app.fillCustomHeader(0, "X-Debug", "verbose");
+            app.checkCustomHeaderPersist(0);
+            app.navigateHome();
+            then(app.customHeaderRowCount()).isEqualTo(1);
+
+            app.removeCustomHeader(0);
+            app.navigateHome();
+            then(app.customHeaderRowCount()).isEqualTo(0);
+        }
+
+        @Test void shouldIncludeHeaderParamInHttpieCommand() {
+            app.clickModeButton("httpie");
+            app.fillInput("X-Request-ID", "test-456");
+            app.clickSend();
+
+            var clipboard = app.readClipboard();
+            then(clipboard).contains("X-Request-ID:test-456");
         }
     }
 

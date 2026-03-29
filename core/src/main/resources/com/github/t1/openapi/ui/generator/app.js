@@ -30,6 +30,100 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Global headers panel toggle
+    var globalHeadersPanel = document.getElementById('global-headers');
+    if (globalHeadersPanel) {
+        globalHeadersPanel.querySelector('.global-headers-toggle').addEventListener('click', function() {
+            globalHeadersPanel.classList.toggle('is-collapsed');
+        });
+        globalHeadersPanel.addEventListener('click', function(e) {
+            var addBtn = e.target.closest('.custom-header-add');
+            if (addBtn) {
+                var body = globalHeadersPanel.querySelector('.global-headers-body');
+                var row = document.createElement('div');
+                row.className = 'custom-header-row';
+                row.innerHTML =
+                    '<input type="text" class="input is-small custom-header-name" name="' + randomName() + '" placeholder="Header name">' +
+                    '<input type="text" class="input is-small custom-header-value" name="' + randomName() + '" placeholder="Value">' +
+                    '<label class="checkbox is-size-7 custom-header-persist"><input type="checkbox" class="custom-header-persist-check"> persist</label>' +
+                    '<button type="button" class="delete is-small custom-header-remove"></button>';
+                body.insertBefore(row, addBtn);
+                row.querySelector('.custom-header-name').focus();
+                updateGlobalHeaderCount();
+                return;
+            }
+            var removeBtn = e.target.closest('.custom-header-remove');
+            if (removeBtn) {
+                var row = removeBtn.closest('.custom-header-row');
+                var persistCheck = row.querySelector('.custom-header-persist-check');
+                if (persistCheck && persistCheck.checked) {
+                    var name = row.querySelector('.custom-header-name').value.trim();
+                    if (name) localStorage.removeItem('openapi-ui-global-header:' + name);
+                }
+                row.remove();
+                updateGlobalHeaderCount();
+                return;
+            }
+        });
+    }
+
+    function updateGlobalHeaderCount() {
+        if (!globalHeadersPanel) return;
+        var count = globalHeadersPanel.querySelectorAll('.custom-header-row').length;
+        globalHeadersPanel.querySelector('.global-headers-count').textContent = count;
+    }
+
+    // Global header persistence
+    if (globalHeadersPanel) {
+        globalHeadersPanel.addEventListener('change', function(e) {
+            var checkbox = e.target.closest('.custom-header-persist-check');
+            if (!checkbox) return;
+            var row = checkbox.closest('.custom-header-row');
+            var name = row.querySelector('.custom-header-name').value.trim();
+            var value = row.querySelector('.custom-header-value').value;
+            if (checkbox.checked && name) {
+                localStorage.setItem('openapi-ui-global-header:' + name, value);
+                row.setAttribute('data-prev-name', name);
+            } else if (name) {
+                localStorage.removeItem('openapi-ui-global-header:' + name);
+                row.removeAttribute('data-prev-name');
+            }
+        });
+        globalHeadersPanel.addEventListener('input', function(e) {
+            var inp = e.target.closest('.custom-header-name, .custom-header-value');
+            if (!inp) return;
+            var row = inp.closest('.custom-header-row');
+            var checkbox = row.querySelector('.custom-header-persist-check');
+            if (!checkbox || !checkbox.checked) return;
+            var name = row.querySelector('.custom-header-name').value.trim();
+            var value = row.querySelector('.custom-header-value').value;
+            var prevName = row.getAttribute('data-prev-name');
+            if (prevName && prevName !== name) localStorage.removeItem('openapi-ui-global-header:' + prevName);
+            if (name) {
+                localStorage.setItem('openapi-ui-global-header:' + name, value);
+                row.setAttribute('data-prev-name', name);
+            }
+        });
+        // Restore persisted global headers
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (!key.startsWith('openapi-ui-global-header:')) continue;
+            var ghName = key.substring('openapi-ui-global-header:'.length);
+            var ghValue = localStorage.getItem(key);
+            var body = globalHeadersPanel.querySelector('.global-headers-body');
+            var addBtn = body.querySelector('.custom-header-add');
+            var row = document.createElement('div');
+            row.className = 'custom-header-row';
+            row.innerHTML =
+                '<input type="text" class="input is-small custom-header-name" placeholder="Header name" value="' + ghName.replace(/"/g, '&quot;') + '">' +
+                '<input type="text" class="input is-small custom-header-value" placeholder="Value" value="' + ghValue.replace(/"/g, '&quot;') + '">' +
+                '<label class="checkbox is-size-7 custom-header-persist"><input type="checkbox" class="custom-header-persist-check" checked> persist</label>' +
+                '<button type="button" class="delete is-small custom-header-remove"></button>';
+            body.insertBefore(row, addBtn);
+        }
+        updateGlobalHeaderCount();
+    }
+
     // View toggle consumer
     var viewToggle = document.querySelector('[data-toggle="view"]');
     if (viewToggle) {
@@ -129,6 +223,41 @@ document.addEventListener('DOMContentLoaded', function() {
             sendBtns.forEach(function(b) { b.textContent = 'Copy'; });
         }
         initDescriptionToggle();
+        // Restore persisted spec-defined parameter values
+        document.querySelectorAll('[data-param-in]').forEach(function(inp) {
+            var form = inp.closest('form[data-path]');
+            if (!form) return;
+            var key = paramStorageKey(form, inp.getAttribute('data-param-in'), inp.getAttribute('name'));
+            var saved = localStorage.getItem(key);
+            if (saved !== null) {
+                inp.value = saved;
+                var persistCheck = inp.closest('.field').querySelector('.param-persist-check');
+                if (persistCheck) persistCheck.checked = true;
+            }
+        });
+        // Restore persisted per-op custom headers
+        var form = document.querySelector('#detail form[data-path]');
+        if (form) {
+            var prefix = customHeaderStorageKey(form, '');
+            var container = form.querySelector('.custom-headers');
+            if (container) {
+                var addBtn = container.querySelector('.custom-header-add');
+                for (var si = 0; si < localStorage.length; si++) {
+                    var sKey = localStorage.key(si);
+                    if (!sKey.startsWith(prefix)) continue;
+                    var chName = sKey.substring(prefix.length);
+                    var chValue = localStorage.getItem(sKey);
+                    var chRow = document.createElement('div');
+                    chRow.className = 'custom-header-row';
+                    chRow.innerHTML =
+                        '<input type="text" class="input is-small custom-header-name" placeholder="Header name" value="' + chName.replace(/"/g, '&quot;') + '">' +
+                        '<input type="text" class="input is-small custom-header-value" placeholder="Value" value="' + chValue.replace(/"/g, '&quot;') + '">' +
+                        '<label class="checkbox is-size-7 custom-header-persist"><input type="checkbox" class="custom-header-persist-check" checked> persist</label>' +
+                        '<button type="button" class="delete is-small custom-header-remove"></button>';
+                    container.insertBefore(chRow, addBtn);
+                }
+            }
+        }
         document.querySelectorAll('select[data-example-select]').forEach(function(sel) {
             sel.addEventListener('change', function() {
                 var textarea = sel.closest('.field').querySelector('textarea[data-request-body]');
@@ -151,6 +280,16 @@ document.addEventListener('DOMContentLoaded', function() {
         return new XMLSerializer().serializeToString(result);
     }
 
+    function randomName() {return 'h-' + Math.random().toString(36).slice(2);}
+
+    function paramStorageKey(form, paramIn, name) {
+        return 'openapi-ui-param:' + paramIn + ':' + form.getAttribute('data-method') + ':' + form.getAttribute('data-path') + ':' + name;
+    }
+
+    function customHeaderStorageKey(form, name) {
+        return 'openapi-ui-custom-header:' + form.getAttribute('data-method') + ':' + form.getAttribute('data-path') + ':' + name;
+    }
+
     function detectLanguage(contentType) {
         var mime = (contentType || '').split(';')[0].trim();
         var subtype = mime.split('/')[1] || '';
@@ -159,8 +298,95 @@ document.addEventListener('DOMContentLoaded', function() {
         return null;
     }
 
-    // Schema box toggle
+    // Spec-defined param persistence
+    detail.addEventListener('change', function(e) {
+        var checkbox = e.target.closest('.param-persist-check');
+        if (checkbox) {
+            var fieldEl = checkbox.closest('.field');
+            var inp = fieldEl.querySelector('[data-param-in]');
+            if (!inp) return;
+            var form = inp.closest('form[data-path]');
+            var key = paramStorageKey(form, inp.getAttribute('data-param-in'), inp.getAttribute('name'));
+            if (checkbox.checked) {
+                localStorage.setItem(key, inp.value);
+            } else {
+                localStorage.removeItem(key);
+            }
+            return;
+        }
+        // Per-op custom header persistence
+        var customCheckbox = e.target.closest('.custom-headers .custom-header-persist-check');
+        if (customCheckbox) {
+            var row = customCheckbox.closest('.custom-header-row');
+            var form = row.closest('form[data-path]');
+            var name = row.querySelector('.custom-header-name').value.trim();
+            var value = row.querySelector('.custom-header-value').value;
+            var key = customHeaderStorageKey(form, name);
+            if (customCheckbox.checked && name) {
+                localStorage.setItem(key, value);
+                row.setAttribute('data-prev-name', name);
+            } else if (name) {
+                localStorage.removeItem(key);
+                row.removeAttribute('data-prev-name');
+            }
+        }
+    });
+    detail.addEventListener('input', function(e) {
+        var inp = e.target.closest('[data-param-in]');
+        if (inp) {
+            var fieldEl = inp.closest('.field');
+            var persistCheck = fieldEl.querySelector('.param-persist-check');
+            if (!persistCheck || !persistCheck.checked) return;
+            var form = inp.closest('form[data-path]');
+            localStorage.setItem(paramStorageKey(form, inp.getAttribute('data-param-in'), inp.getAttribute('name')), inp.value);
+            return;
+        }
+        // Per-op custom header input update
+        var customInp = e.target.closest('.custom-headers .custom-header-name, .custom-headers .custom-header-value');
+        if (customInp) {
+            var row = customInp.closest('.custom-header-row');
+            var checkbox = row.querySelector('.custom-header-persist-check');
+            if (!checkbox || !checkbox.checked) return;
+            var form = row.closest('form[data-path]');
+            var name = row.querySelector('.custom-header-name').value.trim();
+            var value = row.querySelector('.custom-header-value').value;
+            var prevName = row.getAttribute('data-prev-name');
+            if (prevName && prevName !== name) localStorage.removeItem(customHeaderStorageKey(form, prevName));
+            if (name) {
+                localStorage.setItem(customHeaderStorageKey(form, name), value);
+                row.setAttribute('data-prev-name', name);
+            }
+        }
+    });
+
+    // Schema box toggle + custom header management
     detail.addEventListener('click', function(e) {
+        var addBtn = e.target.closest('.custom-header-add');
+        if (addBtn) {
+            var container = addBtn.closest('.custom-headers');
+            var row = document.createElement('div');
+            row.className = 'custom-header-row';
+            row.innerHTML =
+                '<input type="text" class="input is-small custom-header-name" name="' + randomName() + '" placeholder="Header name">' +
+                '<input type="text" class="input is-small custom-header-value" name="' + randomName() + '" placeholder="Value">' +
+                '<label class="checkbox is-size-7 custom-header-persist"><input type="checkbox" class="custom-header-persist-check"> persist</label>' +
+                '<button type="button" class="delete is-small custom-header-remove"></button>';
+            container.insertBefore(row, addBtn);
+            row.querySelector('.custom-header-name').focus();
+            return;
+        }
+        var removeBtn = e.target.closest('.custom-header-remove');
+        if (removeBtn) {
+            var row = removeBtn.closest('.custom-header-row');
+            var persistCheck = row.querySelector('.custom-header-persist-check');
+            if (persistCheck && persistCheck.checked) {
+                var form = row.closest('form[data-path]');
+                var name = row.querySelector('.custom-header-name').value.trim();
+                if (form && name) localStorage.removeItem(customHeaderStorageKey(form, name));
+            }
+            row.remove();
+            return;
+        }
         var toggle = e.target.closest('.schema-toggle');
         if (toggle) {
             var box = toggle.closest('.schema-box');
@@ -479,16 +705,39 @@ document.addEventListener('DOMContentLoaded', function() {
             var inputs = sendForm.querySelectorAll('input[name], select[name]');
             var resolvedPath = pathTemplate;
             var queryParams = [];
+            var requestHeaders = {};
             inputs.forEach(function(inp) {
                 var name = inp.getAttribute('name');
+                var paramIn = inp.getAttribute('data-param-in') || 'query';
                 var isCheckbox = inp.type === 'checkbox';
                 var val = isCheckbox ? (inp.checked ? 'true' : '') : inp.value;
-                if (pathTemplate.includes('{' + name + '}')) {
+                if (paramIn === 'path' || pathTemplate.includes('{' + name + '}')) {
                     resolvedPath = resolvedPath.replace('{' + name + '}', encodeURIComponent(val));
+                } else if (paramIn === 'header') {
+                    if (val) requestHeaders[name] = val;
                 } else if (val) {
                     queryParams.push(name + '=' + encodeURIComponent(val));
                 }
             });
+            sendForm.querySelectorAll('.custom-header-row').forEach(function(row) {
+                var name = row.querySelector('.custom-header-name').value.trim();
+                var value = row.querySelector('.custom-header-value').value;
+                if (name) requestHeaders[name] = value;
+            });
+            // Collect global headers (lowest priority) and merge
+            var globalHeaders = {};
+            var ghPanel = document.getElementById('global-headers');
+            if (ghPanel) {
+                ghPanel.querySelectorAll('.custom-header-row').forEach(function(row) {
+                    var name = row.querySelector('.custom-header-name').value.trim();
+                    var value = row.querySelector('.custom-header-value').value;
+                    if (name) globalHeaders[name] = value;
+                });
+            }
+            var mergedHeaders = {};
+            Object.keys(globalHeaders).forEach(function(h) { mergedHeaders[h] = globalHeaders[h]; });
+            Object.keys(requestHeaders).forEach(function(h) { mergedHeaders[h] = requestHeaders[h]; });
+            requestHeaders = mergedHeaders;
             var url = baseUrl.startsWith('http') ? baseUrl + resolvedPath
                     : new URL((baseUrl + resolvedPath).replace(/\/+/g, '/'), window.location.origin).href;
             if (queryParams.length > 0) url += '?' + queryParams.join('&');
@@ -497,15 +746,23 @@ document.addEventListener('DOMContentLoaded', function() {
             var bodyValue = bodyTextarea ? bodyTextarea.value : '';
 
             if (mode === 'curl') {
-                var cmd = bodyValue
-                        ? 'curl -X ' + method + " -H 'Content-Type: application/json' -d '" + bodyValue + "' " + url
-                        : 'curl -X ' + method + ' ' + url;
+                var headerFlags = Object.keys(requestHeaders).map(function(h) {
+                    return "-H '" + h + ": " + requestHeaders[h] + "'";
+                }).join(' ');
+                var cmd = 'curl -X ' + method;
+                if (headerFlags) cmd += ' ' + headerFlags;
+                if (bodyValue) cmd += " -H 'Content-Type: application/json' -d '" + bodyValue + "'";
+                cmd += ' ' + url;
                 navigator.clipboard.writeText(cmd);
                 showCopied(sendBtn);
             } else if (mode === 'httpie') {
+                var headerArgs = Object.keys(requestHeaders).map(function(h) {
+                    return h + ':' + requestHeaders[h];
+                }).join(' ');
                 var cmd = bodyValue
                         ? "echo '" + bodyValue + "' | http " + method + ' ' + url + " Content-Type:application/json"
                         : 'http ' + method + ' ' + url;
+                if (headerArgs) cmd += ' ' + headerArgs;
                 navigator.clipboard.writeText(cmd);
                 showCopied(sendBtn);
             } else if (mode === 'try') {
@@ -520,6 +777,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (acceptSelect && acceptSelect.value) {
                     fetchOptions.headers['Accept'] = acceptSelect.value;
                 }
+                Object.keys(requestHeaders).forEach(function(h) {
+                    fetchOptions.headers[h] = requestHeaders[h];
+                });
                 fetch(url, fetchOptions).then(function(resp) {
                     var ct = resp.headers.get('Content-Type') || '';
                     var headers = [];
