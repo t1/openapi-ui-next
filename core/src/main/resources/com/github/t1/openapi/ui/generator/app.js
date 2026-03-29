@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (headers) headers.remove();
     }
 
-    function showResponseStatus(btn, status, statusText, headers) {
+    function showResponseStatus(btn, status, statusText, headers, headersExpanded) {
         var levelRight = btn.closest('.level').querySelector('.level-right');
         levelRight.textContent = '';
         var badge = document.createElement('span');
@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var toggle = document.createElement('button');
             toggle.type = 'button';
             toggle.className = 'response-headers-toggle';
-            toggle.textContent = 'headers (' + headers.length + ') \u25B8';
+            toggle.textContent = 'headers (' + headers.length + ') ' + (headersExpanded ? '\u25BE' : '\u25B8');
             toggle.addEventListener('click', function() {
                 var container = detail.querySelector('.response-headers');
                 if (container) {
@@ -476,7 +476,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             levelRight.appendChild(toggle);
             var container = document.createElement('div');
-            container.className = 'response-headers';
+            container.className = 'response-headers' + (headersExpanded ? ' is-visible' : '');
             var grid = document.createElement('div');
             grid.className = 'response-header-rows';
             headers.forEach(function(h) {
@@ -787,8 +787,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         headers.push({name: name, value: value});
                     });
                     return resp.text().then(function(text) {
+                        var headersWereVisible = detail.querySelector('.response-headers.is-visible') !== null;
                         clearPreviousResponse();
-                        showResponseStatus(sendBtn, resp.status, resp.statusText, headers);
+                        showResponseStatus(sendBtn, resp.status, resp.statusText, headers, headersWereVisible);
                         if (ct.includes('json')) {
                             try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
                         } else if (ct.includes('xml')) {

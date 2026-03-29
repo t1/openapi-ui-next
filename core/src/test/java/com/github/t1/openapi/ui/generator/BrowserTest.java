@@ -480,6 +480,29 @@ class BrowserTest {
                 then(app.responseHeadersVisible()).isFalse();
             }
 
+            @Test void shouldKeepHeadersExpandedOnResend() {
+                app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+                navigateToListPetsAndSend();
+                app.toggleResponseHeaders();
+                then(app.responseHeadersVisible()).isTrue();
+
+                app.resend();
+
+                then(app.responseHeadersVisible()).isTrue();
+                then(app.responseHeadersToggleText()).contains("headers").endsWith("▾");
+            }
+
+            @Test void shouldKeepHeadersCollapsedOnResend() {
+                app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+                navigateToListPetsAndSend();
+                then(app.responseHeadersVisible()).isFalse();
+
+                app.resend();
+
+                then(app.responseHeadersVisible()).isFalse();
+                then(app.responseHeadersToggleText()).contains("headers").endsWith("▸");
+            }
+
             @Test void tryModeShowsYamlResponseAsIs() {
                 app.mockEndpoint("/pets", "application/yaml", "pets:\n  - name: Fido\n    id: 1");
 
