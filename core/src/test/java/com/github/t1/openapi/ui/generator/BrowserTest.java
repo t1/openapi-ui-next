@@ -1623,4 +1623,42 @@ class BrowserTest {
             then(app.nestedPropertyNames("response")).contains("id", "name", "status");
         }
     }
+
+    @ResourceLock("multi-method") @Nested class GivenDomCache {
+        @RegisterExtension static AppFixture app = launch("multi-method.yaml");
+
+        @Test void shouldPreserveFieldValueAcrossNavigation() {
+            app.waitForDetailContent("List pets");
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get pet by ID");
+            app.fillInput("petId", "42");
+
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("List pets");
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get pet by ID");
+
+            then(app.inputValue("petId")).isEqualTo("42");
+        }
+
+        @Test void shouldPreserveResponseAcrossNavigation() {
+            app.waitForDetailContent("List pets");
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get pet by ID");
+            app.mockRootEndpoint("/pets/42", "application/json", "{\"id\":42}");
+            app.fillInput("petId", "42");
+            app.clickSend();
+            app.waitForResponse();
+
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("List pets");
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get pet by ID");
+
+            then(app.hasResponseStatus()).isTrue();
+            then(app.responseText()).contains("\"id\"");
+        }
+    }
 }

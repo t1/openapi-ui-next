@@ -1,5 +1,57 @@
 document.addEventListener('DOMContentLoaded', function() {
     var detail = document.getElementById('detail');
+    var fieldCache = new Map();
+    var responseCache = new Map();
+
+    function opKey(form) {
+        return form.getAttribute('data-method') + ':' + form.getAttribute('data-path');
+    }
+
+    function saveFields(form) {
+        var key = opKey(form);
+        var fields = {};
+        form.querySelectorAll('input[name], select[name], textarea[data-request-body]').forEach(function(el) {
+            var name = el.getAttribute('name') || '__body__';
+            fields[name] = el.type === 'checkbox' ? el.checked : el.value;
+        });
+        fieldCache.set(key, fields);
+    }
+
+    function restoreFields(form) {
+        var key = opKey(form);
+        var fields = fieldCache.get(key);
+        if (!fields) return;
+        form.querySelectorAll('input[name], select[name], textarea[data-request-body]').forEach(function(el) {
+            var name = el.getAttribute('name') || '__body__';
+            if (!(name in fields)) return;
+            if (el.type === 'checkbox') el.checked = fields[name];
+            else el.value = fields[name];
+        });
+    }
+
+    function restoreResponse(form) {
+        var key = opKey(form);
+        var resp = responseCache.get(key);
+        if (!resp) return;
+        var btn = form.querySelector('button[type=submit]');
+        if (!btn) return;
+        showResponseStatus(btn, resp.status, resp.statusText, resp.headers, resp.headersExpanded);
+        if (resp.body) {
+            var pre = document.createElement('pre');
+            pre.className = 'response';
+            if (resp.highlighted) {
+                pre.innerHTML = resp.highlighted;
+            } else {
+                pre.textContent = resp.body;
+            }
+            detail.appendChild(pre);
+        } else if (resp.noBody) {
+            var msg = document.createElement('p');
+            msg.textContent = 'no body';
+            msg.className = 'response-no-body';
+            detail.appendChild(msg);
+        }
+    }
 
     // Mode toggle consumer
     var modeContainer = document.querySelector('[data-toggle="mode"]');
@@ -264,6 +316,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (textarea) textarea.value = sel.value;
             });
         });
+        // Restore session-cached field values and response
+        clearPreviousResponse();
+        var form = document.querySelector('#detail form[data-path]');
+        if (form) {
+            restoreFields(form);
+            restoreResponse(form);
+        }
     });
 
     function prettyPrintXml(xml) {
@@ -357,6 +416,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.setAttribute('data-prev-name', name);
             }
         }
+    });
+
+    // Save field values to session cache on every input
+    detail.addEventListener('input', function(e) {
+        var form = e.target.closest('form[data-path]');
+        if (form) saveFields(form);
     });
 
     // Schema box toggle + custom header management
@@ -515,6 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
             li.classList.add('is-active');
             var link = li.querySelector('a');
             link.focus();
+            clearPreviousResponse();
             var hxGet = link.getAttribute('hx-get');
             htmx.ajax('GET', hxGet, link.getAttribute('hx-target'));
             history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
@@ -795,6 +861,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         } else if (ct.includes('xml')) {
                             try { text = prettyPrintXml(text); } catch(e) {}
                         }
+                        var highlighted = null;
                         if (text.trim()) {
                             var pre = document.createElement('pre');
                             pre.className = 'response';
@@ -805,6 +872,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 code.textContent = text;
                                 pre.appendChild(code);
                                 hljs.highlightElement(code);
+                                highlighted = pre.innerHTML;
                             } else {
                                 pre.textContent = text;
                             }
@@ -815,6 +883,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             msg.className = 'response-no-body';
                             detail.appendChild(msg);
                         }
+                        responseCache.set(opKey(sendForm), {
+                            status: resp.status, statusText: resp.statusText,
+                            headers: headers, headersExpanded: headersWereVisible,
+                            body: text.trim() ? text : null, highlighted: highlighted,
+                            noBody: !text.trim()
+                        });
                     });
                 }).catch(function(err) {
                     clearPreviousResponse();
