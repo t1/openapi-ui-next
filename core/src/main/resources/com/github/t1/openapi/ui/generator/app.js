@@ -151,6 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var addBtn = body.querySelector('.custom-header-add');
             var row = document.createElement('div');
             row.className = 'custom-header-row';
+            row.setAttribute('data-prev-name', ghName);
             row.innerHTML =
                 '<input type="text" class="input is-small custom-header-name" placeholder="Header name" value="' + ghName.replace(/"/g, '&quot;') + '">' +
                 '<input type="text" class="input is-small custom-header-value" placeholder="Value" value="' + ghValue.replace(/"/g, '&quot;') + '">' +
@@ -288,6 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     var chValue = localStorage.getItem(sKey);
                     var chRow = document.createElement('div');
                     chRow.className = 'custom-header-row';
+                    chRow.setAttribute('data-prev-name', chName);
                     chRow.innerHTML =
                         '<input type="text" class="input is-small custom-header-name" placeholder="Header name" value="' + chName.replace(/"/g, '&quot;') + '">' +
                         '<input type="text" class="input is-small custom-header-value" placeholder="Value" value="' + chValue.replace(/"/g, '&quot;') + '">' +

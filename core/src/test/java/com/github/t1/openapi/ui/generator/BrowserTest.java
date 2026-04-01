@@ -140,6 +140,20 @@ class BrowserTest {
             then(app.globalHeaderName(0)).isEqualTo("X-Auth");
         }
 
+        @Test void shouldCleanUpOldKeyWhenRenamingRestoredPersistedGlobalHeader() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.fillGlobalHeader(0, "Authorization", "Bearer secret");
+            app.checkGlobalHeaderPersist(0);
+            app.navigateHome();
+            app.clickGlobalHeadersToggle();
+            app.fillGlobalHeaderName(0, "X-Auth");
+            app.navigateHome();
+            app.clickGlobalHeadersToggle();
+            then(app.globalHeaderRowCount()).isEqualTo(1);
+            then(app.globalHeaderName(0)).isEqualTo("X-Auth");
+        }
+
         @Test void shouldRemovePersistedGlobalHeaderFromStorageOnDelete() {
             app.clickGlobalHeadersToggle();
             app.clickGlobalHeaderButton("+ Add global header");
@@ -1603,6 +1617,17 @@ class BrowserTest {
             app.clickButton("+ Add custom header");
             app.fillCustomHeader(0, "X-Debug", "verbose");
             app.checkCustomHeaderPersist(0);
+            app.fillCustomHeaderName(0, "X-Test");
+            app.navigateHome();
+            then(app.customHeaderRowCount()).isEqualTo(1);
+            then(app.customHeaderName(0)).isEqualTo("X-Test");
+        }
+
+        @Test void shouldCleanUpOldKeyWhenRenamingRestoredPersistedCustomHeader() {
+            app.clickButton("+ Add custom header");
+            app.fillCustomHeader(0, "X-Debug", "verbose");
+            app.checkCustomHeaderPersist(0);
+            app.navigateHome();
             app.fillCustomHeaderName(0, "X-Test");
             app.navigateHome();
             then(app.customHeaderRowCount()).isEqualTo(1);
