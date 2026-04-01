@@ -404,10 +404,10 @@ class OpenApiUiGeneratorTest {
 
         then(outputDir.resolve("pets/GET.html")).exists();
         then(outputDir.resolve("pets/POST.html")).exists();
-        then(outputDir.resolve("pets/{petId}/GET.html")).exists();
-        then(outputDir.resolve("pets/{petId}/DELETE.html")).exists();
+        then(outputDir.resolve("pets/{id}/GET.html")).exists();
+        then(outputDir.resolve("pets/{id}/DELETE.html")).exists();
         then(outputDir.resolve("pets/index.html")).exists();
-        then(outputDir.resolve("pets/{petId}/index.html")).exists();
+        then(outputDir.resolve("pets/{id}/index.html")).exists();
     }
 
     @Test void shouldCombineSummaryAndDescriptionWithDash() throws Exception {
@@ -452,7 +452,7 @@ class OpenApiUiGeneratorTest {
     @Test void shouldRenderDeprecatedBadgeInHeaderRow() throws Exception {
         generate("/multi-method.yaml");
 
-        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        var fragment = Files.readString(outputDir.resolve("pets/{id}/GET.html"));
         var headerRow = fragment.substring(fragment.indexOf("is-flex"), fragment.indexOf("</div>"));
         then(headerRow).contains("deprecated-badge");
     }
@@ -468,7 +468,7 @@ class OpenApiUiGeneratorTest {
     @Test void shouldRenderExternalDocs() throws Exception {
         generate("/multi-method.yaml");
 
-        var fragment = Files.readString(outputDir.resolve("pets/{petId}/GET.html"));
+        var fragment = Files.readString(outputDir.resolve("pets/{id}/GET.html"));
         then(fragment).contains("external-docs");
         then(fragment).contains("https://example.com/docs/pets");
     }

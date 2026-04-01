@@ -20,7 +20,7 @@ paths:
       responses:
         "201":
           description: Created
-  /pets/{petId}:
+  /pets/{id}:
     get:
       summary: Get pet by ID
       description: Returns a single pet.
@@ -28,7 +28,7 @@ paths:
       externalDocs:
         url: https://example.com/docs/pets
       parameters:
-        - name: petId
+        - name: id
           in: path
           required: true
           schema:
@@ -40,7 +40,7 @@ paths:
       summary: Delete a pet
       description: Permanently removes a pet.
       parameters:
-        - name: petId
+        - name: id
           in: path
           required: true
           schema:
@@ -48,3 +48,30 @@ paths:
       responses:
         "204":
           description: Deleted
+  /pets/{petId}/visits/{visitId}:
+    get:
+      summary: Get a visit
+      description: Returns a single visit for a pet.
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: visitId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  date:
+                    type: string
