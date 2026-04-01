@@ -661,6 +661,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.locator("#detail .field:has(input[name='" + paramName + "']) .param-persist-check").check();
     }
 
+    boolean isParamPersistChecked(String paramName) {
+        return page.locator("#detail .field:has(input[name='" + paramName + "']) .param-persist-check").isChecked();
+    }
+
     String inputValue(String name) {
         return page.locator("#detail input[name='" + name + "']").inputValue();
     }

@@ -804,6 +804,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (idx < 0) return;
 
         var el = document.activeElement;
+        if (e.key === 'p' && (e.ctrlKey || e.metaKey)) {
+            var fieldEl = el.closest('.field');
+            var persistCheck = fieldEl ? fieldEl.querySelector('.param-persist-check') : null;
+            if (!persistCheck) {
+                var row = el.closest('.custom-header-row');
+                persistCheck = row ? row.querySelector('.custom-header-persist-check') : null;
+            }
+            if (persistCheck) {
+                persistCheck.click();
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            return;
+        }
         if (el.tagName === 'TEXTAREA' && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
             var val = el.value;
             var pos = el.selectionStart;

@@ -964,6 +964,15 @@ class BrowserTest {
             then(app.currentMode()).isEqualTo("try");
         }
 
+        @Test void shouldTogglePersistWithCtrlP() {
+            app.waitForInput("petId");
+            app.focusInput("petId");
+
+            app.pressKey("Control+p");
+
+            then(app.isParamPersistChecked("petId")).isTrue();
+        }
+
         @Test void shouldOpenSelectOnEnterInsteadOfSend() {
             app.waitForDetailContent("Get a pet");
             app.focusSelect("status");
