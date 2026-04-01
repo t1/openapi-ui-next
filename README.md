@@ -50,7 +50,9 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
 **Try It Out**
 - Three modes: Try (fetch), httpie, curl
 - Response rendering with syntax highlighting (JSON, HTML, XML, YAML)
-- Collapsible response headers display
+- Collapsible response headers display with spec documentation: documented headers show descriptions,
+  deprecated indicators, and required-but-missing warnings; undocumented headers are hidden behind
+  a "Show all" button when documented headers exist; auto-expands on first send when documented headers are present
 
 ## Status
 

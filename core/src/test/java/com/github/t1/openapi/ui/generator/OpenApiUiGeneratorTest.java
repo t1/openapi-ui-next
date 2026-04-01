@@ -695,4 +695,32 @@ class OpenApiUiGeneratorTest {
         var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));
         then(tagTree).doesNotContain("data-method");
     }
+
+    @Test void shouldGenerateResponseFragmentForDocumentedStatusCode() throws Exception {
+        generate("/response-headers.yaml");
+
+        then(outputDir.resolve("pets/GET-response-200.html")).exists();
+        var fragment = Files.readString(outputDir.resolve("pets/GET-response-200.html"));
+        then(fragment).contains("200 OK");
+        then(fragment).contains("A list of pets");
+        then(fragment).contains("X-Request-Id");
+        then(fragment).contains("Unique request identifier");
+    }
+
+    @Test void shouldGenerateResponseFallbackFragment() throws Exception {
+        generate("/response-headers.yaml");
+
+        then(outputDir.resolve("pets/GET-response-fallback.html")).exists();
+        var fragment = Files.readString(outputDir.resolve("pets/GET-response-fallback.html"));
+        then(fragment).contains("response-status");
+        then(fragment).doesNotContain("X-Request-Id");
+    }
+
+    @Test void shouldWrapSendButtonInResponseArea() throws Exception {
+        generate("/response-headers.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("response-area");
+        then(fragment).contains("type=\"submit\"");
+    }
 }

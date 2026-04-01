@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  title: Test API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    get:
+      summary: List pets
+      operationId: listPets
+      responses:
+        '200':
+          description: A list of pets
+          headers:
+            X-Request-Id:
+              description: Unique request identifier
+              required: true
+              schema:
+                type: string
+            X-Deprecated-Header:
+              description: Old header, do not use
+              deprecated: true
+              schema:
+                type: string

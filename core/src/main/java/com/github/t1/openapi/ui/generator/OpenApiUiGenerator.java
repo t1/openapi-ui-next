@@ -230,10 +230,14 @@ public class OpenApiUiGenerator {
             var child = entry.getValue();
             var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
             for (var opEntry : child.operations.entrySet()) {
-                var fragment = MethodFragmentGenerator.buildContent(new OperationContext(opEntry.getKey(), opEntry.getValue(), fullPath));
+                var ctx = new OperationContext(opEntry.getKey(), opEntry.getValue(), fullPath);
+                var fragment = MethodFragmentGenerator.buildContent(ctx);
                 var fragmentDir = outputDir.resolve(fullPath);
                 Files.createDirectories(fragmentDir);
                 Files.writeString(fragmentDir.resolve(opEntry.getKey().name() + ".html"), fragment.render());
+                for (var responseEntry : MethodFragmentGenerator.buildResponseFragments(ctx).entrySet()) {
+                    Files.writeString(fragmentDir.resolve(responseEntry.getKey()), responseEntry.getValue());
+                }
             }
             if (!child.operations.isEmpty()) {
                 var pathFragment = PathFragmentGenerator.buildContent(fullPath, child.operations);

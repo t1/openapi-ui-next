@@ -33,24 +33,9 @@ document.addEventListener('DOMContentLoaded', function() {
         var key = opKey(form);
         var resp = responseCache.get(key);
         if (!resp) return;
-        var btn = form.querySelector('button[type=submit]');
-        if (!btn) return;
-        showResponseStatus(btn, resp.status, resp.statusText, resp.headers, resp.headersExpanded);
-        if (resp.body) {
-            var pre = document.createElement('pre');
-            pre.className = 'response';
-            if (resp.highlighted) {
-                pre.innerHTML = resp.highlighted;
-            } else {
-                pre.textContent = resp.body;
-            }
-            detail.appendChild(pre);
-        } else if (resp.noBody) {
-            var msg = document.createElement('p');
-            msg.textContent = 'no body';
-            msg.className = 'response-no-body';
-            detail.appendChild(msg);
-        }
+        var area = form.querySelector('.response-area');
+        if (!area) return;
+        showResponse(area, form, resp.status, resp.statusText, resp.headers, resp.body, resp.ct, resp.headersExpanded);
     }
 
     // Mode toggle consumer
@@ -317,9 +302,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         // Restore session-cached field values and response
-        clearPreviousResponse();
         var form = document.querySelector('#detail form[data-path]');
         if (form) {
+            var area = form.querySelector('.response-area');
+            if (area) initialResponseArea = area.innerHTML;
             restoreFields(form);
             restoreResponse(form);
         }
@@ -507,59 +493,192 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, true);
 
-    function clearPreviousResponse() {
-        var existing = detail.querySelector('pre.response');
-        if (existing) existing.remove();
-        var noBody = detail.querySelector('.response-no-body');
-        if (noBody) noBody.remove();
-        var headersToggle = detail.querySelector('.response-headers-toggle');
-        if (headersToggle) headersToggle.remove();
-        var headers = detail.querySelector('.response-headers');
-        if (headers) headers.remove();
+    var fragmentCache = new Map();
+    var initialResponseArea = null;
+
+    function fragmentBaseUrl(form) {
+        var path = form.getAttribute('data-path').substring(1);
+        var method = form.getAttribute('data-method');
+        return path + '/' + method + '-response-';
     }
 
-    function showResponseStatus(btn, status, statusText, headers, headersExpanded) {
-        var levelRight = btn.closest('.level').querySelector('.level-right');
-        levelRight.textContent = '';
-        var badge = document.createElement('span');
-        badge.className = 'response-status';
-        badge.textContent = status + ' ' + statusText;
-        if (status >= 200 && status < 300) badge.classList.add('is-success');
-        else badge.classList.add('is-error');
-        levelRight.appendChild(badge);
-        if (headers && headers.length > 0) {
-            var toggle = document.createElement('button');
-            toggle.type = 'button';
-            toggle.className = 'response-headers-toggle';
-            toggle.textContent = 'headers (' + headers.length + ') ' + (headersExpanded ? '\u25BE' : '\u25B8');
-            toggle.addEventListener('click', function() {
-                var container = detail.querySelector('.response-headers');
-                if (container) {
-                    var visible = container.classList.toggle('is-visible');
-                    toggle.textContent = 'headers (' + headers.length + ') ' + (visible ? '\u25BE' : '\u25B8');
-                }
-            });
-            levelRight.appendChild(toggle);
-            var container = document.createElement('div');
-            container.className = 'response-headers' + (headersExpanded ? ' is-visible' : '');
-            var grid = document.createElement('div');
-            grid.className = 'response-header-rows';
-            headers.forEach(function(h) {
-                var name = document.createElement('span');
-                name.className = 'response-header-name';
-                name.textContent = h.name;
-                var value = document.createElement('span');
-                value.className = 'response-header-value';
-                value.setAttribute('data-header', h.name);
-                value.textContent = h.value;
-                grid.appendChild(name);
-                grid.appendChild(value);
-            });
-            container.appendChild(grid);
-            var level = btn.closest('.level');
-            level.parentNode.insertBefore(container, level.nextSibling);
-        }
+    function clearPreviousResponse() {
+        var area = detail.querySelector('.response-area');
+        if (!area) return;
+        if (!initialResponseArea) initialResponseArea = area.innerHTML;
+        area.innerHTML = initialResponseArea;
     }
+
+    function showResponse(area, form, status, statusText, headers, body, ct, headersExpanded) {
+        var base = fragmentBaseUrl(form);
+        var specificUrl = base + status + '.html';
+        var fallbackUrl = base + 'fallback.html';
+        var isFallback = false;
+
+        function populate(html) {
+            area.innerHTML = html;
+            var badge = area.querySelector('.response-status');
+            if (isFallback && badge) {
+                badge.textContent = status + ' ' + statusText;
+                if (status >= 200 && status < 300) badge.classList.add('is-success');
+                else badge.classList.add('is-error');
+            }
+            // populate documented header values
+            if (headers && headers.length > 0) {
+                var headersByName = {};
+                headers.forEach(function(h) { headersByName[h.name.toLowerCase()] = h.value; });
+                area.querySelectorAll('.response-header-value[data-header]').forEach(function(el) {
+                    var name = el.getAttribute('data-header');
+                    if (headersByName[name] !== undefined) el.textContent = headersByName[name];
+                    else {
+                        el.textContent = '(missing)';
+                        el.classList.add('response-header-missing');
+                        var nameEl = el.previousElementSibling;
+                        if (nameEl) nameEl.classList.add('response-header-missing');
+                    }
+                });
+                // append undocumented headers
+                var docGrid = area.querySelector('.response-documented-headers');
+                var undocGrid = area.querySelector('.response-headers-undocumented');
+                if (!undocGrid) {
+                    undocGrid = document.createElement('div');
+                    undocGrid.className = 'response-header-rows response-headers-undocumented';
+                    var headersContainer = area.querySelector('.response-headers');
+                    if (headersContainer) headersContainer.appendChild(undocGrid);
+                }
+                var documentedNames = {};
+                area.querySelectorAll('.response-documented-headers .response-header-name').forEach(function(el) {
+                    documentedNames[el.textContent.toLowerCase()] = true;
+                });
+                var hasDocumented = Object.keys(documentedNames).length > 0;
+                var undocumented = [];
+                headers.forEach(function(h) {
+                    if (hasDocumented && documentedNames[h.name.toLowerCase()]) return;
+                    if (!hasDocumented) {
+                        // no documented headers in fragment — show all in main grid
+                        var grid = docGrid || undocGrid;
+                        appendHeaderRow(grid, h.name, h.value);
+                    } else {
+                        undocumented.push(h);
+                    }
+                });
+                undocumented.forEach(function(h) {
+                    appendHeaderRow(undocGrid, h.name, h.value);
+                });
+                // show-all button
+                if (hasDocumented && undocumented.length > 0) {
+                    undocGrid.style.display = 'none';
+                    var showAllBtn = document.createElement('button');
+                    showAllBtn.type = 'button';
+                    showAllBtn.className = 'response-headers-show-all';
+                    showAllBtn.textContent = 'Show all (' + undocumented.length + ' more)';
+                    var headersContainer = area.querySelector('.response-headers');
+                    headersContainer.insertBefore(showAllBtn, undocGrid);
+                }
+                // auto-detect: expand if any documented header has an actual value
+                if (headersExpanded === null) {
+                    var hasMatch = false;
+                    area.querySelectorAll('.response-documented-headers .response-header-value[data-header]').forEach(function(el) {
+                        if (el.textContent && el.textContent !== '(missing)') hasMatch = true;
+                    });
+                    headersExpanded = hasMatch;
+                }
+                // update toggle text with count
+                var toggle = area.querySelector('.response-headers-toggle');
+                if (toggle) {
+                    toggle.textContent = 'headers (' + headers.length + ') ' + (headersExpanded ? '\u25BE' : '\u25B8');
+                }
+                // expand headers if requested
+                var headersContainer = area.querySelector('.response-headers');
+                if (headersContainer && headersExpanded) headersContainer.classList.add('is-visible');
+            }
+            // populate body
+            var pre = area.querySelector('pre.response');
+            if (body && body.trim()) {
+                if (pre) {
+                    var lang = detectLanguage(ct);
+                    if (lang && typeof hljs !== 'undefined') {
+                        var code = document.createElement('code');
+                        code.className = 'language-' + lang;
+                        code.textContent = body;
+                        pre.appendChild(code);
+                        hljs.highlightElement(code);
+                    } else {
+                        pre.textContent = body;
+                    }
+                }
+            } else {
+                if (pre) pre.remove();
+                var msg = document.createElement('p');
+                msg.textContent = 'no body';
+                msg.className = 'response-no-body box';
+                area.appendChild(msg);
+            }
+        }
+
+        function fetchFragment(url) {
+            if (fragmentCache.has(url)) return Promise.resolve(fragmentCache.get(url));
+            return fetch(url).then(function(resp) {
+                if (!resp.ok) return null;
+                return resp.text().then(function(html) {
+                    fragmentCache.set(url, html);
+                    return html;
+                });
+            });
+        }
+
+        return fetchFragment(specificUrl).then(function(html) {
+            if (html) return populate(html);
+            isFallback = true;
+            return fetchFragment(fallbackUrl).then(function(html) {
+                if (html) populate(html);
+            });
+        });
+    }
+
+    function appendHeaderRow(grid, name, value) {
+        var nameEl = document.createElement('span');
+        nameEl.className = 'response-header-name';
+        nameEl.textContent = name;
+        var valueEl = document.createElement('span');
+        valueEl.className = 'response-header-value';
+        valueEl.setAttribute('data-header', name.toLowerCase());
+        valueEl.textContent = value;
+        grid.appendChild(nameEl);
+        grid.appendChild(valueEl);
+    }
+
+    // event delegation for response-area toggle/show-all clicks
+    detail.addEventListener('click', function(e) {
+        var toggle = e.target.closest('.response-headers-toggle');
+        if (toggle) {
+            var area = toggle.closest('.response-area');
+            if (!area) return;
+            var container = area.querySelector('.response-headers');
+            if (container) {
+                var visible = container.classList.toggle('is-visible');
+                var count = toggle.textContent.match(/\((\d+)\)/);
+                var num = count ? count[1] : '';
+                toggle.textContent = 'headers' + (num ? ' (' + num + ') ' : ' ') + (visible ? '\u25BE' : '\u25B8');
+            }
+            return;
+        }
+        var showAll = e.target.closest('.response-headers-show-all');
+        if (showAll) {
+            var area = showAll.closest('.response-area');
+            if (!area) return;
+            var undocGrid = area.querySelector('.response-headers-undocumented');
+            if (undocGrid) {
+                var visible = undocGrid.style.display !== 'none';
+                undocGrid.style.display = visible ? 'none' : '';
+                var count = showAll.textContent.match(/\((\d+)/);
+                showAll.textContent = visible
+                    ? 'Show all (' + (count ? count[1] : '') + ' more)'
+                    : 'Show less';
+            }
+            return;
+        }
+    });
 
     function showCopied(btn) {
         var original = btn.textContent;
@@ -846,6 +965,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Object.keys(requestHeaders).forEach(function(h) {
                     fetchOptions.headers[h] = requestHeaders[h];
                 });
+                var area = sendForm.querySelector('.response-area');
                 fetch(url, fetchOptions).then(function(resp) {
                     var ct = resp.headers.get('Content-Type') || '';
                     var headers = [];
@@ -853,54 +973,31 @@ document.addEventListener('DOMContentLoaded', function() {
                         headers.push({name: name, value: value});
                     });
                     return resp.text().then(function(text) {
-                        var headersWereVisible = detail.querySelector('.response-headers.is-visible') !== null;
-                        clearPreviousResponse();
-                        showResponseStatus(sendBtn, resp.status, resp.statusText, headers, headersWereVisible);
+                        var headersWereVisible = area.querySelector('.response-headers.is-visible') !== null;
+                        if (!area.querySelector('.response-headers')) headersWereVisible = null; // auto-detect
                         if (ct.includes('json')) {
                             try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
                         } else if (ct.includes('xml')) {
                             try { text = prettyPrintXml(text); } catch(e) {}
                         }
-                        var highlighted = null;
-                        if (text.trim()) {
-                            var pre = document.createElement('pre');
-                            pre.className = 'response';
-                            var lang = detectLanguage(ct);
-                            if (lang && typeof hljs !== 'undefined') {
-                                var code = document.createElement('code');
-                                code.className = 'language-' + lang;
-                                code.textContent = text;
-                                pre.appendChild(code);
-                                hljs.highlightElement(code);
-                                highlighted = pre.innerHTML;
-                            } else {
-                                pre.textContent = text;
-                            }
-                            detail.appendChild(pre);
-                        } else {
-                            var msg = document.createElement('p');
-                            msg.textContent = 'no body';
-                            msg.className = 'response-no-body';
-                            detail.appendChild(msg);
-                        }
-                        responseCache.set(opKey(sendForm), {
-                            status: resp.status, statusText: resp.statusText,
-                            headers: headers, headersExpanded: headersWereVisible,
-                            body: text.trim() ? text : null, highlighted: highlighted,
-                            noBody: !text.trim()
+                        return showResponse(area, sendForm, resp.status, resp.statusText, headers, text, ct, headersWereVisible).then(function() {
+                            var currentlyVisible = area.querySelector('.response-headers.is-visible') !== null;
+                            responseCache.set(opKey(sendForm), {
+                                status: resp.status, statusText: resp.statusText,
+                                headers: headers, headersExpanded: currentlyVisible,
+                                body: text, ct: ct
+                            });
                         });
                     });
                 }).catch(function(err) {
-                    clearPreviousResponse();
-                    showResponseStatus(sendBtn, 0, 'Network error');
-                    var pre = document.createElement('pre');
-                    pre.textContent = err.message;
-                    pre.className = 'response';
-                    detail.appendChild(pre);
+                    return showResponse(area, sendForm, 0, 'Network error', [], err.message, '', false);
                 }).finally(function() {
-                    sendBtn.disabled = false;
-                    sendBtn.textContent = 'Send';
-                    sendBtn.focus();
+                    var btn = area.querySelector('button[type=submit]');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'Send';
+                        btn.focus();
+                    }
                 });
             }
         });

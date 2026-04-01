@@ -9,6 +9,7 @@
 target/
 
 /.superpowers/
+/docs/superpowers/
 /.playwright-mcp/
 
 TODO.md

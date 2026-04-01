@@ -3,9 +3,11 @@ package com.github.t1.openapi.ui.generator;
 import com.github.t1.htmljava.Element;
 import com.github.t1.htmljava.Renderable;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.responses.ApiResponses;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,9 +29,11 @@ import static com.github.t1.bulmajava.form.Input.input;
 import static com.github.t1.bulmajava.form.Checkbox.checkbox;
 import static com.github.t1.bulmajava.form.InputType.TEXT;
 import static com.github.t1.bulmajava.form.Select.select;
-import static com.github.t1.bulmajava.layout.Level.level;
+import static com.github.t1.bulmajava.columns.Column.column;
+import static com.github.t1.bulmajava.columns.Columns.columns;
 import static com.github.t1.htmljava.HtmlBasics.div;
 import static com.github.t1.htmljava.HtmlBasics.element;
+import static com.github.t1.htmljava.HtmlBasics.p;
 import static com.github.t1.htmljava.HtmlBasics.span;
 import static com.github.t1.openapi.ui.components.SplitPane.splitPane;
 import static com.github.t1.openapi.ui.generator.OpenApiUiGenerator.methodColor;
@@ -179,39 +183,137 @@ class MethodFragmentGenerator {
             var responseBox = buildResponseBox(operation.getResponses());
             if (responseBox != null) sendForm.content(responseBox);
         }
-        var sendRow = level().content(
-                div().classes("level-left").content(
+        var responseArea = div().classes("response-area");
+        var sendRow = columns().classes("is-gapless").content(
+                column().classes("is-narrow").content(
                         button("Send").is(PRIMARY).attr("type", "submit")),
-                div().classes("level-right"));
-        sendForm.content(sendRow);
+                column().classes("has-text-right"));
+        responseArea.content(sendRow);
+        sendForm.content(responseArea);
         fragment.content(sendForm);
         return fragment;
     }
 
-    private static Renderable buildResponseBox(io.swagger.v3.oas.models.responses.ApiResponses responses) {
-        // collect status codes that have content
+    static Map<String, String> buildResponseFragments(OperationContext ctx) {
+        var operation = ctx.operation();
+        if (operation.getResponses() == null) return Map.of();
+        var fragments = new LinkedHashMap<String, String>();
+        var method = ctx.method().name();
+        for (var entry : operation.getResponses().entrySet()) {
+            var code = entry.getKey();
+            var response = entry.getValue();
+            var panel = buildResponsePanel(code, response);
+            fragments.put(method + "-response-" + code + ".html", panel.render());
+        }
+        fragments.put(method + "-response-fallback.html", buildFallbackPanel().render());
+        return fragments;
+    }
+
+    private static Element buildResponsePanel(String code, io.swagger.v3.oas.models.responses.ApiResponse response) {
+        var panel = div();
+        var statusNum = Integer.parseInt(code);
+        var statusClass = statusNum >= 200 && statusNum < 300 ? "is-success" : "is-error";
+        var statusText = httpStatusText(statusNum);
+        panel.content(columns().classes("is-gapless").content(
+                column().classes("is-narrow").content(button("Send").is(PRIMARY).attr("type", "submit")),
+                column().classes("has-text-right").content(
+                        div().classes("response-info").content(
+                                div().classes("response-info-top").content(
+                                        span(code + " " + statusText).classes("response-status", statusClass),
+                                        element("button").attr("type", "button").classes("response-headers-toggle").content("headers ▸")),
+                                response.getDescription() != null
+                                        ? div().classes("response-status-description").content(response.getDescription())
+                                        : span()))));
+        // documented headers
+        var headersSection = box().classes("response-headers");
+        if (response.getHeaders() != null && !response.getHeaders().isEmpty()) {
+            var docGrid = div().classes("response-header-rows", "response-documented-headers");
+            for (var headerEntry : response.getHeaders().entrySet()) {
+                var headerObj = headerEntry.getValue();
+                var nameEl = span(headerEntry.getKey()).classes("response-header-name");
+                if (Boolean.TRUE.equals(headerObj.getDeprecated())) nameEl.classes("is-deprecated");
+                docGrid.content(nameEl);
+                docGrid.content(span().classes("response-header-value").attr("data-header", headerEntry.getKey().toLowerCase()));
+                if (headerObj.getDescription() != null) {
+                    docGrid.content(span());
+                    docGrid.content(span(headerObj.getDescription()).classes("response-header-description")
+                            .attr("data-header", headerEntry.getKey().toLowerCase()));
+                }
+            }
+            headersSection.content(docGrid);
+        }
+        headersSection.content(div().classes("response-header-rows", "response-headers-undocumented"));
+        panel.content(headersSection);
+        panel.content(element("pre").classes("response", "box"));
+        return panel;
+    }
+
+    private static Element buildFallbackPanel() {
+        var panel = div();
+        panel.content(columns().classes("is-gapless").content(
+                column().classes("is-narrow").content(button("Send").is(PRIMARY).attr("type", "submit")),
+                column().classes("has-text-right").content(
+                        div().classes("response-info").content(
+                                div().classes("response-info-top").content(
+                                        span().classes("response-status"),
+                                        element("button").attr("type", "button").classes("response-headers-toggle").content("headers ▸"))))));
+        panel.content(box().classes("response-headers").content(
+                div().classes("response-header-rows")));
+        panel.content(element("pre").classes("response", "box"));
+        return panel;
+    }
+
+    private static String httpStatusText(int code) {
+        return switch (code) {
+            case 200 -> "OK";
+            case 201 -> "Created";
+            case 204 -> "No Content";
+            case 301 -> "Moved Permanently";
+            case 304 -> "Not Modified";
+            case 400 -> "Bad Request";
+            case 401 -> "Unauthorized";
+            case 403 -> "Forbidden";
+            case 404 -> "Not Found";
+            case 405 -> "Method Not Allowed";
+            case 409 -> "Conflict";
+            case 500 -> "Internal Server Error";
+            case 502 -> "Bad Gateway";
+            case 503 -> "Service Unavailable";
+            default -> String.valueOf(code);
+        };
+    }
+
+    private static Renderable buildResponseBox(ApiResponses responses) {
+        // collect status codes that have content, headers, or description
         var statusCodes = responses.entrySet().stream()
-                .filter(e -> e.getValue().getContent() != null)
+                .filter(e -> e.getValue().getContent() != null
+                        || e.getValue().getHeaders() != null
+                        || e.getValue().getDescription() != null)
                 .map(Map.Entry::getKey)
                 .sorted()
                 .toList();
         if (statusCodes.isEmpty()) return null;
+
         var hasSchemaProperties = statusCodes.stream()
+                .filter(code -> responses.get(code).getContent() != null)
                 .anyMatch(code -> responses.get(code).getContent().values().stream()
                         .anyMatch(mt -> mt.getSchema() != null && mt.getSchema().getProperties() != null));
-        // collect all content types across all status codes
+        var hasHeaders = statusCodes.stream()
+                .anyMatch(code -> responses.get(code).getHeaders() != null && !responses.get(code).getHeaders().isEmpty());
+        var hasExpandableContent = hasSchemaProperties || hasHeaders;
+
         var allContentTypes = responses.values().stream()
                 .filter(r -> r.getContent() != null)
                 .flatMap(r -> r.getContent().keySet().stream())
                 .distinct()
                 .toList();
-        if (!hasSchemaProperties && allContentTypes.size() <= 1) return null;
+        if (!hasExpandableContent && allContentTypes.size() <= 1) return null;
 
         var responseBox = box().classes("schema-box", "is-collapsed").attr("data-box", "response");
 
         // header: title on the left, Accept select + Schema toggle on the right
         var title = div().classes("schema-box-title")
-                .content(subtitle(6, "Response Body"));
+                .content(subtitle(6, "Response"));
         var header = div().classes("schema-box-header").content(title);
         var controls = div().classes("schema-box-controls");
         if (allContentTypes.size() > 1) {
@@ -220,15 +322,15 @@ class MethodFragmentGenerator {
             for (var ct : allContentTypes) sel.option(ct, ct);
             controls.content(sel);
         }
-        if (hasSchemaProperties) {
+        if (hasExpandableContent) {
             controls.content(element("button").attr("type", "button").classes("schema-toggle").content("Schema ▸"));
         }
         header.content(controls);
         responseBox.content(header);
 
-        if (!hasSchemaProperties) return responseBox;
+        if (!hasExpandableContent) return responseBox;
 
-        // content: status code tabs + property panels
+        // content: status code tabs + panels
         var content = div().classes("schema-box-content");
 
         // status code tabs
@@ -244,7 +346,7 @@ class MethodFragmentGenerator {
         }
         content.content(tabs);
 
-        // property panels per status code
+        // panels per status code
         var isFirstPanel = true;
         for (var code : statusCodes) {
             var response = responses.get(code);
@@ -252,11 +354,46 @@ class MethodFragmentGenerator {
             if (!isFirstPanel) panel.style("display:none");
             isFirstPanel = false;
 
-            // use first available content type's schema
-            var mediaType = response.getContent().values().iterator().next();
-            if (mediaType.getSchema() != null) {
-                var schema = mediaType.getSchema();
-                addSchemaContent(panel, schema);
+            // response description
+            if (response.getDescription() != null) {
+                panel.content(p(response.getDescription()).classes("schema-response-description"));
+            }
+
+            // documented headers
+            var responseHasHeaders = response.getHeaders() != null && !response.getHeaders().isEmpty();
+            var responseHasBody = response.getContent() != null
+                    && response.getContent().values().iterator().next().getSchema() != null;
+            if (responseHasHeaders) {
+                if (responseHasBody) panel.content(subtitle(6, "Headers").classes("schema-section-title"));
+                var headersSection = div().classes("schema-response-headers");
+                var headerProps = div().classes("schema-props");
+                for (var entry : response.getHeaders().entrySet()) {
+                    var headerObj = entry.getValue();
+                    var nameEl = span(entry.getKey()).classes("schema-prop-name");
+                    var details = span().classes("schema-prop-details");
+                    if (headerObj.getSchema() != null && headerObj.getSchema().getType() != null) {
+                        details.content(span(headerObj.getSchema().getType()).classes("schema-prop-type"));
+                    }
+                    if (Boolean.TRUE.equals(headerObj.getRequired())) {
+                        details.content(tag("required").is(DANGER));
+                    }
+                    if (Boolean.TRUE.equals(headerObj.getDeprecated())) {
+                        details.content(tag("deprecated").classes("is-warning"));
+                    }
+                    if (headerObj.getDescription() != null) {
+                        details.content(span(headerObj.getDescription()).classes("schema-prop-desc"));
+                    }
+                    headerProps.content(nameEl, details);
+                }
+                headersSection.content(headerProps);
+                panel.content(headersSection);
+            }
+
+            // body schema properties
+            if (responseHasBody) {
+                if (responseHasHeaders) panel.content(subtitle(6, "Body").classes("schema-section-title"));
+                var mediaType = response.getContent().values().iterator().next();
+                addSchemaContent(panel, mediaType.getSchema());
             }
             content.content(panel);
         }
@@ -264,6 +401,7 @@ class MethodFragmentGenerator {
         responseBox.content(content);
         return responseBox;
     }
+
 
     @SuppressWarnings("rawtypes")
     private static void addSchemaContent(Element container, Schema<?> schema) {

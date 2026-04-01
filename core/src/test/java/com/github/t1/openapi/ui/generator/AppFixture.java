@@ -92,6 +92,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void mockEndpoint(String path, String contentType, String body, int statusCode) {testServer.mockEndpoint(path, contentType, body, statusCode);}
 
+    void mockEndpointWithHeaders(String path, String contentType, String body, Map<String, String> responseHeaders) {testServer.mockEndpointWithHeaders(path, contentType, body, responseHeaders);}
+
     void mockEndpointWithBodyEcho(String path, String expectedMethod) {testServer.mockEndpointWithBodyEcho(path, expectedMethod);}
 
     void mockEndpointWithContentNegotiation(String path, Map<String, String> responsesByAccept) {testServer.mockEndpointWithContentNegotiation(path, responsesByAccept);}
@@ -231,6 +233,14 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.waitForFunction("document.querySelector('#detail button[type=submit]').textContent === 'Send'");
     }
 
+    /** Clicks Send, waits for headers toggle to disappear and reappear (avoids "Sending..." race condition). */
+    void resendAndWaitForHeaders() {
+        // Remove existing toggle so we can wait for a fresh one
+        page.evaluate("document.querySelector('#detail .response-headers-toggle')?.remove()");
+        clickSend();
+        page.waitForSelector("#detail .response-headers-toggle");
+    }
+
     boolean hasResponseStatus() {return page.locator("#detail .response-status").count() > 0;}
 
     String statusBadgeText() {return page.locator("#detail .response-status").textContent();}
@@ -350,6 +360,36 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean hasBodyBox() {return page.locator("#detail .schema-box[data-box='body']").count() > 0;}
 
+    boolean hasResponseSchemaBox() {return page.locator("#detail .schema-box[data-box='response']").count() > 0;}
+
+    String schemaResponseDescription(String statusCode) {
+        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-response-description").textContent();
+    }
+
+    String schemaHeaderName(String statusCode, int index) {
+        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-response-headers .schema-prop-name").nth(index).textContent().trim();
+    }
+
+    String schemaHeaderDescription(String statusCode, int index) {
+        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-response-headers .schema-prop-desc").nth(index).textContent();
+    }
+
+    boolean schemaHeaderHasBadge(String statusCode, int index, String badgeText) {
+        var header = page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-response-headers .schema-prop-details").nth(index);
+        return header.locator(".tag").filter(new com.microsoft.playwright.Locator.FilterOptions().setHasText(badgeText)).count() > 0;
+    }
+
+    String responseStatusDescription() {
+        return page.locator("#detail .response-status-description").textContent();
+    }
+
+    boolean responseStatusDescriptionIsBeforeHeaders() {
+        return (Boolean) page.evaluate(
+                "() => { var desc = document.querySelector('#detail .response-status-description');" +
+                "var headers = document.querySelector('#detail .response-headers') || document.querySelector('#detail .response-headers-toggle');" +
+                "return desc && headers && desc.compareDocumentPosition(headers) === Node.DOCUMENT_POSITION_FOLLOWING; }");
+    }
+
     boolean hasResponseHeadersToggle() {return page.locator("#detail .response-headers-toggle").count() > 0;}
 
     String responseHeadersToggleText() {return page.locator("#detail .response-headers-toggle").textContent();}
@@ -360,6 +400,34 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     String responseHeaderText(String name) {
         return page.locator("#detail .response-headers .response-header-value[data-header='" + name + "']").textContent();
+    }
+
+    String responseHeaderDescription(String name) {
+        return page.locator("#detail .response-headers .response-header-description[data-header='" + name + "']").textContent();
+    }
+
+    boolean isResponseHeaderMissing(String name) {
+        return page.locator("#detail .response-headers .response-header-missing[data-header='" + name + "']").count() > 0;
+    }
+
+    boolean undocumentedHeadersVisible() {
+        var locator = page.locator("#detail .response-headers-undocumented");
+        if (locator.count() == 0) return false;
+        var style = locator.getAttribute("style");
+        return style == null || !style.contains("display: none");
+    }
+
+    boolean hasShowAllButton() {
+        return page.locator("#detail .response-headers-show-all").count() > 0;
+    }
+
+    void clickShowAll() {
+        page.locator("#detail .response-headers-show-all").click();
+    }
+
+    boolean isResponseHeaderDeprecated(String name) {
+        return page.locator("#detail .response-headers .response-header-name.is-deprecated")
+                .filter(new com.microsoft.playwright.Locator.FilterOptions().setHasText(name)).count() > 0;
     }
 
     boolean responseHasHighlighting() {
@@ -689,6 +757,14 @@ class TestServer {
         replaceContext("/api" + path, exchange -> sendResponse(exchange, statusCode, contentType, body));
     }
 
+    void mockEndpointWithHeaders(String path, String contentType, String body, Map<String, String> responseHeaders) {
+        replaceContext("/api" + path, exchange -> {
+            for (var entry : responseHeaders.entrySet())
+                exchange.getResponseHeaders().set(entry.getKey(), entry.getValue());
+            sendResponse(exchange, 200, contentType, body);
+        });
+    }
+
     void mockEndpointWithBodyEcho(String path, String expectedMethod) {
         replaceContext("/api" + path, exchange -> {
             exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
@@ -760,7 +836,22 @@ class TestServer {
 
     private void replaceContext(String path, HttpHandler handler) {
         try {server.removeContext(path);} catch (IllegalArgumentException ignored) {}
-        server.createContext(path, handler);
+        server.createContext(path, exchange -> {
+            // serve static fragment files (e.g. response fragments) from outputDir
+            var uriPath = exchange.getRequestURI().getPath();
+            if (uriPath.endsWith(".html")) {
+                var file = outputDir.resolve(uriPath.substring(1));
+                if (Files.exists(file) && Files.isRegularFile(file)) {
+                    var bytes = Files.readAllBytes(file);
+                    exchange.getResponseHeaders().set("Content-Type", "text/html");
+                    exchange.sendResponseHeaders(200, bytes.length);
+                    exchange.getResponseBody().write(bytes);
+                    exchange.close();
+                    return;
+                }
+            }
+            handler.handle(exchange);
+        });
     }
 
     private void sendResponse(HttpExchange exchange, int statusCode, String contentType, String body) throws IOException {

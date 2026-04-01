@@ -20,6 +20,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.headers.Header;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
@@ -59,9 +61,11 @@ public class PetResource {
     @GET @Path("/{id}") @Produces({APPLICATION_JSON, APPLICATION_XML})
     @Operation(summary = "Get a pet by ID", description = "Returns a single pet by its unique identifier.")
     @APIResponse(responseCode = "200", description = "A pet",
+            headers = @Header(name = "X-Request-ID", description = "Echoed request identifier",
+                    schema = @Schema(type = SchemaType.STRING)),
             content = {@Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = PetResponse.class)),
                     @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = PetResponse.class))})
-    @APIResponse(responseCode = "404", description = "Pet not found",
+    @APIResponse(responseCode = "400", description = "Business error",
             content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
     @APIResponse(responseCode = "500", description = "Internal server error",
             content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))

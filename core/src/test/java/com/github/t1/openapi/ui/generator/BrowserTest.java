@@ -1,5 +1,6 @@
 package com.github.t1.openapi.ui.generator;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -501,6 +502,15 @@ class BrowserTest {
 
                 then(app.responseHeadersVisible()).isFalse();
                 then(app.responseHeadersToggleText()).contains("headers").endsWith("▸");
+            }
+
+            @Test void shouldNotShowShowAllWhenNoDocumentedHeaders() {
+                app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+
+                navigateToListPetsAndSend();
+                app.toggleResponseHeaders();
+
+                then(app.hasShowAllButton()).isFalse();
             }
 
             @Test void tryModeShowsYamlResponseAsIs() {
@@ -1659,6 +1669,151 @@ class BrowserTest {
 
             then(app.hasResponseStatus()).isTrue();
             then(app.responseText()).contains("\"id\"");
+        }
+    }
+
+    @ResourceLock("response-headers") @Nested class GivenAppWithResponseHeaders {
+        @RegisterExtension static AppFixture app =
+                launch("response-headers.yaml").withBaseUrlOverride();
+
+        private void navigateToListPetsAndSend() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+            app.clickSend();
+            app.waitForResponse();
+        }
+
+        @Test void shouldShowDescriptionForDocumentedHeader() {
+            app.mockEndpointWithHeaders("/pets", "application/json", "{\"id\":\"1\"}",
+                    Map.of("X-Request-Id", "abc-123"));
+
+            navigateToListPetsAndSend();
+            // headers auto-expand on first send when documented headers exist
+
+            then(app.responseHeaderDescription("x-request-id")).isEqualTo("Unique request identifier");
+        }
+
+        @Test void shouldShowResponseDescriptionBelowStatus() {
+            app.mockEndpointWithHeaders("/pets", "application/json", "{\"id\":\"1\"}",
+                    Map.of("X-Request-Id", "abc-123"));
+
+            navigateToListPetsAndSend();
+
+            then(app.responseStatusDescription()).isEqualTo("A list of pets");
+            then(app.responseStatusDescriptionIsBeforeHeaders()).isTrue();
+            app.screenshot("response-headers-documented");
+        }
+
+        @Test void shouldShowDeprecatedIndicator() {
+            app.mockEndpointWithHeaders("/pets", "application/json", "{\"id\":\"1\"}",
+                    Map.of("X-Deprecated-Header", "old-value"));
+
+            navigateToListPetsAndSend();
+
+            then(app.isResponseHeaderDeprecated("x-deprecated-header")).isTrue();
+        }
+
+        @Test void shouldShowMissingWarningForRequiredHeader() {
+            app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+
+            navigateToListPetsAndSend();
+
+            then(app.responseHeaderText("x-request-id")).isEqualTo("(missing)");
+            then(app.isResponseHeaderMissing("x-request-id")).isTrue();
+        }
+
+        @Test void shouldHideUndocumentedHeadersWhenDocumentedExist() {
+            app.mockEndpointWithHeaders("/pets", "application/json", "{\"id\":\"1\"}",
+                    Map.of("X-Request-Id", "abc-123"));
+
+            navigateToListPetsAndSend();
+
+            then(app.responseHeaderText("x-request-id")).isEqualTo("abc-123");
+            then(app.undocumentedHeadersVisible()).isFalse();
+            then(app.hasShowAllButton()).isTrue();
+        }
+
+        @Test void shouldRevealUndocumentedHeadersOnShowAll() {
+            app.mockEndpointWithHeaders("/pets", "application/json", "{\"id\":\"1\"}",
+                    Map.of("X-Request-Id", "abc-123"));
+
+            navigateToListPetsAndSend();
+            // headers auto-expand on first send when documented headers exist
+            app.clickShowAll();
+
+            then(app.undocumentedHeadersVisible()).isTrue();
+            then(app.responseHeaderText("content-type")).contains("application/json");
+        }
+
+        @Disabled("tested in GivenAppWithOneGet.InTryMode")
+        @Test void shouldNotShowShowAllWhenNoDocumentedHeaders() {}
+
+        @Test void shouldAutoExpandOnFirstSendWhenDocumentedHeadersExist() {
+            app.mockEndpointWithHeaders("/pets", "application/json", "{\"id\":\"1\"}",
+                    Map.of("X-Request-Id", "abc-123"));
+
+            navigateToListPetsAndSend();
+
+            then(app.responseHeadersVisible()).isTrue();
+        }
+
+        @Test void shouldShowResponseSchemaBox() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+
+            then(app.hasResponseSchemaBox()).isTrue();
+        }
+
+        @Test void shouldShowResponseDescriptionInSchema() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+            app.toggleSchema("response");
+
+            then(app.schemaResponseDescription("200")).isEqualTo("A list of pets");
+        }
+
+        @Test void shouldShowDocumentedHeadersInSchema() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+            app.toggleSchema("response");
+
+            then(app.schemaHeaderName("200", 0)).isEqualTo("X-Request-Id");
+            then(app.schemaHeaderDescription("200", 0)).isEqualTo("Unique request identifier");
+        }
+
+        @Test void shouldShowRequiredBadgeOnSchemaHeader() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+            app.toggleSchema("response");
+
+            then(app.schemaHeaderHasBadge("200", 0, "required")).isTrue();
+        }
+
+        @Test void shouldShowDeprecatedBadgeOnSchemaHeader() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+            app.toggleSchema("response");
+
+            then(app.schemaHeaderHasBadge("200", 1, "deprecated")).isTrue();
+        }
+
+        @Test void shouldPreserveCollapsedStateOnResend() {
+            app.mockEndpointWithHeaders("/pets", "application/json", "{\"id\":\"1\"}",
+                    Map.of("X-Request-Id", "abc-123"));
+            navigateToListPetsAndSend();
+            then(app.responseHeadersVisible()).as("auto-expanded on first send").isTrue();
+            app.toggleResponseHeaders();
+            then(app.responseHeadersVisible()).as("collapsed after toggle").isFalse();
+
+            app.resendAndWaitForHeaders();
+
+            then(app.responseHeadersVisible()).as("stays collapsed on resend").isFalse();
         }
     }
 }
