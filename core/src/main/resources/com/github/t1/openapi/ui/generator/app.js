@@ -267,7 +267,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var key = paramStorageKey(form, inp.getAttribute('data-param-in'), inp.getAttribute('name'));
             var saved = localStorage.getItem(key);
             if (saved !== null) {
-                inp.value = saved;
+                if (inp.type === 'checkbox') inp.checked = saved === 'true';
+                else inp.value = saved;
                 var persistCheck = inp.closest('.field').querySelector('.param-persist-check');
                 if (persistCheck) persistCheck.checked = true;
             }
@@ -328,11 +329,37 @@ document.addEventListener('DOMContentLoaded', function() {
     function randomName() {return 'h-' + Math.random().toString(36).slice(2);}
 
     function paramStorageKey(form, paramIn, name) {
+        if (paramIn === 'path') {
+            var pathInputs = Array.from(form.querySelectorAll('[data-param-in="path"]'));
+            var paramIndex = 0;
+            for (var p = 0; p < pathInputs.length; p++) {
+                if (pathInputs[p].getAttribute('name') === name) { paramIndex = p; break; }
+            }
+            var pathTemplate = form.getAttribute('data-fragment-path');
+            var segments = pathTemplate.split('/');
+            var positionPath = [];
+            var paramCount = 0;
+            for (var i = 0; i < segments.length; i++) {
+                var isParam = segments[i].charAt(0) === '{';
+                if (isParam) {
+                    positionPath.push('{}');
+                    if (paramCount === paramIndex) break;
+                    paramCount++;
+                } else {
+                    positionPath.push(segments[i]);
+                }
+            }
+            return 'openapi-ui-param:path:' + positionPath.join('/');
+        }
         return 'openapi-ui-param:' + paramIn + ':' + form.getAttribute('data-method') + ':' + form.getAttribute('data-path') + ':' + name;
     }
 
     function customHeaderStorageKey(form, name) {
         return 'openapi-ui-custom-header:' + form.getAttribute('data-method') + ':' + form.getAttribute('data-path') + ':' + name;
+    }
+
+    function paramValue(inp) {
+        return inp.type === 'checkbox' ? String(inp.checked) : inp.value;
     }
 
     function detectLanguage(contentType) {
@@ -353,9 +380,21 @@ document.addEventListener('DOMContentLoaded', function() {
             var form = inp.closest('form[data-path]');
             var key = paramStorageKey(form, inp.getAttribute('data-param-in'), inp.getAttribute('name'));
             if (checkbox.checked) {
-                localStorage.setItem(key, inp.value);
+                localStorage.setItem(key, paramValue(inp));
             } else {
                 localStorage.removeItem(key);
+            }
+            return;
+        }
+        // Persisted param checkbox value change
+        var paramInp = e.target.closest('[data-param-in]');
+        if (paramInp && paramInp.type === 'checkbox') {
+            var fieldEl = paramInp.closest('.field');
+            var persistCheck = fieldEl.querySelector('.param-persist-check');
+            if (persistCheck && persistCheck.checked) {
+                var form = paramInp.closest('form[data-path]');
+                var key = paramStorageKey(form, paramInp.getAttribute('data-param-in'), paramInp.getAttribute('name'));
+                localStorage.setItem(key, paramValue(paramInp));
             }
             return;
         }
@@ -383,7 +422,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var persistCheck = fieldEl.querySelector('.param-persist-check');
             if (!persistCheck || !persistCheck.checked) return;
             var form = inp.closest('form[data-path]');
-            localStorage.setItem(paramStorageKey(form, inp.getAttribute('data-param-in'), inp.getAttribute('name')), inp.value);
+            localStorage.setItem(paramStorageKey(form, inp.getAttribute('data-param-in'), inp.getAttribute('name')), paramValue(inp));
             return;
         }
         // Per-op custom header input update
@@ -497,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var initialResponseArea = null;
 
     function fragmentBaseUrl(form) {
-        var path = form.getAttribute('data-path').substring(1);
+        var path = form.getAttribute('data-fragment-path');
         var method = form.getAttribute('data-method');
         return path + '/' + method + '-response-';
     }
@@ -529,12 +568,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 headers.forEach(function(h) { headersByName[h.name.toLowerCase()] = h.value; });
                 area.querySelectorAll('.response-header-value[data-header]').forEach(function(el) {
                     var name = el.getAttribute('data-header');
-                    if (headersByName[name] !== undefined) el.textContent = headersByName[name];
-                    else {
+                    if (headersByName[name] !== undefined) {
+                        el.textContent = headersByName[name];
+                    } else if (el.hasAttribute('data-required')) {
                         el.textContent = '(missing)';
                         el.classList.add('response-header-missing');
                         var nameEl = el.previousElementSibling;
                         if (nameEl) nameEl.classList.add('response-header-missing');
+                    } else {
+                        el.textContent = '\u2014';
+                        el.classList.add('response-header-absent');
                     }
                 });
                 // append undocumented headers
@@ -579,18 +622,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (headersExpanded === null) {
                     var hasMatch = false;
                     area.querySelectorAll('.response-documented-headers .response-header-value[data-header]').forEach(function(el) {
-                        if (el.textContent && el.textContent !== '(missing)') hasMatch = true;
+                        if (el.textContent && el.textContent !== '(missing)' && el.textContent !== '\u2014') hasMatch = true;
                     });
                     headersExpanded = hasMatch;
                 }
                 // update toggle text with count
                 var toggle = area.querySelector('.response-headers-toggle');
                 if (toggle) {
-                    toggle.textContent = 'headers (' + headers.length + ') ' + (headersExpanded ? '\u25BE' : '\u25B8');
+                    toggle.textContent = 'Headers (' + headers.length + ') ' + (headersExpanded ? '\u25BE' : '\u25B8');
                 }
                 // expand headers if requested
                 var headersContainer = area.querySelector('.response-headers');
-                if (headersContainer && headersExpanded) headersContainer.classList.add('is-visible');
+                if (headersContainer && headersExpanded) headersContainer.classList.add('is-expanded');
+            } else {
+                var headersBox = area.querySelector('.response-headers');
+                if (headersBox) {
+                    var toggle = headersBox.querySelector('.response-headers-toggle');
+                    if (toggle) toggle.style.display = 'none';
+                    var emptyMsg = headersBox.querySelector('.response-empty');
+                    if (emptyMsg) emptyMsg.style.display = '';
+                }
             }
             // populate body
             var pre = area.querySelector('pre.response');
@@ -608,11 +659,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             } else {
-                if (pre) pre.remove();
-                var msg = document.createElement('p');
-                msg.textContent = 'no body';
-                msg.className = 'response-no-body box flat-box';
-                area.appendChild(msg);
+                if (pre) pre.style.display = 'none';
+                var emptyBody = area.querySelector('p.response-empty.box');
+                if (emptyBody) emptyBody.style.display = '';
             }
         }
 
@@ -649,17 +698,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // event delegation for response-area toggle/show-all clicks
+    detail.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        var toggle = e.target.closest('.response-headers-toggle');
+        if (toggle) {
+            e.preventDefault();
+            toggle.click();
+        }
+    });
     detail.addEventListener('click', function(e) {
         var toggle = e.target.closest('.response-headers-toggle');
         if (toggle) {
             var area = toggle.closest('.response-area');
             if (!area) return;
-            var container = area.querySelector('.response-headers');
+            var container = toggle.closest('.response-headers');
             if (container) {
-                var visible = container.classList.toggle('is-visible');
+                var expanded = container.classList.toggle('is-expanded');
                 var count = toggle.textContent.match(/\((\d+)\)/);
                 var num = count ? count[1] : '';
-                toggle.textContent = 'headers' + (num ? ' (' + num + ') ' : ' ') + (visible ? '\u25BE' : '\u25B8');
+                toggle.textContent = 'Headers' + (num ? ' (' + num + ') ' : ' ') + (expanded ? '\u25BE' : '\u25B8');
             }
             return;
         }
@@ -973,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         headers.push({name: name, value: value});
                     });
                     return resp.text().then(function(text) {
-                        var headersWereVisible = area.querySelector('.response-headers.is-visible') !== null;
+                        var headersWereVisible = area.querySelector('.response-headers.is-expanded') !== null;
                         if (!area.querySelector('.response-headers')) headersWereVisible = null; // auto-detect
                         if (ct.includes('json')) {
                             try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
@@ -981,7 +1038,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             try { text = prettyPrintXml(text); } catch(e) {}
                         }
                         return showResponse(area, sendForm, resp.status, resp.statusText, headers, text, ct, headersWereVisible).then(function() {
-                            var currentlyVisible = area.querySelector('.response-headers.is-visible') !== null;
+                            var currentlyVisible = area.querySelector('.response-headers.is-expanded') !== null;
                             responseCache.set(opKey(sendForm), {
                                 status: resp.status, statusText: resp.statusText,
                                 headers: headers, headersExpanded: currentlyVisible,

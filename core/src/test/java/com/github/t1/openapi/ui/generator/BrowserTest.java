@@ -450,7 +450,7 @@ class BrowserTest {
                 navigateToListPetsAndSend();
 
                 then(app.hasResponseHeadersToggle()).isTrue();
-                then(app.responseHeadersToggleText()).contains("headers").endsWith("▸");
+                then(app.responseHeadersToggleText()).contains("Headers").endsWith("▸");
             }
 
             @Test void shouldHideHeadersByDefault() {
@@ -490,7 +490,7 @@ class BrowserTest {
                 app.resend();
 
                 then(app.responseHeadersVisible()).isTrue();
-                then(app.responseHeadersToggleText()).contains("headers").endsWith("▾");
+                then(app.responseHeadersToggleText()).contains("Headers").endsWith("▾");
             }
 
             @Test void shouldKeepHeadersCollapsedOnResend() {
@@ -501,7 +501,7 @@ class BrowserTest {
                 app.resend();
 
                 then(app.responseHeadersVisible()).isFalse();
-                then(app.responseHeadersToggleText()).contains("headers").endsWith("▸");
+                then(app.responseHeadersToggleText()).contains("Headers").endsWith("▸");
             }
 
             @Test void shouldNotShowShowAllWhenNoDocumentedHeaders() {
@@ -705,7 +705,7 @@ class BrowserTest {
         @Test void shouldNavigateToTabWhenClickingMethodBadge() {
             app.waitForDetailContent("List pets");
             app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
+            app.clickTreeNode("pets/{id}/index.html");
             app.waitForDetailContent("Get pet by ID");
 
             app.clickMethodBadge("pets/index.html", "POST");
@@ -805,9 +805,10 @@ class BrowserTest {
         @Test void shouldNavigateFromTabsToFields() {
             app.focusTree();
             app.pressKey("ArrowRight"); // expand collapsed node
-            app.pressKey("ArrowDown"); // select {petId}
-            app.waitForInput("petId");
-            app.pressKey("ArrowRight"); // enter tabs (leaf item)
+            app.pressKey("ArrowDown"); // select {id}
+            app.waitForInput("id");
+            app.pressKey("ArrowRight"); // expand {id} node
+            app.pressKey("ArrowRight"); // enter tabs
             app.pressKey("ArrowRight"); // switch to DELETE tab
             app.waitForDetailContent("Delete a pet"); // wait for tab swap
             app.pressKey("ArrowDown"); // enter fields
@@ -828,9 +829,9 @@ class BrowserTest {
         @Test void shouldReturnToTabsOnArrowUpFromFirstField() {
             app.focusTree();
             app.pressKey("ArrowRight"); // expand collapsed node
-            app.pressKey("ArrowDown"); // select {petId}
-            app.waitForInput("petId");
-            app.pressKey("ArrowRight"); // expand {petId} node
+            app.pressKey("ArrowDown"); // select {id}
+            app.waitForInput("id");
+            app.pressKey("ArrowRight"); // expand {id} node
             app.pressKey("ArrowRight"); // enter tabs
             app.pressKey("ArrowDown"); // enter fields
             app.pressKey("ArrowUp"); // back to tabs
@@ -848,9 +849,9 @@ class BrowserTest {
         @Test void shouldEscapeFromFieldsToTree() {
             app.focusTree();
             app.pressKey("ArrowRight"); // expand collapsed node
-            app.pressKey("ArrowDown"); // select {petId}
+            app.pressKey("ArrowDown"); // select {id}
             app.waitForDetailContent("Get pet by ID");
-            app.pressKey("ArrowRight"); // expand {petId} node
+            app.pressKey("ArrowRight"); // expand {id} node
             app.pressKey("ArrowRight"); // enter tabs
             app.pressKey("ArrowDown"); // enter fields
             app.pressKey("Escape"); // back to tree
@@ -868,6 +869,42 @@ class BrowserTest {
 
             then(app.isTabActive(1)).isFalse();
             then(app.isTabActive(2)).isTrue();
+        }
+
+        @Test void shouldSharePersistedPathParamBetweenMethods() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{id}/index.html");
+            app.waitForInput("id");
+            app.fillInput("id", "42");
+            app.checkParamPersist("id");
+
+            app.clickMethodTab(2); // switch to DELETE tab
+            app.waitForDetailContent("Delete a pet");
+
+            then(app.inputValue("id")).isEqualTo("42");
+        }
+
+        @Test void shouldSharePersistedPathParamWithSubpath() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{id}/index.html");
+            app.waitForInput("id");
+            app.fillInput("id", "42");
+            app.checkParamPersist("id");
+
+            app.expandAllNodes();
+            app.clickTreeNode("pets/{id}/visits/{visitId}/index.html");
+            app.waitForDetailContent("Get a visit");
+
+            then(app.inputValue("petId")).isEqualTo("42");
+        }
+
+        @Test void shouldLoadResponseSchemaForSubpathWithRenamedParam() {
+            app.expandAllNodes();
+            app.clickTreeNode("pets/{id}/visits/{visitId}/index.html");
+            app.waitForDetailContent("Get a visit");
+            app.toggleSchema("response");
+
+            then(app.statusCodeTabs()).containsExactly("200");
         }
     }
 
@@ -1396,10 +1433,10 @@ class BrowserTest {
             app.waitForDetailContent("List pets");
 
             app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
+            app.clickTreeNode("pets/{id}/index.html");
             app.waitForDetailContent("Get pet by ID");
 
-            then(app.locationHash()).isEqualTo("#pets/{petId}");
+            then(app.locationHash()).isEqualTo("#pets/{id}");
         }
 
         @Test void shouldUpdateHashWhenSwitchingMethodTab() {
@@ -1412,11 +1449,11 @@ class BrowserTest {
         }
 
         @Test void shouldNavigateToTreeItemFromHash() {
-            app.navigateTo("#pets/{petId}");
+            app.navigateTo("#pets/{id}");
             app.waitForDetailContent("Get pet by ID");
 
             then(app.detailText()).contains("Get pet by ID");
-            then(app.isTreeItemSelected("pets/{petId}/index.html")).isTrue();
+            then(app.isTreeItemSelected("pets/{id}/index.html")).isTrue();
         }
 
         @Test void shouldNavigateToMethodTabFromHash() {
@@ -1452,7 +1489,7 @@ class BrowserTest {
         @Test void shouldNavigateBackWithBrowserHistory() {
             app.waitForDetailContent("List pets");
             app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
+            app.clickTreeNode("pets/{id}/index.html");
             app.waitForDetailContent("Get pet by ID");
 
             app.goBack();
@@ -1537,6 +1574,13 @@ class BrowserTest {
             app.checkParamPersist("limit");
             app.navigateHome();
             then(app.inputValue("limit")).isEqualTo("25");
+        }
+
+        @Test void shouldPersistBooleanQueryParam() {
+            app.checkCheckbox("verbose");
+            app.checkParamPersist("verbose");
+            app.navigateHome();
+            then(app.isCheckboxChecked("verbose")).isTrue();
         }
 
         @Test void shouldCleanUpOldKeyWhenRenamingPersistedCustomHeader() {
@@ -1640,31 +1684,31 @@ class BrowserTest {
         @Test void shouldPreserveFieldValueAcrossNavigation() {
             app.waitForDetailContent("List pets");
             app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
+            app.clickTreeNode("pets/{id}/index.html");
             app.waitForDetailContent("Get pet by ID");
-            app.fillInput("petId", "42");
+            app.fillInput("id", "42");
 
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("List pets");
-            app.clickTreeNode("pets/{petId}/index.html");
+            app.clickTreeNode("pets/{id}/index.html");
             app.waitForDetailContent("Get pet by ID");
 
-            then(app.inputValue("petId")).isEqualTo("42");
+            then(app.inputValue("id")).isEqualTo("42");
         }
 
         @Test void shouldPreserveResponseAcrossNavigation() {
             app.waitForDetailContent("List pets");
             app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
+            app.clickTreeNode("pets/{id}/index.html");
             app.waitForDetailContent("Get pet by ID");
             app.mockRootEndpoint("/pets/42", "application/json", "{\"id\":42}");
-            app.fillInput("petId", "42");
+            app.fillInput("id", "42");
             app.clickSend();
             app.waitForResponse();
 
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("List pets");
-            app.clickTreeNode("pets/{petId}/index.html");
+            app.clickTreeNode("pets/{id}/index.html");
             app.waitForDetailContent("Get pet by ID");
 
             then(app.hasResponseStatus()).isTrue();

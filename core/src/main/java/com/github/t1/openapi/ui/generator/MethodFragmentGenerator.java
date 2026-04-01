@@ -85,7 +85,7 @@ class MethodFragmentGenerator {
                             .attr("target", "_blank")
                             .content("External docs")));
         }
-        var sendForm = form().attr("data-path", "/" + displayPath).attr("data-method", method.name());
+        var sendForm = form().attr("data-path", "/" + displayPath).attr("data-fragment-path", fullPath).attr("data-method", method.name());
         if (operation.getParameters() != null) {
             for (var param : operation.getParameters()) {
                 var schema = param.getSchema();
@@ -106,7 +106,9 @@ class MethodFragmentGenerator {
                     }
                     inputField.content(sel);
                 } else if ("boolean".equals(schema != null ? schema.getType() : null)) {
-                    inputField.content(checkbox().name(param.getName()).attr("data-param-in", param.getIn()));
+                    var cb = element("input").attr("type", "checkbox")
+                            .attr("name", param.getName()).attr("data-param-in", param.getIn());
+                    inputField.content(element("label").classes("checkbox").content(cb));
                 } else {
                     var inp = input(TEXT).attr("name", param.getName());
                     inp.attr("data-param-in", param.getIn());
@@ -219,13 +221,13 @@ class MethodFragmentGenerator {
                 column().classes("has-text-right").content(
                         div().classes("response-info").content(
                                 div().classes("response-info-top").content(
-                                        span(code + " " + statusText).classes("response-status", statusClass),
-                                        element("button").attr("type", "button").classes("response-headers-toggle").content("headers ▸")),
+                                        span(code + " " + statusText).classes("response-status", statusClass)),
                                 response.getDescription() != null
                                         ? div().classes("response-status-description").content(response.getDescription())
                                         : span()))));
         // documented headers
         var headersSection = box().classes("response-headers", "flat-box");
+        headersSection.content(subtitle(6, "Headers \u25B8").classes("response-headers-toggle").attr("tabindex", "0"));
         if (response.getHeaders() != null && !response.getHeaders().isEmpty()) {
             var docGrid = div().classes("response-header-rows", "response-documented-headers");
             for (var headerEntry : response.getHeaders().entrySet()) {
@@ -233,7 +235,9 @@ class MethodFragmentGenerator {
                 var nameEl = span(headerEntry.getKey()).classes("response-header-name");
                 if (Boolean.TRUE.equals(headerObj.getDeprecated())) nameEl.classes("is-deprecated");
                 docGrid.content(nameEl);
-                docGrid.content(span().classes("response-header-value").attr("data-header", headerEntry.getKey().toLowerCase()));
+                var valueEl = span().classes("response-header-value").attr("data-header", headerEntry.getKey().toLowerCase());
+                if (Boolean.TRUE.equals(headerObj.getRequired())) valueEl.attr("data-required", "");
+                docGrid.content(valueEl);
                 if (headerObj.getDescription() != null) {
                     docGrid.content(span());
                     docGrid.content(span(headerObj.getDescription()).classes("response-header-description")
@@ -243,8 +247,10 @@ class MethodFragmentGenerator {
             headersSection.content(docGrid);
         }
         headersSection.content(div().classes("response-header-rows", "response-headers-undocumented"));
+        headersSection.content(p("no headers").classes("response-empty").style("display:none"));
         panel.content(headersSection);
         panel.content(element("pre").classes("response", "box", "flat-box"));
+        panel.content(p("no body").classes("response-empty", "box", "flat-box").style("display:none"));
         return panel;
     }
 
@@ -255,11 +261,13 @@ class MethodFragmentGenerator {
                 column().classes("has-text-right").content(
                         div().classes("response-info").content(
                                 div().classes("response-info-top").content(
-                                        span().classes("response-status"),
-                                        element("button").attr("type", "button").classes("response-headers-toggle").content("headers ▸"))))));
+                                        span().classes("response-status"))))));
         panel.content(box().classes("response-headers", "flat-box").content(
-                div().classes("response-header-rows")));
+                subtitle(6, "Headers \u25B8").classes("response-headers-toggle").attr("tabindex", "0"),
+                div().classes("response-header-rows"),
+                p("no headers").classes("response-empty").style("display:none")));
         panel.content(element("pre").classes("response", "box", "flat-box"));
+        panel.content(p("no body").classes("response-empty", "box", "flat-box").style("display:none"));
         return panel;
     }
 

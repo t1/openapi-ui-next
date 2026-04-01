@@ -202,6 +202,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void fillInput(String name, String value) {page.locator("#detail input[name='" + name + "']").fill(value);}
 
+    void checkCheckbox(String name) {page.locator("#detail input[type='checkbox'][name='" + name + "']").check();}
+
+    boolean isCheckboxChecked(String name) {return page.locator("#detail input[type='checkbox'][name='" + name + "']").isChecked();}
+
     void focusInput(String name) {page.locator("#detail input[name='" + name + "']").focus();}
 
     void focusSelect(String name) {page.locator("#detail select[name='" + name + "']").focus();}
@@ -245,7 +249,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     String statusBadgeText() {return page.locator("#detail .response-status").textContent();}
 
-    String noBodyMessageText() {return page.locator("#detail .response-no-body").textContent();}
+    String noBodyMessageText() {return page.locator("#detail .response-area .response-empty.box").textContent();}
 
     void clickMethodTab(int index) {page.locator(".tabs li:nth-child(" + index + ") a").click();}
 
@@ -396,7 +400,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void toggleResponseHeaders() {page.locator("#detail .response-headers-toggle").click();}
 
-    boolean responseHeadersVisible() {return page.locator("#detail .response-headers.is-visible").count() > 0;}
+    boolean responseHeadersVisible() {return page.locator("#detail .response-headers.is-expanded").count() > 0;}
 
     String responseHeaderText(String name) {
         return page.locator("#detail .response-headers .response-header-value[data-header='" + name + "']").textContent();
