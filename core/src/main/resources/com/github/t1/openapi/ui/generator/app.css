@@ -346,7 +346,6 @@ section > .container > .split-layout > .split-second {
     color: var(--bulma-text-weak);
     font-size: 0.8125rem;
     font-style: italic;
-    margin-bottom: 0.5rem;
 }
 .schema-section-title {
     font-size: 0.75rem;

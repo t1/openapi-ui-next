@@ -1363,6 +1363,16 @@ class BrowserTest {
     @ResourceLock("rich-response") @Nested class GivenAppWithRichResponse {
         @RegisterExtension static AppFixture app = launch("rich-response.yaml");
 
+        @Test void shouldShowArrayResponseSchemaProperties() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("List pets");
+            app.toggleSchema("response");
+
+            then(app.schemaTypeBadge("response")).isEqualTo("array");
+            then(app.schemaPropertyNames("response")).contains("id", "name");
+        }
+
         @Test void shouldShowResponseBoxWithSchemaToggle() {
             app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");

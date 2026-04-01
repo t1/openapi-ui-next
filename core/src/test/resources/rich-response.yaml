@@ -5,6 +5,26 @@ info:
 servers:
   - url: https://api.example.com
 paths:
+  /pets:
+    get:
+      summary: List pets
+      operationId: listPets
+      responses:
+        '200':
+          description: A list of pets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    name:
+                      type: string
+                      example: Max
   /pets/{petId}:
     get:
       summary: Get a pet

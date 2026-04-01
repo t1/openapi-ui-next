@@ -322,6 +322,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("#detail .schema-box[data-box='" + boxType + "']:not(.is-collapsed)").count() > 0;
     }
 
+    String schemaTypeBadge(String boxType) {
+        return page.locator(".schema-box[data-box='" + boxType + "'] .schema-status-panel:visible .schema-type-badge").textContent();
+    }
+
     List<String> schemaPropertyNames(String boxType) {
         return page.locator(".schema-box[data-box='" + boxType + "'] .schema-status-panel:visible .schema-prop-name").allTextContents();
     }

@@ -14,6 +14,7 @@ import java.util.Set;
 
 import static com.github.t1.bulmajava.basic.Color.PRIMARY;
 import static com.github.t1.bulmajava.basic.Size.MEDIUM;
+import static com.github.t1.bulmajava.basic.Size.NORMAL;
 import static com.github.t1.bulmajava.basic.Size.SMALL;
 import static com.github.t1.bulmajava.components.Message.message;
 import static com.github.t1.bulmajava.components.Message.messageBody;
@@ -305,7 +306,8 @@ class MethodFragmentGenerator {
         var hasSchemaProperties = statusCodes.stream()
                 .filter(code -> responses.get(code).getContent() != null)
                 .anyMatch(code -> responses.get(code).getContent().values().stream()
-                        .anyMatch(mt -> mt.getSchema() != null && mt.getSchema().getProperties() != null));
+                        .anyMatch(mt -> mt.getSchema() != null && (mt.getSchema().getProperties() != null
+                                || ("array".equals(mt.getSchema().getType()) && mt.getSchema().getItems() != null))));
         var hasHeaders = statusCodes.stream()
                 .anyMatch(code -> responses.get(code).getHeaders() != null && !responses.get(code).getHeaders().isEmpty());
         var hasExpandableContent = hasSchemaProperties || hasHeaders;
@@ -427,8 +429,11 @@ class MethodFragmentGenerator {
             }
             container.content(titleBar);
         }
-        var required = schema.getRequired() != null ? schema.getRequired() : List.<String>of();
-        Map<String, Schema> properties = schema.getProperties();
+        var isArray = "array".equals(schema.getType()) && schema.getItems() != null;
+        if (isArray) container.content(tag("array").is(NORMAL).classes("schema-type-badge"));
+        var effectiveSchema = isArray ? schema.getItems() : schema;
+        var required = effectiveSchema.getRequired() != null ? effectiveSchema.getRequired() : List.<String>of();
+        Map<String, Schema> properties = effectiveSchema.getProperties();
         if (properties != null) {
             var table = div().classes("schema-props");
             for (var prop : properties.entrySet()) {
