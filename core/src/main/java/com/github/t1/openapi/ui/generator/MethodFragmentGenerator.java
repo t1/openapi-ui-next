@@ -132,7 +132,7 @@ class MethodFragmentGenerator {
                 if ("{}".equals(skeleton)) skeleton = mediaTypeExample(jsonContent);
 
                 var bodyBox = box();
-                bodyBox.classes("schema-box", "is-collapsed").attr("data-box", "body");
+                bodyBox.classes("schema-box", "flat-box", "is-collapsed").attr("data-box", "body");
                 var bodyTitle = div().classes("schema-box-title")
                         .content(subtitle(6, "Request Body"));
                 var bodyControls = div().classes("schema-box-controls");
@@ -225,7 +225,7 @@ class MethodFragmentGenerator {
                                         ? div().classes("response-status-description").content(response.getDescription())
                                         : span()))));
         // documented headers
-        var headersSection = box().classes("response-headers");
+        var headersSection = box().classes("response-headers", "flat-box");
         if (response.getHeaders() != null && !response.getHeaders().isEmpty()) {
             var docGrid = div().classes("response-header-rows", "response-documented-headers");
             for (var headerEntry : response.getHeaders().entrySet()) {
@@ -244,7 +244,7 @@ class MethodFragmentGenerator {
         }
         headersSection.content(div().classes("response-header-rows", "response-headers-undocumented"));
         panel.content(headersSection);
-        panel.content(element("pre").classes("response", "box"));
+        panel.content(element("pre").classes("response", "box", "flat-box"));
         return panel;
     }
 
@@ -257,9 +257,9 @@ class MethodFragmentGenerator {
                                 div().classes("response-info-top").content(
                                         span().classes("response-status"),
                                         element("button").attr("type", "button").classes("response-headers-toggle").content("headers ▸"))))));
-        panel.content(box().classes("response-headers").content(
+        panel.content(box().classes("response-headers", "flat-box").content(
                 div().classes("response-header-rows")));
-        panel.content(element("pre").classes("response", "box"));
+        panel.content(element("pre").classes("response", "box", "flat-box"));
         return panel;
     }
 
@@ -309,7 +309,7 @@ class MethodFragmentGenerator {
                 .toList();
         if (!hasExpandableContent && allContentTypes.size() <= 1) return null;
 
-        var responseBox = box().classes("schema-box", "is-collapsed").attr("data-box", "response");
+        var responseBox = box().classes("schema-box", "flat-box", "is-collapsed").attr("data-box", "response");
 
         // header: title on the left, Accept select + Schema toggle on the right
         var title = div().classes("schema-box-title")

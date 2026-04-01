@@ -611,7 +611,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (pre) pre.remove();
                 var msg = document.createElement('p');
                 msg.textContent = 'no body';
-                msg.className = 'response-no-body box';
+                msg.className = 'response-no-body box flat-box';
                 area.appendChild(msg);
             }
         }

@@ -256,6 +256,10 @@ section > .container > .split-layout > .split-second {
     font-style: italic;
 }
 /* schema boxes */
+.box.flat-box {
+    box-shadow: none;
+    border: 1px solid var(--bulma-border);
+}
 .schema-box {
     margin-bottom: 0.75rem;
     overflow: visible;
