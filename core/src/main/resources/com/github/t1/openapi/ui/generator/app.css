@@ -194,12 +194,7 @@ section > .container > .split-layout > .split-second {
     text-align: left;
 }
 .response-headers-toggle {
-    border: none;
-    background: none;
-    font-size: 0.6875rem;
-    color: var(--bulma-text-weak);
     cursor: pointer;
-    padding: 0.25rem;
 }
 .response-headers-toggle:focus {
     outline: 2px solid var(--bulma-link);
@@ -207,16 +202,16 @@ section > .container > .split-layout > .split-second {
     border-radius: 2px;
 }
 .response-headers {
-    display: none;
     position: relative;
     font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
     font-size: 0.75rem;
     color: var(--bulma-text);
+    margin-bottom: 0.75rem;
 }
-.response-headers.is-visible {
-    display: block;
+.response-headers .response-header-rows {
+    display: none;
 }
-.response-header-rows {
+.response-headers.is-expanded .response-header-rows {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 0 0.75rem;
@@ -240,7 +235,14 @@ section > .container > .split-layout > .split-second {
 .response-header-missing {
     color: var(--bulma-warning);
 }
+.response-header-absent {
+    color: var(--bulma-text-weak);
+}
 .response-headers-show-all {
+    display: none;
+}
+.response-headers.is-expanded .response-headers-show-all {
+    display: block;
     position: absolute;
     top: 1.25rem;
     right: 1.25rem;
@@ -251,9 +253,11 @@ section > .container > .split-layout > .split-second {
     cursor: pointer;
     padding: 0;
 }
-.response-no-body {
+.response-empty {
     color: var(--bulma-text-weak);
     font-style: italic;
+    font-family: var(--bulma-family-primary);
+    font-size: 1rem;
 }
 /* schema boxes */
 .box.flat-box {
