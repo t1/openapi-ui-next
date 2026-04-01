@@ -261,10 +261,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         initDescriptionToggle();
         // Restore persisted spec-defined parameter values
-        document.querySelectorAll('[data-param-in]').forEach(function(inp) {
-            var form = inp.closest('form[data-path]');
+        document.querySelectorAll('[data-param-in]').forEach(function(el) {
+            var form = el.closest('form[data-path]');
             if (!form) return;
-            var key = paramStorageKey(form, inp.getAttribute('data-param-in'), inp.getAttribute('name'));
+            var inp = paramControl(el);
+            var key = paramStorageKey(form, el.getAttribute('data-param-in'), inp.getAttribute('name'));
             var saved = localStorage.getItem(key);
             if (saved !== null) {
                 if (inp.type === 'checkbox') inp.checked = saved === 'true';
@@ -358,6 +359,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return 'openapi-ui-custom-header:' + form.getAttribute('data-method') + ':' + form.getAttribute('data-path') + ':' + name;
     }
 
+    function paramControl(el) {
+        var inner = el.querySelector('select');
+        return inner || el;
+    }
+
     function paramValue(inp) {
         return inp.type === 'checkbox' ? String(inp.checked) : inp.value;
     }
@@ -375,10 +381,11 @@ document.addEventListener('DOMContentLoaded', function() {
         var checkbox = e.target.closest('.param-persist-check');
         if (checkbox) {
             var fieldEl = checkbox.closest('.field');
-            var inp = fieldEl.querySelector('[data-param-in]');
-            if (!inp) return;
-            var form = inp.closest('form[data-path]');
-            var key = paramStorageKey(form, inp.getAttribute('data-param-in'), inp.getAttribute('name'));
+            var el = fieldEl.querySelector('[data-param-in]');
+            if (!el) return;
+            var inp = paramControl(el);
+            var form = el.closest('form[data-path]');
+            var key = paramStorageKey(form, el.getAttribute('data-param-in'), inp.getAttribute('name'));
             if (checkbox.checked) {
                 localStorage.setItem(key, paramValue(inp));
             } else {
@@ -386,15 +393,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             return;
         }
-        // Persisted param checkbox value change
-        var paramInp = e.target.closest('[data-param-in]');
-        if (paramInp && paramInp.type === 'checkbox') {
-            var fieldEl = paramInp.closest('.field');
+        // Persisted param value change (checkbox or select)
+        var paramEl = e.target.closest('[data-param-in]');
+        if (paramEl) {
+            var fieldEl = paramEl.closest('.field');
             var persistCheck = fieldEl.querySelector('.param-persist-check');
             if (persistCheck && persistCheck.checked) {
-                var form = paramInp.closest('form[data-path]');
-                var key = paramStorageKey(form, paramInp.getAttribute('data-param-in'), paramInp.getAttribute('name'));
-                localStorage.setItem(key, paramValue(paramInp));
+                var inp = paramControl(paramEl);
+                var form = paramEl.closest('form[data-path]');
+                var key = paramStorageKey(form, paramEl.getAttribute('data-param-in'), inp.getAttribute('name'));
+                localStorage.setItem(key, paramValue(inp));
             }
             return;
         }
@@ -416,13 +424,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     detail.addEventListener('input', function(e) {
-        var inp = e.target.closest('[data-param-in]');
-        if (inp) {
-            var fieldEl = inp.closest('.field');
+        var el = e.target.closest('[data-param-in]');
+        if (el) {
+            var fieldEl = el.closest('.field');
             var persistCheck = fieldEl.querySelector('.param-persist-check');
             if (!persistCheck || !persistCheck.checked) return;
-            var form = inp.closest('form[data-path]');
-            localStorage.setItem(paramStorageKey(form, inp.getAttribute('data-param-in'), inp.getAttribute('name')), paramValue(inp));
+            var inp = paramControl(el);
+            var form = el.closest('form[data-path]');
+            localStorage.setItem(paramStorageKey(form, el.getAttribute('data-param-in'), inp.getAttribute('name')), paramValue(inp));
             return;
         }
         // Per-op custom header input update

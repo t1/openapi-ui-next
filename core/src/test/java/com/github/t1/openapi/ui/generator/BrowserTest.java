@@ -973,6 +973,13 @@ class BrowserTest {
             then(app.isParamPersistChecked("petId")).isTrue();
         }
 
+        @Test void shouldPersistSelectQueryParam() {
+            app.selectOption("status", "adopted");
+            app.checkParamPersist("status");
+            app.navigateHome();
+            then(app.selectValue("status")).isEqualTo("adopted");
+        }
+
         @Test void shouldOpenSelectOnEnterInsteadOfSend() {
             app.waitForDetailContent("Get a pet");
             app.focusSelect("status");

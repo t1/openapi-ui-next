@@ -210,6 +210,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void focusSelect(String name) {page.locator("#detail select[name='" + name + "']").focus();}
 
+    void selectOption(String name, String value) {page.locator("#detail select[name='" + name + "']").selectOption(value);}
+
+    String selectValue(String name) {return page.locator("#detail select[name='" + name + "']").inputValue();}
+
     void fillRequestBody(String body) {page.locator("#detail textarea[data-request-body]").fill(body);}
 
     void focusRequestBody() {page.locator("#detail textarea[data-request-body]").focus();}
@@ -608,6 +612,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     String locationHash() {return (String) page.evaluate("() => location.hash");}
 
+    String localStorageDump() {return (String) page.evaluate("() => JSON.stringify(localStorage)");}
+
     void goBack() {page.goBack();}
 
     void navigateTo(String hash) {page.navigate(testServer.baseUrl() + "/index.html" + hash);}
@@ -658,11 +664,11 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     void checkParamPersist(String paramName) {
-        page.locator("#detail .field:has(input[name='" + paramName + "']) .param-persist-check").check();
+        page.locator("#detail .field:has([name='" + paramName + "']) .param-persist-check").check();
     }
 
     boolean isParamPersistChecked(String paramName) {
-        return page.locator("#detail .field:has(input[name='" + paramName + "']) .param-persist-check").isChecked();
+        return page.locator("#detail .field:has([name='" + paramName + "']) .param-persist-check").isChecked();
     }
 
     String inputValue(String name) {
