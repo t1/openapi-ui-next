@@ -1803,6 +1803,39 @@ class BrowserTest {
             then(app.hasResponseStatus()).isTrue();
             then(app.responseText()).contains("\"id\"");
         }
+
+        @Test void shouldPreserveSchemaExpandedStateAcrossNavigation() {
+            app.waitForDetailContent("List pets");
+            app.expandAllNodes();
+            app.clickTreeNode("pets/{id}/visits/{visitId}/index.html");
+            app.waitForDetailContent("Get a visit");
+            app.toggleSchema("response");
+            then(app.isSchemaExpanded("response")).isTrue();
+
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("List pets");
+            app.clickTreeNode("pets/{id}/visits/{visitId}/index.html");
+            app.waitForDetailContent("Get a visit");
+
+            then(app.isSchemaExpanded("response")).isTrue();
+        }
+
+        @Test void shouldNotPreserveSchemaExpandedStateAcrossReload() {
+            app.waitForDetailContent("List pets");
+            app.expandAllNodes();
+            app.clickTreeNode("pets/{id}/visits/{visitId}/index.html");
+            app.waitForDetailContent("Get a visit");
+            app.toggleSchema("response");
+            then(app.isSchemaExpanded("response")).isTrue();
+
+            app.navigateHome();
+            app.waitForDetailContent("List pets");
+            app.expandAllNodes();
+            app.clickTreeNode("pets/{id}/visits/{visitId}/index.html");
+            app.waitForDetailContent("Get a visit");
+
+            then(app.isSchemaExpanded("response")).isFalse();
+        }
     }
 
     @ResourceLock("response-headers") @Nested class GivenAppWithResponseHeaders {

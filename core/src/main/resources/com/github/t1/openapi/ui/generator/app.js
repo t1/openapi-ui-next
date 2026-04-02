@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var detail = document.getElementById('detail');
     var fieldCache = new Map();
     var responseCache = new Map();
+    var schemaToggleCache = new Map();
 
     function opKey(form) {
         return form.getAttribute('data-method') + ':' + form.getAttribute('data-path');
@@ -26,6 +27,30 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!(name in fields)) return;
             if (el.type === 'checkbox') el.checked = fields[name];
             else el.value = fields[name];
+        });
+    }
+
+    function saveSchemaToggles(form) {
+        var key = opKey(form);
+        var state = {};
+        form.querySelectorAll('.schema-box[data-box]').forEach(function(box) {
+            state[box.getAttribute('data-box')] = !box.classList.contains('is-collapsed');
+        });
+        schemaToggleCache.set(key, state);
+    }
+
+    function restoreSchemaToggles(form) {
+        var key = opKey(form);
+        var state = schemaToggleCache.get(key);
+        if (!state) return;
+        form.querySelectorAll('.schema-box[data-box]').forEach(function(box) {
+            var boxType = box.getAttribute('data-box');
+            if (boxType in state) {
+                var expanded = state[boxType];
+                box.classList.toggle('is-collapsed', !expanded);
+                var toggle = box.querySelector('.schema-toggle');
+                if (toggle) toggle.textContent = expanded ? 'Schema ▾' : 'Schema ▸';
+            }
         });
     }
 
@@ -343,6 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (area) initialResponseArea = area.innerHTML;
             restoreFields(form);
             restoreResponse(form);
+            restoreSchemaToggles(form);
         }
     });
 
@@ -525,6 +551,8 @@ document.addEventListener('DOMContentLoaded', function() {
             box.classList.toggle('is-collapsed');
             toggle.textContent = box.classList.contains('is-collapsed') ? 'Schema ▸' : 'Schema ▾';
             toggle.focus(); // Safari doesn't focus buttons on click
+            var form = toggle.closest('form[data-path]');
+            if (form) saveSchemaToggles(form);
             return;
         }
         var nestedToggle = e.target.closest('.schema-nested-toggle');
