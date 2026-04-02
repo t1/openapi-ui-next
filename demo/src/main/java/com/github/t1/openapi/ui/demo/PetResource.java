@@ -87,7 +87,9 @@ public class PetResource {
     }
 
     @POST @Produces(APPLICATION_JSON) @Operation(summary = "Add a new pet")
-    public Response create(@RequestBody @Valid Pet pet) {
+    public Response create(
+            @HeaderParam("X-Api-Key") @Parameter(required = true, description = "API key for authentication") String apiKey,
+            @RequestBody @Valid Pet pet) {
         validateOwner(pet.ownerId);
         var created = new Pet(nextId++, pet.name, pet.status, pet.ownerId);
         PETS.add(created);
