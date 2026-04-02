@@ -35,6 +35,7 @@ import static com.github.t1.bulmajava.columns.Columns.columns;
 import static com.github.t1.htmljava.HtmlBasics.div;
 import static com.github.t1.htmljava.HtmlBasics.element;
 import static com.github.t1.htmljava.HtmlBasics.p;
+import static com.github.t1.htmljava.HtmlBasics.strong;
 import static com.github.t1.htmljava.HtmlBasics.span;
 import static com.github.t1.openapi.ui.components.SplitPane.splitPane;
 import static com.github.t1.openapi.ui.generator.OpenApiUiGenerator.methodColor;
@@ -66,7 +67,7 @@ class MethodFragmentGenerator {
             headerRow.content(tagsRow);
         }
         var descriptionSpan = span().classes("op-description").content(
-                element("strong").content(summary));
+                strong(summary));
         if (operation.getDescription() != null) {
             descriptionSpan.content(" — " + operation.getDescription());
         }
@@ -360,7 +361,7 @@ class MethodFragmentGenerator {
         var isFirstPanel = true;
         for (var code : statusCodes) {
             var response = responses.get(code);
-            var panel = div().classes("schema-status-panel").attr("data-status", code);
+            var panel = div().classes("schema-status-panel", "content").attr("data-status", code);
             if (!isFirstPanel) panel.style("display:none");
             isFirstPanel = false;
 
@@ -374,7 +375,7 @@ class MethodFragmentGenerator {
             var responseHasBody = response.getContent() != null
                     && response.getContent().values().iterator().next().getSchema() != null;
             if (responseHasHeaders) {
-                if (responseHasBody) panel.content(subtitle(6, "Headers").classes("schema-section-title"));
+                if (responseHasBody) panel.content(span("Headers"));
                 var headersSection = div().classes("schema-response-headers");
                 var headerProps = div().classes("schema-props");
                 for (var entry : response.getHeaders().entrySet()) {
@@ -401,7 +402,7 @@ class MethodFragmentGenerator {
 
             // body schema properties
             if (responseHasBody) {
-                if (responseHasHeaders) panel.content(subtitle(6, "Body").classes("schema-section-title"));
+                if (responseHasHeaders) panel.content(span("Body"));
                 var mediaType = response.getContent().values().iterator().next();
                 addSchemaContent(panel, mediaType.getSchema());
             }
