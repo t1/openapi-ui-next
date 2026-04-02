@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 body.insertBefore(row, addBtn);
                 row.querySelector('.custom-header-name').focus();
                 updateGlobalHeaderCount();
+                applyGlobalHeaderPlaceholders();
                 return;
             }
             var removeBtn = e.target.closest('.custom-header-remove');
@@ -99,6 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 row.remove();
                 updateGlobalHeaderCount();
+                applyGlobalHeaderPlaceholders();
                 return;
             }
         });
@@ -129,6 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
         globalHeadersPanel.addEventListener('input', function(e) {
             var inp = e.target.closest('.custom-header-name, .custom-header-value');
             if (!inp) return;
+            applyGlobalHeaderPlaceholders();
             var row = inp.closest('.custom-header-row');
             var checkbox = row.querySelector('.custom-header-persist-check');
             if (!checkbox || !checkbox.checked) return;
@@ -160,6 +163,33 @@ document.addEventListener('DOMContentLoaded', function() {
             body.insertBefore(row, addBtn);
         }
         updateGlobalHeaderCount();
+        applyGlobalHeaderPlaceholders();
+    }
+
+    function applyGlobalHeaderPlaceholders() {
+        var globals = {};
+        if (globalHeadersPanel) {
+            globalHeadersPanel.querySelectorAll('.custom-header-row').forEach(function(row) {
+                var name = row.querySelector('.custom-header-name').value.trim();
+                var value = row.querySelector('.custom-header-value').value;
+                if (name) globals[name.toLowerCase()] = value;
+            });
+        }
+        document.querySelectorAll('[data-param-in="header"]').forEach(function(el) {
+            var name = el.getAttribute('name');
+            if (!name) return;
+            if (!el.hasAttribute('data-original-placeholder')) {
+                el.setAttribute('data-original-placeholder', el.getAttribute('placeholder') || '');
+            }
+            var globalValue = globals[name.toLowerCase()];
+            if (globalValue) {
+                el.setAttribute('placeholder', globalValue + ' \u00A0\u00A0\u00A0// from global headers');
+            } else {
+                var original = el.getAttribute('data-original-placeholder');
+                if (original) el.setAttribute('placeholder', original);
+                else el.removeAttribute('placeholder');
+            }
+        });
     }
 
     // View toggle consumer
@@ -299,6 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
+        applyGlobalHeaderPlaceholders();
         document.querySelectorAll('select[data-example-select]').forEach(function(sel) {
             sel.addEventListener('change', function() {
                 var textarea = sel.closest('.field').querySelector('textarea[data-request-body]');

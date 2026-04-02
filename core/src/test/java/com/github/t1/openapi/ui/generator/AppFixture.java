@@ -679,6 +679,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("#detail input[name='" + name + "']").inputValue();
     }
 
+    String inputPlaceholder(String name) {
+        return page.locator("#detail input[name='" + name + "']").getAttribute("placeholder");
+    }
+
     void checkCustomHeaderPersist(int index) {
         page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-persist-check").check();
     }

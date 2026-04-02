@@ -1674,6 +1674,44 @@ class BrowserTest {
             var clipboard = app.readClipboard();
             then(clipboard).contains("X-Request-ID:test-456");
         }
+
+        @Test void shouldShowGlobalHeaderValueAsPlaceholderOnDocumentedHeader() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.fillGlobalHeader(0, "X-Request-ID", "abc");
+
+            then(app.inputPlaceholder("X-Request-ID")).isEqualTo("abc \u00A0\u00A0\u00A0// from global headers");
+        }
+
+        @Test void shouldClearPlaceholderWhenGlobalHeaderRemoved() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.fillGlobalHeader(0, "X-Request-ID", "abc");
+            then(app.inputPlaceholder("X-Request-ID")).isEqualTo("abc \u00A0\u00A0\u00A0// from global headers");
+
+            app.removeGlobalHeader(0);
+
+            then(app.inputPlaceholder("X-Request-ID")).isNullOrEmpty();
+        }
+
+        @Test void shouldUpdatePlaceholderWhenGlobalHeaderValueChanges() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.fillGlobalHeader(0, "X-Request-ID", "old-value");
+            then(app.inputPlaceholder("X-Request-ID")).isEqualTo("old-value \u00A0\u00A0\u00A0// from global headers");
+
+            app.fillGlobalHeader(0, "X-Request-ID", "new-value");
+
+            then(app.inputPlaceholder("X-Request-ID")).isEqualTo("new-value \u00A0\u00A0\u00A0// from global headers");
+        }
+
+        @Test void shouldNotShowPlaceholderWhenGlobalHeaderValueIsEmpty() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.fillGlobalHeader(0, "X-Request-ID", "");
+
+            then(app.inputPlaceholder("X-Request-ID")).isNullOrEmpty();
+        }
     }
 
     @ResourceLock("nested-schema") @Nested class GivenAppWithNestedSchema {
