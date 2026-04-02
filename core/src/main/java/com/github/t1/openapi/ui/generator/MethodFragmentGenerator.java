@@ -157,7 +157,10 @@ class MethodFragmentGenerator {
                     bodyControls.content(span("Example").classes("schema-accept-label"));
                     bodyControls.content(div().classes("select", "is-small").content(exampleSelect));
                 }
-                bodyControls.content(element("button").attr("type", "button").classes("schema-toggle").content("Schema ▸"));
+                var schema = jsonContent.getSchema();
+                var hasProperties = schema.getProperties() != null && !schema.getProperties().isEmpty();
+                if (hasProperties)
+                    bodyControls.content(element("button").attr("type", "button").classes("schema-toggle").content("Schema ▸"));
                 var bodyHeader = div().classes("schema-box-header")
                         .content(bodyTitle, bodyControls);
 
@@ -171,8 +174,7 @@ class MethodFragmentGenerator {
                 textarea
                         .content(skeleton);
 
-                var schema = jsonContent.getSchema();
-                if (schema.getProperties() != null && !schema.getProperties().isEmpty()) {
+                if (hasProperties) {
                     var treeContent = div();
                     addSchemaContent(treeContent, schema);
                     var tree = div().classes("schema-box-tree", "schema-box-content").content(treeContent);

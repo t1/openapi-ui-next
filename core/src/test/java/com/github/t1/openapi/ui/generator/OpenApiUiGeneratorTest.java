@@ -354,6 +354,13 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("&quot;name&quot; : &quot;Rex&quot;");
     }
 
+    @Test void shouldNotRenderBodySchemaToggleWhenNoProperties() throws Exception {
+        generate("/request-body-single-example.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{id}/PATCH.html"));
+        then(fragment).doesNotContain("schema-toggle");
+    }
+
     @Test void shouldIncludeRequestBodyStyles() throws Exception {
         generate("/request-body.yaml");
 
