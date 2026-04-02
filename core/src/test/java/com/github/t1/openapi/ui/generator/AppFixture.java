@@ -202,6 +202,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void fillInput(String name, String value) {page.locator("#detail input[name='" + name + "']").fill(value);}
 
+    boolean isInputDisabled(String name) {return page.locator("#detail input[name='" + name + "']").isDisabled();}
+
     void checkCheckbox(String name) {page.locator("#detail input[type='checkbox'][name='" + name + "']").check();}
 
     boolean isCheckboxChecked(String name) {return page.locator("#detail input[type='checkbox'][name='" + name + "']").isChecked();}
@@ -284,6 +286,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     String responseText() {return page.locator("#detail pre.response").textContent();}
+
+    String cookieNoticeText() {return page.locator("#detail .cookie-notice").textContent();}
 
     boolean hasResponseTypeSelect() {return page.locator("#detail [data-accept] select").count() > 0;}
 
@@ -707,12 +711,15 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.waitForSelector("#error-banner", new Page.WaitForSelectorOptions()
                 .setState(com.microsoft.playwright.options.WaitForSelectorState.HIDDEN));
     }
+
+    String lastRequestHeader(String name) { return testServer.lastRequestHeader(name); }
 }
 
 class TestServer {
     private final HttpServer server;
     private final Path outputDir;
     private volatile boolean blockFragments;
+    private Map<String, String> lastRequestHeaders = new java.util.concurrent.ConcurrentHashMap<>();
 
     TestServer(String specFilename) throws Exception {
         outputDir = Files.createTempDirectory("openapi-ui-test");
@@ -760,8 +767,14 @@ class TestServer {
 
     String baseUrl() {return "http://localhost:" + server.getAddress().getPort();}
 
+    String lastRequestHeader(String name) { return lastRequestHeaders.get(name); }
+
     void mockEndpoint(String path, String contentType, String body) {
-        replaceContext("/api" + path, exchange -> sendResponse(exchange, 200, contentType, body));
+        replaceContext("/api" + path, exchange -> {
+            lastRequestHeaders.clear();
+            exchange.getRequestHeaders().forEach((k, v) -> lastRequestHeaders.put(k, v.getFirst()));
+            sendResponse(exchange, 200, contentType, body);
+        });
     }
 
     void mockEndpoint(String path, String expectedMethod, String contentType, String body) {

@@ -1982,4 +1982,66 @@ class BrowserTest {
             then(app.responseHeadersVisible()).as("stays collapsed on resend").isFalse();
         }
     }
+
+    @ResourceLock("response-set-cookie") @Nested class GivenAppWithSetCookieHeader {
+        @RegisterExtension static AppFixture app = launch("response-set-cookie.yaml").withBaseUrlOverride();
+
+        @Test void shouldShowBrowserLimitationNoteForSetCookieHeader() {
+            app.mockEndpoint("/login", "application/json", "{\"ok\":true}");
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("Login");
+            app.clickSend();
+            app.waitForResponse();
+
+            then(app.responseHeaderText("set-cookie")).contains("not visible to JS");
+        }
+    }
+
+    @ResourceLock("cookie-param") @Nested class GivenAppWithCookieParam {
+        @RegisterExtension static AppFixture app = launch("cookie-param.yaml").withBaseUrlOverride();
+
+        @Test void shouldShowCookieLimitationNoteAtField() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+
+            then(app.cookieNoticeText()).contains("browser manages this automatically");
+        }
+
+        @Test void shouldDisableCookieParamInTryModeAndEnableInCurl() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+            then(app.isInputDisabled("session")).isTrue();
+
+            app.clickModeButton("curl");
+            then(app.isInputDisabled("session")).isFalse();
+
+            app.clickModeButton("try");
+            then(app.isInputDisabled("session")).isTrue();
+        }
+
+        @Test void shouldIncludeCookieParamInCurlCommand() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+            app.clickModeButton("curl");
+            app.fillInput("session", "abc123");
+            app.clickSend();
+
+            then(app.readClipboard()).contains("-b 'session=abc123'");
+        }
+
+        @Test void shouldIncludeCookieParamInHttpieCommand() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+            app.clickModeButton("httpie");
+            app.fillInput("session", "abc123");
+            app.clickSend();
+
+            then(app.readClipboard()).contains("Cookie:session=abc123");
+        }
+    }
 }

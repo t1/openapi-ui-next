@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  title: Set-Cookie API
+  version: "1.0"
+servers:
+  - url: https://api.example.com
+paths:
+  /login:
+    post:
+      summary: Login
+      responses:
+        "200":
+          description: Logged in
+          headers:
+            Set-Cookie:
+              description: Session cookie
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean

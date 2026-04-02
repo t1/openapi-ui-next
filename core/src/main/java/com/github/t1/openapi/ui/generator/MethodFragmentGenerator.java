@@ -117,7 +117,13 @@ class MethodFragmentGenerator {
                     if (required) inp.attr("required", "");
                     inputField.content(inp);
                 }
-                if (param.getDescription() != null) {
+                if ("cookie".equals(param.getIn())) {
+                    var help = p().classes("help");
+                    if (param.getDescription() != null) help.content(span(param.getDescription() + " — "));
+                    help.content(element("em").classes("cookie-notice")
+                            .content("the browser manages this automatically in try mode"));
+                    inputField.content(help);
+                } else if (param.getDescription() != null) {
                     inputField.help(param.getDescription());
                 }
                 sendForm.content(inputField);

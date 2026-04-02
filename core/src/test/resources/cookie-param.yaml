@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info:
+  title: Cookie Param API
+  version: "1.0"
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    get:
+      summary: List pets
+      parameters:
+        - name: session
+          in: cookie
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK

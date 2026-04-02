@@ -68,8 +68,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (modeContainer) {
         modeContainer.addEventListener('toggle', function(e) {
             modeContainer.setAttribute('data-mode', e.detail.value);
+            var isTry = e.detail.value === 'try';
             var sendBtns = document.querySelectorAll('#detail button[type=submit]');
-            sendBtns.forEach(function(b) { b.textContent = e.detail.value === 'try' ? 'Send' : 'Copy'; });
+            sendBtns.forEach(function(b) { b.textContent = isTry ? 'Send' : 'Copy'; });
+            detail.querySelectorAll('[data-param-in="cookie"]').forEach(function(inp) { inp.disabled = isTry; });
         });
         modeContainer.addEventListener('keydown', function(e) {
             if (e.key === 'ArrowDown') {
@@ -311,10 +313,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.body.addEventListener('htmx:afterSwap', function(e) {
         var currentMode = modeContainer ? modeContainer.getAttribute('data-mode') : 'try';
-        if (currentMode !== 'try') {
+        var isTry = currentMode === 'try';
+        if (!isTry) {
             var sendBtns = document.querySelectorAll('#detail button[type=submit]');
             sendBtns.forEach(function(b) { b.textContent = 'Copy'; });
         }
+        detail.querySelectorAll('[data-param-in="cookie"]').forEach(function(inp) { inp.disabled = isTry; });
         initDescriptionToggle();
         // Restore persisted spec-defined parameter values
         document.querySelectorAll('[data-param-in]').forEach(function(el) {
@@ -646,7 +650,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         var nameEl = el.previousElementSibling;
                         if (nameEl) nameEl.classList.add('response-header-missing');
                     } else {
-                        el.textContent = '\u2014';
+                        if (name === 'set-cookie') {
+                            el.textContent = 'browser sends these automatically, not visible to JS';
+                        } else {
+                            el.textContent = '\u2014';
+                        }
                         el.classList.add('response-header-absent');
                     }
                 });
@@ -1032,6 +1040,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var resolvedPath = pathTemplate;
             var queryParams = [];
             var requestHeaders = {};
+            var cookieParts = [];
             inputs.forEach(function(inp) {
                 var name = inp.getAttribute('name');
                 var paramIn = inp.getAttribute('data-param-in') || 'query';
@@ -1041,10 +1050,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     resolvedPath = resolvedPath.replace('{' + name + '}', encodeURIComponent(val));
                 } else if (paramIn === 'header') {
                     if (val) requestHeaders[name] = val;
+                } else if (paramIn === 'cookie') {
+                    if (val) cookieParts.push(name + '=' + val);
                 } else if (val) {
                     queryParams.push(name + '=' + encodeURIComponent(val));
                 }
             });
+            if (cookieParts.length > 0) requestHeaders['Cookie'] = cookieParts.join('; ');
             sendForm.querySelectorAll('.custom-header-row').forEach(function(row) {
                 var name = row.querySelector('.custom-header-name').value.trim();
                 var value = row.querySelector('.custom-header-value').value;
@@ -1072,23 +1084,29 @@ document.addEventListener('DOMContentLoaded', function() {
             var bodyValue = bodyTextarea ? bodyTextarea.value : '';
 
             if (mode === 'curl') {
-                var headerFlags = Object.keys(requestHeaders).map(function(h) {
+                var headerFlags = Object.keys(requestHeaders).filter(function(h) {
+                    return h !== 'Cookie';
+                }).map(function(h) {
                     return "-H '" + h + ": " + requestHeaders[h] + "'";
                 }).join(' ');
                 var cmd = 'curl -X ' + method;
                 if (headerFlags) cmd += ' ' + headerFlags;
+                if (cookieParts.length > 0) cmd += " -b '" + cookieParts.join('; ') + "'";
                 if (bodyValue) cmd += " -H 'Content-Type: application/json' -d '" + bodyValue + "'";
                 cmd += ' ' + url;
                 navigator.clipboard.writeText(cmd);
                 showCopied(sendBtn);
             } else if (mode === 'httpie') {
-                var headerArgs = Object.keys(requestHeaders).map(function(h) {
+                var headerArgs = Object.keys(requestHeaders).filter(function(h) {
+                    return h !== 'Cookie';
+                }).map(function(h) {
                     return h + ':' + requestHeaders[h];
                 }).join(' ');
                 var cmd = bodyValue
                         ? "echo '" + bodyValue + "' | http " + method + ' ' + url + " Content-Type:application/json"
                         : 'http ' + method + ' ' + url;
                 if (headerArgs) cmd += ' ' + headerArgs;
+                if (cookieParts.length > 0) cmd += ' Cookie:' + cookieParts.join('\\; ');
                 navigator.clipboard.writeText(cmd);
                 showCopied(sendBtn);
             } else if (mode === 'try') {
@@ -1104,7 +1122,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     fetchOptions.headers['Accept'] = acceptSelect.value;
                 }
                 Object.keys(requestHeaders).forEach(function(h) {
-                    fetchOptions.headers[h] = requestHeaders[h];
+                    if (h !== 'Cookie') fetchOptions.headers[h] = requestHeaders[h];
                 });
                 var area = sendForm.querySelector('.response-area');
                 fetch(url, fetchOptions).then(function(resp) {

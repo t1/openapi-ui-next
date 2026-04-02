@@ -11,6 +11,11 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import io.vertx.core.http.HttpServerResponse;
+
+import static io.vertx.core.http.Cookie.cookie;
+import jakarta.ws.rs.CookieParam;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
@@ -51,9 +56,16 @@ public class PetResource {
                                                         + "The response includes each pet's name, species, status, and owner information. "
                                                         + "Pagination is not yet supported; all matching records are returned in a single response. "
                                                         + "For large datasets, consider using the status filter to reduce the result set.")
+    @APIResponse(responseCode = "200", description = "A list of pets",
+            headers = @Header(name = "Set-Cookie", description = "Session tracking cookie",
+                    schema = @Schema(type = SchemaType.STRING)))
     public List<Pet> list(
             @QueryParam("status") PetStatus status,
-            @HeaderParam("X-Request-ID") @Parameter(description = "Unique request correlation identifier") String requestId) {
+            @HeaderParam("X-Request-ID") @Parameter(description = "Unique request correlation identifier") String requestId,
+            @CookieParam("session_id") @Parameter(description = "Session identifier for tracking") String sessionId,
+            @Context HttpServerResponse response) {
+        System.out.println("session_id cookie: " + sessionId);
+        response.addCookie(cookie("session_id", "demo123").setPath("/").setHttpOnly(true));
         if (status == null) return PETS;
         return PETS.stream().filter(p -> p.status == status).toList();
     }
