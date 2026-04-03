@@ -259,6 +259,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void waitForInput(String name) {page.waitForSelector("#detail input[name='" + name + "']");}
 
+    void focusSendButton() {page.locator("#detail button[type=submit]").focus();}
+
     void clickSend() {page.locator("#detail button[type=submit]").click();}
 
     String sendButtonText() {return page.locator("#detail button[type=submit]").textContent();}
@@ -336,6 +338,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void toggleSchema(String boxType) {
         page.locator("#detail .schema-box[data-box='" + boxType + "'] .schema-toggle").click();
+    }
+
+    void focusSchemaToggle(String boxType) {
+        page.locator(".schema-box[data-box='" + boxType + "'] .schema-toggle").focus();
     }
 
     boolean isSchemaToggleFocused(String boxType) {
@@ -546,6 +552,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     boolean isTabFocused() {
         return (Boolean) page.evaluate("() => document.activeElement.closest('.tabs') !== null");
     }
+
 
     boolean focusedTabHasFocusRing() {
         return (Boolean) page.evaluate(

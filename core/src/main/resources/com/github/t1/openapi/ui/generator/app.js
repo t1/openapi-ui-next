@@ -617,24 +617,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (panel) panel.style.display = '';
     }
 
-    // Status code tab keyboard navigation
-    document.addEventListener('keydown', function(e) {
-        var focused = document.activeElement;
-        if (!focused || !focused.classList.contains('schema-status-tab')) return;
-        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        if (e.key === 'ArrowRight') {
-            var next = focused.nextElementSibling;
-            if (next) activateStatusTab(next);
-            else bump(focused, 'h');
-        } else {
-            var prev = focused.previousElementSibling;
-            if (prev) activateStatusTab(prev);
-            else bump(focused, 'h');
-        }
-    }, true);
-
     var fragmentCache = new Map();
     var initialResponseArea = null;
 
@@ -851,58 +833,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(function() { btn.textContent = original; }, 1500);
     }
 
-    // Tab keyboard navigation
-    document.addEventListener('keydown', function(e) {
-        var focused = document.activeElement;
-        if (!focused || !focused.closest || !focused.closest('.tabs')) return;
-        if (['ArrowRight','ArrowLeft','ArrowDown','ArrowUp','Enter','Escape'].indexOf(e.key) < 0) return;
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        function activateTab(li) {
-            var tabs = li.closest('.tabs');
-            tabs.querySelectorAll('li').forEach(function(l) { l.classList.remove('is-active'); });
-            li.classList.add('is-active');
-            var link = li.querySelector('a');
-            link.focus();
-            clearPreviousResponse();
-            var hxGet = link.getAttribute('hx-get');
-            htmx.ajax('GET', hxGet, link.getAttribute('hx-target'));
-            history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
-        }
-        if (e.key === 'ArrowRight') {
-            var nextLi = focused.closest('li').nextElementSibling;
-            if (nextLi) activateTab(nextLi);
-            else bump(focused, 'h');
-        } else if (e.key === 'ArrowUp') {
-            bump(focused, 'v');
-        } else if (e.key === 'ArrowLeft') {
-            var prevLi = focused.closest('li').previousElementSibling;
-            if (prevLi) {
-                activateTab(prevLi);
-            } else {
-                document.querySelector('[role="tree"]').focus();
-            }
-        } else if (e.key === 'ArrowDown' || e.key === 'Enter') {
-            var firstInput = document.querySelector('#method-content input, #method-content select, #method-content textarea, #method-content .schema-toggle, #method-content button[type=submit]');
-            if (firstInput) firstInput.focus();
-        } else if (e.key === 'Escape') {
-            document.querySelector('[role="tree"]').focus();
-        }
-    }, true);
-
-    // Description toggle arrow key navigation
-    document.addEventListener('keydown', function(e) {
-        if (!document.activeElement.classList.contains('desc-toggle')) return;
-        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        var all = Array.from(document.querySelectorAll('[tabindex], a, button, input, textarea, select'));
-        all = all.filter(function(el) { return el.tabIndex >= 0 && el.offsetParent !== null; });
-        var idx = all.indexOf(document.activeElement);
-        var next = e.key === 'ArrowDown' ? all[idx + 1] : all[idx - 1];
-        if (next) next.focus();
-    }, true);
-
     // Pin shortcut (Ctrl+P / Alt+P) — works in both detail pane and global headers
     document.addEventListener('keydown', function(e) {
         var persistMod = /Mac/.test(navigator.platform) ? e.ctrlKey : e.altKey;
@@ -922,59 +852,154 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Field navigation within method content
+    function findSpatialTarget(el, direction) {
+        var rect = el.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var candidates = Array.from(document.querySelectorAll(
+            '#method-content input, #method-content select, #method-content textarea, #method-content button, #method-content [tabindex="0"],'
+            + ' .tabs a[tabindex="0"],'
+            + ' [role="tree"]'
+        ));
+        var elIsTab = el.closest && el.closest('.tabs');
+        var elIsStatusTab = el.classList.contains('schema-status-tab');
+        candidates = candidates.filter(function(c) {
+            if (c === el) return false;
+            if (c.disabled) return false;
+            if (!c.offsetParent && c.getAttribute('role') !== 'tree') return false;
+            if (c.closest && c.closest('.toggle')) return false;
+            // when navigating from outside tabs, only the active tab is a candidate
+            if (!elIsTab && c.closest && c.closest('.tabs') && !c.closest('li').classList.contains('is-active')) return false;
+            if (!elIsStatusTab && c.classList.contains('schema-status-tab') && !c.classList.contains('is-active')) return false;
+            return true;
+        });
+
+        var best = null;
+        var bestDist = Infinity;
+        var bestCorridor = false;
+
+        candidates.forEach(function(c) {
+            var cr = c.getBoundingClientRect();
+            // for tab links, use the tab bar's rect so the whole bar acts as one spatial unit
+            if (!elIsTab && c.closest && c.closest('.tabs')) cr = c.closest('.tabs').getBoundingClientRect();
+            if (!elIsStatusTab && c.classList.contains('schema-status-tab')) cr = c.closest('.schema-status-tabs').getBoundingClientRect();
+            var ccx = cr.left + cr.width / 2;
+            var ccy = cr.top + cr.height / 2;
+
+            // filter by direction
+            if (direction === 'down' && ccy <= cy) return;
+            if (direction === 'up' && ccy >= cy) return;
+            if (direction === 'right' && ccx <= cx) return;
+            if (direction === 'left' && ccx >= cx) return;
+
+            // check corridor overlap on cross-axis
+            var corridor;
+            if (direction === 'down' || direction === 'up') {
+                corridor = rect.right > cr.left && cr.right > rect.left; // horizontal overlap
+            } else {
+                corridor = rect.bottom > cr.top && cr.bottom > rect.top; // vertical overlap
+            }
+
+            // distance: primary axis for corridor, euclidean for fallback
+            var dist;
+            if (corridor) {
+                dist = (direction === 'down' || direction === 'up') ? Math.abs(ccy - cy) : Math.abs(ccx - cx);
+            } else {
+                dist = Math.sqrt((ccx - cx) * (ccx - cx) + (ccy - cy) * (ccy - cy));
+            }
+
+            // corridor candidates beat non-corridor
+            if (corridor && !bestCorridor) {
+                best = c;
+                bestDist = dist;
+                bestCorridor = true;
+            } else if (corridor === bestCorridor && dist < bestDist) {
+                best = c;
+                bestDist = dist;
+            }
+        });
+
+        return best;
+    }
+
+    // Spatial arrow-key navigation for detail pane and tabs
     document.addEventListener('keydown', function(e) {
-        var mc = document.getElementById('method-content') || document.getElementById('detail');
-        if (!mc) return;
-        var focusables = Array.from(mc.querySelectorAll('input, select, textarea, .schema-toggle, button[type=submit]'));
-        var idx = focusables.indexOf(document.activeElement);
-        if (idx < 0) return;
         var el = document.activeElement;
+        if (!el || !el.closest) return;
+        // don't interfere with tree or toggle internal navigation
+        if (el.closest('[role="tree"]')) return;
+        if (el.closest('.toggle')) return;
+
+        var isArrow = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.key) >= 0;
+        if (!isArrow && e.key !== 'Enter' && e.key !== 'Escape') return;
+
+        // text input/textarea: Left/Right stay native
+        if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight')
+            && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
+
+        // textarea multi-line: Up/Down navigate away only at first/last line
         if (el.tagName === 'TEXTAREA' && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
             var val = el.value;
             var pos = el.selectionStart;
             if (e.key === 'ArrowDown') {
-                var atLastLine = val.indexOf('\n', pos) < 0;
-                if (!atLastLine) return;
+                if (val.indexOf('\n', pos) >= 0) return; // not at last line
             } else {
-                var atFirstLine = val.lastIndexOf('\n', pos - 1) < 0;
-                if (!atFirstLine) return;
+                if (val.lastIndexOf('\n', pos - 1) >= 0) return; // not at first line
             }
         }
-        var handled = true;
-        if (e.key === 'ArrowDown') {
-            if (idx < focusables.length - 1) focusables[idx + 1].focus();
-            else bump(focusables[idx], 'v');
-        } else if (e.key === 'ArrowUp') {
-            if (idx > 0) {
-                focusables[idx - 1].focus();
+
+        if (isArrow) {
+            var direction = e.key === 'ArrowDown' ? 'down'
+                : e.key === 'ArrowUp' ? 'up'
+                : e.key === 'ArrowRight' ? 'right' : 'left';
+            var target = findSpatialTarget(el, direction);
+            if (target) {
+                target.focus();
             } else {
-                var activeTabLink = document.querySelector('.tabs .is-active a');
-                if (activeTabLink) activeTabLink.focus();
-                else {
-                    var tree = document.querySelector('[role="tree"]');
-                    if (tree) tree.focus();
-                }
+                var bumpDir = (direction === 'left' || direction === 'right') ? 'h' : 'v';
+                bump(el, bumpDir);
             }
-        } else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && el.closest('.schema-box-header')) {
-            var header = el.closest('.schema-box-header');
-            var headerFocusables = Array.from(header.querySelectorAll('select, .schema-toggle'));
-            var hIdx = headerFocusables.indexOf(el);
-            if (e.key === 'ArrowRight' && hIdx < headerFocusables.length - 1) headerFocusables[hIdx + 1].focus();
-            else if (e.key === 'ArrowLeft' && hIdx > 0) headerFocusables[hIdx - 1].focus();
-            else bump(el, 'h');
-        } else if (e.key === 'Enter' && el.classList.contains('schema-toggle')) {
-            el.click();
-        } else if (e.key === 'Enter' && el.tagName !== 'SELECT') {
-            var sendBtn = mc.querySelector('button[type=submit]');
-            if (sendBtn) sendBtn.click();
+            e.preventDefault();
+            e.stopPropagation();
+        } else if (e.key === 'Enter') {
+            if (el.classList.contains('schema-toggle')) {
+                el.click();
+            } else if (el.tagName !== 'SELECT') {
+                var mc = document.getElementById('method-content') || document.getElementById('detail');
+                var sendBtn = mc ? mc.querySelector('button[type=submit]') : null;
+                if (sendBtn) sendBtn.click();
+            }
+            e.preventDefault();
+            e.stopPropagation();
         } else if (e.key === 'Escape') {
-            document.querySelector('[role="tree"]').focus();
-        } else {
-            handled = false;
+            var tree = document.querySelector('[role="tree"]');
+            if (tree) tree.focus();
+            e.preventDefault();
+            e.stopPropagation();
         }
-        if (handled) { e.preventDefault(); e.stopPropagation(); }
     }, true);
+
+    // Activate method tabs on focus (spatial navigation focuses them)
+    document.addEventListener('focusin', function(e) {
+        var link = e.target.closest('.tabs a');
+        if (!link) return;
+        var li = link.closest('li');
+        if (!li || li.classList.contains('is-active')) return;
+        var tabs = li.closest('.tabs');
+        tabs.querySelectorAll('li').forEach(function(l) { l.classList.remove('is-active'); });
+        li.classList.add('is-active');
+        clearPreviousResponse();
+        var hxGet = link.getAttribute('hx-get');
+        htmx.ajax('GET', hxGet, link.getAttribute('hx-target'));
+        history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
+    });
+
+    // Activate status code tabs on focus
+    document.addEventListener('focusin', function(e) {
+        if (!e.target.classList.contains('schema-status-tab')) return;
+        if (e.target.classList.contains('is-active')) return;
+        activateStatusTab(e.target);
+    });
 
     // When clicking a method badge in the tree, navigate to that tab
     var pendingMethod = null;

@@ -776,17 +776,13 @@ class BrowserTest {
             app.screenshot("focus-tab");
         }
 
-        @Test void shouldNavigateFromChevronWithArrowKeys() {
+        @Test void shouldNavigateFromChevronWithArrowDown() {
             app.waitForDetailContent("List pets");
             app.focusDescriptionToggle();
             then(app.activeElementSelector()).contains("desc-toggle");
 
             app.pressKey("ArrowDown");
             then(app.activeElementSelector()).contains("custom-header-add");
-
-            app.focusDescriptionToggle();
-            app.pressKey("ArrowUp");
-            then(app.isTabFocused()).isTrue();
         }
 
         @Test void shouldExpandAndCollapseDescription() {
@@ -849,13 +845,13 @@ class BrowserTest {
             app.screenshot("focus-field");
         }
 
-        @Test void shouldFocusSendButtonOnArrowDownFromTabWithoutParams() {
+        @Test void shouldFocusFirstButtonOnArrowDownFromTabWithoutParams() {
             app.waitForDetailContent("List pets");
             app.focusTab(1);
 
             app.pressKey("ArrowDown");
 
-            then(app.activeElementSelector()).contains("button").contains("type=submit");
+            then(app.activeElementSelector()).contains("button");
         }
 
         @Test void shouldReturnToTabsOnArrowUpFromFirstField() {
@@ -869,6 +865,23 @@ class BrowserTest {
             app.pressKey("ArrowUp"); // back to tabs
 
             then(app.isTabFocused()).isTrue();
+        }
+
+        @Test void shouldReturnToActiveTabOnArrowUpFromField() {
+            app.focusTree();
+            app.pressKey("ArrowRight"); // expand collapsed node
+            app.pressKey("ArrowDown"); // select {id}
+            app.waitForInput("id");
+            app.pressKey("ArrowRight"); // expand {id} node
+            app.pressKey("ArrowRight"); // enter tabs on GET (first)
+            app.pressKey("ArrowRight"); // switch to DELETE tab
+            app.waitForDetailContent("Delete a pet");
+            app.pressKey("ArrowDown"); // enter fields
+            app.pressKey("ArrowUp"); // back to tabs — should land on DELETE (active), not switch to GET
+
+            then(app.isTabFocused()).isTrue();
+            then(app.isTabActive(2)).isTrue(); // DELETE tab should still be active
+            then(app.detailText()).contains("Delete a pet"); // content should not switch
         }
 
         @Test void arrowUpAtFirstItemFocusesViewToggle() {
@@ -1509,6 +1522,72 @@ class BrowserTest {
             then(app.activeStatusCodeTab()).isEqualTo("200");
         }
 
+        @Test void shouldNavigateDownFromAcceptSelectToSendButton() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.focusSelect("accept");
+
+            app.pressKey("ArrowDown");
+
+            then(app.activeElementSelector()).contains("button").contains("type=submit");
+        }
+
+        @Test void shouldNavigateUpFromSendButtonToCustomHeaderAdd() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.focusSendButton();
+
+            app.pressKey("ArrowUp");
+
+            then(app.activeElementSelector()).contains("button").contains("custom-header-add");
+        }
+
+        @Test void shouldNavigateRightFromAcceptSelectToSchemaToggle() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.focusSelect("accept");
+
+            app.pressKey("ArrowRight");
+
+            then(app.isSchemaToggleFocused("response")).isTrue();
+        }
+
+        @Test void shouldNavigateLeftFromSchemaToggleToAcceptSelect() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.focusSchemaToggle("response");
+
+            app.pressKey("ArrowLeft");
+
+            then(app.activeElementSelector()).contains("select");
+        }
+
+        @Test void shouldNavigateDownFromSchemaToggleToSendButton() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.focusSchemaToggle("response");
+
+            app.pressKey("ArrowDown");
+
+            then(app.activeElementSelector()).contains("button").contains("type=submit");
+        }
+
+        @Test void shouldBumpOnArrowDownFromSendButton() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.focusSendButton();
+
+            app.pressKey("ArrowDown");
+
+            then(app.activeElementSelector()).contains("button").contains("type=submit");
+        }
+
         @ResourceLock("rich-response-try") @Nested class InTryMode {
             @RegisterExtension static AppFixture app =
                     launch("rich-response.yaml").withBaseUrlOverride();
@@ -2070,6 +2149,17 @@ class BrowserTest {
 
             app.clickModeButton("try");
             then(app.isInputDisabled("session")).isTrue();
+        }
+
+        @Test void shouldSkipDisabledFieldOnArrowDown() {
+            app.focusTree();
+            app.pressKey("Enter");
+            app.waitForDetailContent("List pets");
+            app.focusTab(1);
+
+            app.pressKey("ArrowDown"); // should skip disabled cookie input
+
+            then(app.activeElementSelector()).contains("button");
         }
 
         @Test void shouldIncludeCookieParamInCurlCommand() {
