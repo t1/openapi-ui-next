@@ -9,7 +9,7 @@ import static com.github.t1.htmljava.HtmlBasics.div;
 import static com.github.t1.htmljava.HtmlBasics.element;
 
 class PathFragmentGenerator {
-    static Element buildContent(String fullPath, Map<HttpMethod, io.swagger.v3.oas.models.Operation> operations) {
+    static Element buildContent(ApiPath fullPath, Map<HttpMethod, io.swagger.v3.oas.models.Operation> operations) {
         var tabList = element("ul");
         var first = true;
         Element firstMethodContent = null;

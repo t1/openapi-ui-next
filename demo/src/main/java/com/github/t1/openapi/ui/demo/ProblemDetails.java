@@ -19,4 +19,6 @@ record ProblemDetails(
         String detail,
 
         @Schema(description = "URI identifying the specific occurrence", examples = "/pets/99")
-        URI instance) {}
+        URI instance) {
+    static final String MEDIA_TYPE = "application/problem+json";
+}

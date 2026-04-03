@@ -1,32 +1,30 @@
 package com.github.t1.openapi.ui.demo;
 
+import io.vertx.core.http.HttpServerResponse;
 import jakarta.json.JsonObject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import io.vertx.core.http.HttpServerResponse;
-
-import static io.vertx.core.http.Cookie.cookie;
-import jakarta.ws.rs.CookieParam;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
-import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.headers.Header;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
-import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
-import org.eclipse.microprofile.openapi.annotations.headers.Header;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
@@ -35,8 +33,10 @@ import java.util.List;
 
 import static com.github.t1.openapi.ui.demo.PetStatus.adopted;
 import static com.github.t1.openapi.ui.demo.PetStatus.available;
+import static io.vertx.core.http.Cookie.cookie;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_XML;
+import static jakarta.ws.rs.core.Response.Status.CREATED;
 
 @Path("/pets")
 @Tag(name = "pets")
@@ -64,7 +64,6 @@ public class PetResource {
             @HeaderParam("X-Request-ID") @Parameter(description = "Unique request correlation identifier") String requestId,
             @CookieParam("session_id") @Parameter(description = "Session identifier for tracking") String sessionId,
             @Context HttpServerResponse response) {
-        System.out.println("session_id cookie: " + sessionId);
         response.addCookie(cookie("session_id", "demo123").setPath("/").setHttpOnly(true));
         if (status == null) return PETS;
         return PETS.stream().filter(p -> p.status == status).toList();
@@ -82,9 +81,7 @@ public class PetResource {
     @APIResponse(responseCode = "500", description = "Internal server error",
             content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
     public PetResponse get(@PathParam("id") long id, @QueryParam("showVisits") boolean showVisits) {
-        var pet = PETS.stream()
-                .filter(p -> p.id == id).findFirst()
-                .orElseThrow(() -> new PetNotFoundException(id));
+        var pet = findById(id);
         var owner = OwnerResource.OWNERS.stream()
                 .filter(o -> o.id() == pet.ownerId).findFirst()
                 .map(o -> new OwnerSummary(o.id(), o.name()))
@@ -105,21 +102,16 @@ public class PetResource {
         validateOwner(pet.ownerId);
         var created = new Pet(nextId++, pet.name, pet.status, pet.ownerId);
         PETS.add(created);
-        return Response.status(201).entity(created).build();
+        return Response.status(CREATED).entity(created).build();
     }
 
     @PUT @Path("/{id}") @Produces(APPLICATION_JSON) @Operation(summary = "Update a pet", deprecated = true)
     @Deprecated
     public Pet update(@PathParam("id") long id, @RequestBody @Valid Pet pet) {
         validateOwner(pet.ownerId);
-        for (int i = 0; i < PETS.size(); i++) {
-            if (PETS.get(i).id == id) {
-                var updated = new Pet(id, pet.name, pet.status, pet.ownerId);
-                PETS.set(i, updated);
-                return updated;
-            }
-        }
-        throw new PetNotFoundException(id);
+        var updated = new Pet(id, pet.name, pet.status, pet.ownerId);
+        PETS.set(indexOfPet(id), updated);
+        return updated;
     }
 
     @PATCH @Path("/{id}") @Consumes(APPLICATION_JSON) @Produces(APPLICATION_JSON) @Operation(summary = "Partially update a pet")
@@ -129,24 +121,31 @@ public class PetResource {
                     @ExampleObject(name = "Rename", value = "{\"name\": \"Rex\"}"),
                     @ExampleObject(name = "Multiple fields", value = "{\"name\": \"Rex\", \"status\": \"adopted\"}")
             })) JsonObject patch) {
-        for (int i = 0; i < PETS.size(); i++) {
-            var existing = PETS.get(i);
-            if (existing.id == id) {
-                if (patch.containsKey("ownerId")) validateOwner(patch.getJsonNumber("ownerId").longValue());
-                var updated = new Pet(id,
-                        patch.containsKey("name") ? patch.getString("name") : existing.name,
-                        patch.containsKey("status") ? PetStatus.valueOf(patch.getString("status")) : existing.status,
-                        patch.containsKey("ownerId") ? patch.getJsonNumber("ownerId").longValue() : existing.ownerId);
-                PETS.set(i, updated);
-                return updated;
-            }
-        }
+        var i = indexOfPet(id);
+        var existing = PETS.get(i);
+        if (patch.containsKey("ownerId")) validateOwner(patch.getJsonNumber("ownerId").longValue());
+        var updated = new Pet(id,
+                patch.containsKey("name") ? patch.getString("name") : existing.name,
+                patch.containsKey("status") ? PetStatus.valueOf(patch.getString("status")) : existing.status,
+                patch.containsKey("ownerId") ? patch.getJsonNumber("ownerId").longValue() : existing.ownerId);
+        PETS.set(i, updated);
+        return updated;
+    }
+
+    static Pet findById(long id) {
+        return PETS.stream()
+                .filter(p -> p.id == id).findFirst()
+                .orElseThrow(() -> new PetNotFoundException(id));
+    }
+
+    static int indexOfPet(long id) {
+        for (int i = 0; i < PETS.size(); i++)
+            if (PETS.get(i).id == id) return i;
         throw new PetNotFoundException(id);
     }
 
     private static void validateOwner(long ownerId) {
-        var ownerExists = OwnerResource.OWNERS.stream().anyMatch(o -> o.id() == ownerId);
-        if (!ownerExists) throw new InvalidOwnerIdException(ownerId);
+        OwnerResource.findById(ownerId);
     }
 
     @DELETE @Path("/{id}") @Operation(summary = "Delete a pet")

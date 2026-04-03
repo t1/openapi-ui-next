@@ -29,9 +29,9 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
         return this;
     }
 
-    public Tree item(Renderable label, Consumer<Element> extra) {
+    public Tree item(Renderable label, Consumer<Element> customizer) {
         var treeLabel = span().classes("tree-label").content(label);
-        extra.accept(treeLabel);
+        customizer.accept(treeLabel);
         var item = li().attr("role", "treeitem").content(treeLabel);
         markFirstItem(item);
         content(item);
@@ -64,13 +64,13 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
         private Node(Renderable label) {
             item = li().attr("role", "treeitem").attr("aria-expanded", "false");
             treeLabel = span().classes("tree-label");
-            treeLabel.content(span("\u25BC").classes("tree-toggle"));
+            treeLabel.content(span("▼").classes("tree-toggle"));
             treeLabel.content(label);
             item.content(treeLabel);
             subtree = new Tree("group");
         }
 
-        /** Add content as a sibling on the node's {@code <li>} (before the subtree) */
+        /// Add content as a sibling on the node's `<li>` (before the subtree)
         public Node content(Renderable content) {
             treeLabel.content(content);
             return this;
@@ -86,8 +86,8 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
             return this;
         }
 
-        public Node item(Renderable label, Consumer<Element> extra) {
-            subtree.item(label, extra);
+        public Node item(Renderable label, Consumer<Element> customizer) {
+            subtree.item(label, customizer);
             return this;
         }
 
@@ -191,7 +191,7 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                 return hxGet.replace(/\\/index\\.html$/, '').replace(/\\.html$/, '');
             }
             function bump(el, dir) {
-                var cls = dir === 'h' ? 'bump-h' : 'bump-v';
+                var cls = dir === 'h' ? 'bump-horizontal' : 'bump-vertical';
                 el.classList.remove(cls);
                 void el.offsetWidth;
                 el.classList.add(cls);

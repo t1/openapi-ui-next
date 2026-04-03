@@ -22,6 +22,8 @@ public class VisitResource {
             new Visit(3, 2, "2024-03-10", "Dental cleaning")
     ));
 
+    private static long nextId = 4;
+
     @GET @Tag(name = "visits") @Tag(name = "pets") @Operation(summary = "List visits for a pet")
     public List<Visit> list(@PathParam("petId") long petId) {
         return VISITS.stream()
@@ -30,9 +32,8 @@ public class VisitResource {
 
     @POST @Operation(summary = "Record a visit")
     public Visit create(@PathParam("petId") long petId, @RequestBody @Valid Visit visit) {
-        var petExists = PetResource.PETS.stream().anyMatch(p -> p.id == petId);
-        if (!petExists) throw new PetNotFoundException(petId);
-        var created = new Visit(VISITS.size() + 1, petId, visit.date(), visit.reason());
+        PetResource.findById(petId);
+        var created = new Visit(nextId++, petId, visit.date(), visit.reason());
         VISITS.add(created);
         return created;
     }

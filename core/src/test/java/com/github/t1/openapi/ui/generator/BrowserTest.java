@@ -40,16 +40,16 @@ class BrowserTest {
 
         @Test void shouldShowMethodBadge() {then(app.hasMethodBadge("GET")).isTrue();}
 
-        @Test void methodAddonsAreRightAligned() {then(app.areMethodAddonsRightAligned()).isTrue();}
+        @Test void shouldRightAlignMethodAddons() {then(app.areMethodAddonsRightAligned()).isTrue();}
 
-        @Test void treeIsInBoxAndDetailIsNot() {
+        @Test void shouldRenderTreeInBoxButNotDetail() {
             then(app.isTreeInBox()).isTrue();
             then(app.isDetailInBox()).isFalse();
         }
 
         @Test void shouldIncludeCustomStylesheet() {then(app.hasStylesheet("openapi-ui.css")).isTrue();}
 
-        @Test void enterKeyLoadsFragment() {
+        @Test void shouldLoadFragmentOnEnterKey() {
             app.focusTree();
             app.pressKey("Enter");
             app.waitForDetailContent("List pets");
@@ -74,13 +74,13 @@ class BrowserTest {
             then(app.hasResponseBox()).isFalse();
         }
 
-        @Test void focusedTreeScreenshot() {
+        @Test void shouldCaptureTreeFocusScreenshot() {
             app.focusTree();
 
             app.screenshot("focus-tree");
         }
 
-        @Test void tabAndEscapeMoveFocus() {
+        @Test void shouldMoveFocusWithTabAndEscape() {
             app.focusTree();
 
             app.pressKey("Tab");
@@ -90,14 +90,14 @@ class BrowserTest {
             then(app.isTreeFocused()).isTrue();
         }
 
-        @Test void clickingTreeNodeLoadsFragment() {
+        @Test void shouldLoadFragmentOnTreeNodeClick() {
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("List pets");
 
             then(app.detailText()).contains("List pets");
         }
 
-        @Test void clickingTreeNodeFocusesTree() {
+        @Test void shouldFocusTreeOnTreeNodeClick() {
             app.focusTree();
             app.pressKey("Tab");
             then(app.isTreeFocused()).isFalse();
@@ -208,12 +208,12 @@ class BrowserTest {
             then(clipboard).contains("-H 'Authorization: Bearer token123'");
         }
 
-        @Test void modeToggleIsSegmentedControl() {
+        @Test void shouldRenderModeToggleAsSegmentedControl() {
             then(app.hasSegmentedControl()).isTrue();
             then(app.isSegmentActive("try")).isTrue();
         }
 
-        @Test void modeToggleHasThreeOptionsAndSwitches() {
+        @Test void shouldHaveThreeOptionsAndSwitchInModeToggle() {
             then(app.isModeButtonVisible("try")).isTrue();
             then(app.isModeButtonVisible("httpie")).isTrue();
             then(app.isModeButtonVisible("curl")).isTrue();
@@ -223,13 +223,13 @@ class BrowserTest {
             then(app.currentMode()).isEqualTo("curl");
         }
 
-        @Test void modeButtonsHaveTooltips() {
+        @Test void shouldShowTooltipsOnModeButtons() {
             then(app.modeButtonTooltip("try")).contains("Ctrl+1");
             then(app.modeButtonTooltip("httpie")).contains("Ctrl+2");
             then(app.modeButtonTooltip("curl")).contains("Ctrl+3");
         }
 
-        @Test void arrowRightSwitchesToNextMode() {
+        @Test void shouldSwitchToNextModeOnArrowRight() {
             app.focusModeToggle();
 
             app.pressKey("ArrowRight");
@@ -238,7 +238,7 @@ class BrowserTest {
             then(app.isSegmentActive("httpie")).isTrue();
         }
 
-        @Test void arrowLeftSwitchesToPreviousMode() {
+        @Test void shouldSwitchToPreviousModeOnArrowLeft() {
             app.clickModeButton("curl");
 
             app.focusModeToggle();
@@ -265,7 +265,7 @@ class BrowserTest {
             then(app.currentMode()).isEqualTo("try");
         }
 
-        @Test void homeKeySelectsFirstMode() {
+        @Test void shouldSelectFirstModeOnHomeKey() {
             app.clickModeButton("curl");
 
             app.focusModeToggle();
@@ -274,7 +274,7 @@ class BrowserTest {
             then(app.currentMode()).isEqualTo("try");
         }
 
-        @Test void endKeySelectsLastMode() {
+        @Test void shouldSelectLastModeOnEndKey() {
             app.focusModeToggle();
 
             app.pressKey("End");
@@ -282,7 +282,7 @@ class BrowserTest {
             then(app.currentMode()).isEqualTo("curl");
         }
 
-        @Test void shortcutKeySwitchesMode() {
+        @Test void shouldSwitchModeOnShortcutKey() {
             app.focusModeToggle();
 
             app.pressKey("Control+2");
@@ -295,7 +295,7 @@ class BrowserTest {
             then(app.currentMode()).isEqualTo("try");
         }
 
-        @Test void shortcutKeySwitchesModeFromTree() {
+        @Test void shouldSwitchModeOnShortcutKeyFromTree() {
             app.focusTree();
 
             app.pressKey("Control+2");
@@ -303,7 +303,7 @@ class BrowserTest {
             then(app.currentMode()).isEqualTo("httpie");
         }
 
-        @Test void shiftTabFromTreeFocusesViewToggle() {
+        @Test void shouldFocusViewToggleOnShiftTabFromTree() {
             app.focusTree();
 
             app.pressKey("Shift+Tab");
@@ -311,7 +311,7 @@ class BrowserTest {
             then(app.isViewToggleFocused()).isTrue();
         }
 
-        @Test void shiftTabFromViewToggleFocusesModeToggle() {
+        @Test void shouldFocusModeToggleOnShiftTabFromViewToggle() {
             app.focusViewToggle();
 
             app.pressKey("Shift+Tab");
@@ -319,7 +319,7 @@ class BrowserTest {
             then(app.isModeToggleFocused()).isTrue();
         }
 
-        @Test void desktopLayoutIsSideBySide() {
+        @Test void shouldRenderSideBySideOnDesktop() {
             app.setViewportSize(1280, 720);
             app.navigateHome();
 
@@ -328,7 +328,7 @@ class BrowserTest {
             app.screenshot("layout-desktop");
         }
 
-        @Test void mobileLayoutIsStacked() {
+        @Test void shouldRenderStackedOnMobile() {
             app.setViewportSize(375, 667);
             app.navigateHome();
 
@@ -349,7 +349,7 @@ class BrowserTest {
                 app.waitForResponse();
             }
 
-            @Test void tryModeSendsRequestAndShowsPrettifiedJson() {
+            @Test void shouldSendRequestAndShowPrettifiedJsonInTryMode() {
                 app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\",\"name\":\"Fido\"}");
 
                 navigateToListPetsAndSend();
@@ -417,7 +417,7 @@ class BrowserTest {
                 then(app.responseHasHighlighting()).isFalse();
             }
 
-            @Test void tryModeShowsHtmlResponseAsIs() {
+            @Test void shouldShowHtmlResponseAsIsInTryMode() {
                 app.mockEndpoint("/pets", "text/html", "<h1>Hello</h1><p>World</p>");
 
                 navigateToListPetsAndSend();
@@ -425,7 +425,7 @@ class BrowserTest {
                 then(app.responseText()).contains("<h1>Hello</h1>");
             }
 
-            @Test void tryModeShowsXmlResponseAsIs() {
+            @Test void shouldShowXmlResponseAsIsInTryMode() {
                 app.mockEndpoint("/pets", "application/xml", "<pets><pet><name>Fido</name></pet></pets>");
 
                 navigateToListPetsAndSend();
@@ -433,7 +433,7 @@ class BrowserTest {
                 then(app.responseText()).contains("<pets>");
             }
 
-            @Test void tryModeSendButtonRecoversAfterResponse() {
+            @Test void shouldRecoverSendButtonAfterResponseInTryMode() {
                 app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
 
                 navigateToListPetsAndSend();
@@ -442,7 +442,7 @@ class BrowserTest {
                 then(app.isSendButtonEnabled()).isTrue();
             }
 
-            @Test void tryModeShowsStatusBadgeNextToSendButton() {
+            @Test void shouldShowStatusBadgeNextToSendButtonInTryMode() {
                 app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
 
                 navigateToListPetsAndSend();
@@ -450,7 +450,7 @@ class BrowserTest {
                 then(app.statusBadgeText()).isEqualTo("200 OK");
             }
 
-            @Test void tryModeShowsErrorStatusBadge() {
+            @Test void shouldShowErrorStatusBadgeInTryMode() {
                 app.mockEndpoint("/pets", "text/plain", "not found", 404);
 
                 navigateToListPetsAndSend();
@@ -458,7 +458,7 @@ class BrowserTest {
                 then(app.statusBadgeText()).isEqualTo("404 Not Found");
             }
 
-            @Test void tryModeErrorStatusNotDuplicatedInBody() {
+            @Test void shouldNotDuplicateErrorStatusInBodyInTryMode() {
                 app.mockEndpoint("/pets", "text/plain", "not found", 404);
 
                 navigateToListPetsAndSend();
@@ -467,7 +467,7 @@ class BrowserTest {
                 then(app.responseText()).contains("not found");
             }
 
-            @Test void tryModeShowsNoBodyMessageForEmptyResponse() {
+            @Test void shouldShowNoBodyMessageForEmptyResponseInTryMode() {
                 app.mockEndpoint("/pets", "application/json", "", 204);
 
                 navigateToListPetsAndSend();
@@ -482,7 +482,7 @@ class BrowserTest {
                 navigateToListPetsAndSend();
 
                 then(app.hasResponseHeadersToggle()).isTrue();
-                then(app.responseHeadersToggleText()).contains("Headers").endsWith("▸");
+                then(app.responseHeadersToggleText()).contains("Headers").endsWith("▶");
             }
 
             @Test void shouldHideHeadersByDefault() {
@@ -522,7 +522,7 @@ class BrowserTest {
                 app.resend();
 
                 then(app.responseHeadersVisible()).isTrue();
-                then(app.responseHeadersToggleText()).contains("Headers").endsWith("▾");
+                then(app.responseHeadersToggleText()).contains("Headers").endsWith("▼");
             }
 
             @Test void shouldKeepHeadersCollapsedOnResend() {
@@ -533,7 +533,7 @@ class BrowserTest {
                 app.resend();
 
                 then(app.responseHeadersVisible()).isFalse();
-                then(app.responseHeadersToggleText()).contains("Headers").endsWith("▸");
+                then(app.responseHeadersToggleText()).contains("Headers").endsWith("▶");
             }
 
             @Test void shouldNotShowShowAllWhenNoDocumentedHeaders() {
@@ -545,7 +545,7 @@ class BrowserTest {
                 then(app.hasShowAllButton()).isFalse();
             }
 
-            @Test void tryModeShowsYamlResponseAsIs() {
+            @Test void shouldShowYamlResponseAsIsInTryMode() {
                 app.mockEndpoint("/pets", "application/yaml", "pets:\n  - name: Fido\n    id: 1");
 
                 navigateToListPetsAndSend();
@@ -557,7 +557,7 @@ class BrowserTest {
         }
     }
 
-    @ResourceLock("error-banner") @Nested class GivenErrorBanner {
+    @ResourceLock("error-banner") @Nested class ErrorRetryBehavior {
         @RegisterExtension static AppFixture app = launch("one-get.yaml");
 
         @Test void shouldShowBannerWhenHtmxRequestFails() {
@@ -605,7 +605,7 @@ class BrowserTest {
             then(app.isViewActive("tags")).isTrue();
         }
 
-        @Test void arrowKeysSwitchView() {
+        @Test void shouldSwitchViewOnArrowKeys() {
             app.focusViewToggle();
             app.pressKey("ArrowLeft"); // tags is active (rightmost), ArrowLeft switches to paths
             app.waitForTreeContent("invoices");
@@ -613,7 +613,7 @@ class BrowserTest {
             then(app.isViewActive("paths")).isTrue();
         }
 
-        @Test void arrowUpFromViewToggleFocusesModeToggle() {
+        @Test void shouldFocusModeToggleOnArrowUpFromViewToggle() {
             app.focusViewToggle();
 
             app.pressKey("ArrowUp");
@@ -622,7 +622,7 @@ class BrowserTest {
             then(app.isModeToggleFocused()).isTrue();
         }
 
-        @Test void arrowDownFromModeToggleFocusesViewToggle() {
+        @Test void shouldFocusViewToggleOnArrowDownFromModeToggle() {
             app.focusModeToggle();
 
             app.pressKey("ArrowDown");
@@ -649,7 +649,7 @@ class BrowserTest {
             then(app.isViewActive("paths")).isTrue();
         }
 
-        @Test void homeKeySelectsFirstView() {
+        @Test void shouldSelectFirstViewOnHomeKey() {
             app.focusViewToggle();
             // tags is active (rightmost), Home should switch to paths (first)
             app.pressKey("Home");
@@ -658,7 +658,7 @@ class BrowserTest {
             then(app.isViewActive("paths")).isTrue();
         }
 
-        @Test void endKeySelectsLastView() {
+        @Test void shouldSelectLastViewOnEndKey() {
             app.focusViewToggle();
             app.pressKey("ArrowLeft"); // switch to paths first
             app.waitForTreeContent("invoices");
@@ -677,7 +677,7 @@ class BrowserTest {
             then(app.isViewToggleFocused()).isTrue();
         }
 
-        @Test void clickingTagTreeOperationLoadsDetail() {
+        @Test void shouldLoadDetailOnTagTreeOperationClick() {
             app.expandFirstNode();
             app.clickTreeNode("invoices/GET.html");
             app.waitForDetailContent("List invoices");
@@ -685,7 +685,7 @@ class BrowserTest {
             then(app.detailText()).contains("List invoices");
         }
 
-        @Test void tagViewScreenshot() {
+        @Test void shouldCaptureTagViewScreenshot() {
             app.expandFirstNode();
             app.screenshot("tag-view");
         }
@@ -724,7 +724,7 @@ class BrowserTest {
     @ResourceLock("deep-paths") @Nested class GivenAppWithDeepPaths {
         @RegisterExtension static AppFixture app = launch("deep-paths.yaml");
 
-        @Test void methodAddonsShouldBeInSingleRow() {
+        @Test void shouldRenderMethodAddonsInSingleRow() {
             app.expandAllNodes();
 
             then(app.areMethodAddonsInSingleRow()).isTrue();
@@ -757,7 +757,7 @@ class BrowserTest {
             then(app.detailText()).contains("Create a pet");
         }
 
-        @Test void clickingTabFocusesIt() {
+        @Test void shouldFocusTabOnClick() {
             app.waitForDetailContent("List pets");
 
             app.clickMethodTab(2);
@@ -884,7 +884,7 @@ class BrowserTest {
             then(app.detailText()).contains("Delete a pet"); // content should not switch
         }
 
-        @Test void arrowUpAtFirstItemFocusesViewToggle() {
+        @Test void shouldFocusViewToggleOnArrowUpAtFirstItem() {
             app.focusTree();
             app.pressKey("ArrowUp"); // already first item → view toggle
 
@@ -956,7 +956,7 @@ class BrowserTest {
     @ResourceLock("relative-base") @Nested class GivenAppWithRelativeBase {
         @RegisterExtension static AppFixture app = launch("relative-base.yaml");
 
-        @Test void tryModeShouldResolveRelativeBaseUrl() {
+        @Test void shouldResolveRelativeBaseUrlInTryMode() {
             app.focusTree();
             app.pressKey("Enter");
             app.waitForDetailContent("List items");
@@ -967,7 +967,7 @@ class BrowserTest {
             then(app.responseText()).contains("\"id\"");
         }
 
-        @Test void tryModeSendsRequestWithPathParam() {
+        @Test void shouldSendRequestWithPathParamInTryMode() {
             app.mockRootEndpoint("/items/42", "application/json", "{\"id\":\"42\",\"name\":\"Widget\"}");
             app.expandFirstNode();
             app.clickTreeNode("items/{itemId}/index.html");
@@ -1000,7 +1000,7 @@ class BrowserTest {
                     .doesNotContain("data-path");
         }
 
-        @Test void numberKeyDoesNotSwitchModeFromInput() {
+        @Test void shouldNotSwitchModeOnNumberKeyFromInput() {
             app.waitForInput("petId");
             app.focusInput("petId");
 
@@ -1059,7 +1059,7 @@ class BrowserTest {
             @RegisterExtension static AppFixture app =
                     launch("params.yaml").withBaseUrlOverride();
 
-            @Test void tryModeSendsRequestWithPathParam() {
+            @Test void shouldSendRequestWithPathParamInTryMode() {
                 app.mockEndpoint("/pets/42", "application/json", "{\"id\":\"42\",\"name\":\"Fido\"}");
                 app.expandFirstNode();
                 app.clickTreeNode("pets/{petId}/index.html");
@@ -1107,7 +1107,7 @@ class BrowserTest {
             then(app.readClipboard()).isEmpty();
         }
 
-        @Test void curlModeCopiesCommand() {
+        @Test void shouldCopyCommandInCurlMode() {
             app.clickModeButton("curl");
             app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");
@@ -1121,7 +1121,7 @@ class BrowserTest {
                     .contains("https://api.example.com/pets/42");
         }
 
-        @Test void curlModeShowsCopyButtonLabel() {
+        @Test void shouldShowCopyButtonLabelInCurlMode() {
             app.clickModeButton("curl");
             app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");
@@ -1130,7 +1130,7 @@ class BrowserTest {
             then(app.sendButtonText()).isEqualTo("Copy");
         }
 
-        @Test void curlModeShowsCopiedFeedback() {
+        @Test void shouldShowCopiedFeedbackInCurlMode() {
             app.clickModeButton("curl");
             app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");
@@ -1153,7 +1153,7 @@ class BrowserTest {
             then(app.isSendButtonFocused()).isTrue();
         }
 
-        @Test void curlModeIncludesMethod() {
+        @Test void shouldIncludeMethodInCurlMode() {
             app.clickModeButton("curl");
             app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");
@@ -1164,7 +1164,7 @@ class BrowserTest {
             then(app.readClipboard()).startsWith("curl -X GET");
         }
 
-        @Test void httpieModeCopiesCommand() {
+        @Test void shouldCopyCommandInHttpieMode() {
             app.clickModeButton("httpie");
             app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");
@@ -1182,7 +1182,7 @@ class BrowserTest {
         @RegisterExtension static AppFixture app =
                 launch("post-endpoint.yaml").withBaseUrlOverride();
 
-        @Test void tryModeSendsPostRequest() {
+        @Test void shouldSendPostRequestInTryMode() {
             app.mockEndpoint("/pets", "POST", "application/json", "{\"id\":1}");
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");
@@ -1239,7 +1239,7 @@ class BrowserTest {
             then(app.activeElementSelector()).contains("schema-toggle");
         }
 
-        @Test void tryModeSendsRequestBody() {
+        @Test void shouldSendRequestBodyInTryMode() {
             app.mockEndpointWithBodyEcho("/pets", "POST");
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");
@@ -1250,7 +1250,7 @@ class BrowserTest {
             then(app.responseText()).contains("Fido");
         }
 
-        @Test void curlModeIncludesRequestBody() {
+        @Test void shouldIncludeRequestBodyInCurlMode() {
             app.clickModeButton("curl");
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");
@@ -1263,7 +1263,7 @@ class BrowserTest {
                     .contains("-d '{\"name\": \"Fido\"}'");
         }
 
-        @Test void httpieModeIncludesRequestBody() {
+        @Test void shouldIncludeRequestBodyInHttpieMode() {
             app.clickModeButton("httpie");
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");
@@ -1289,7 +1289,7 @@ class BrowserTest {
     @ResourceLock("nested-paths") @Nested class GivenAppWithNestedPaths {
         @RegisterExtension static AppFixture app = launch("nested-paths.yaml");
 
-        @Test void arrowKeysNavigateTree() {
+        @Test void shouldNavigateTreeWithArrowKeys() {
             app.focusTree();
             then(app.selectedTreeItemText()).contains("pets");
 
@@ -1297,7 +1297,7 @@ class BrowserTest {
             then(app.selectedTreeItemText()).isNotNull();
         }
 
-        @Test void clickingTreeNodeSelectsIt() {
+        @Test void shouldSelectTreeNodeOnClick() {
             then(app.isTreeItemSelected("pets/index.html")).isTrue();
 
             app.focusTree();
@@ -1307,7 +1307,7 @@ class BrowserTest {
             then(app.isTreeItemSelected("pets/{petId}/index.html")).isTrue();
         }
 
-        @Test void clickingTreeNodeFocusesTreeAfterContentSwap() {
+        @Test void shouldFocusTreeAfterContentSwapOnTreeNodeClick() {
             app.focusTree();
             app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowRight"); // enter tabs
@@ -1319,12 +1319,12 @@ class BrowserTest {
             then(app.isTreeFocused()).isTrue();
         }
 
-        @Test void nodesStartCollapsed() {
+        @Test void shouldStartNodesCollapsed() {
             then(app.isTextVisible("{petId}")).isFalse();
             app.screenshot("tree-collapsed");
         }
 
-        @Test void trianglePointsRightWhenCollapsed() {
+        @Test void shouldPointTriangleRightWhenCollapsed() {
             app.focusTree();
             then(app.treeToggleRotation()).as("collapsed: rotated -90deg").isEqualTo(-90.0);
 
@@ -1336,7 +1336,7 @@ class BrowserTest {
             app.screenshot("tree-toggle-rotation");
         }
 
-        @Test void arrowRightExpandsAndLeftCollapsesNode() {
+        @Test void shouldExpandOnArrowRightAndCollapseOnArrowLeft() {
             app.focusTree();
             then(app.isTextVisible("{petId}")).isFalse();
 
@@ -1426,6 +1426,12 @@ class BrowserTest {
     @ResourceLock("rich-response") @Nested class GivenAppWithRichResponse {
         @RegisterExtension static AppFixture app = launch("rich-response.yaml");
 
+        private void navigateToPetDetail() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+        }
+
         @Test void shouldShowArrayResponseSchemaProperties() {
             app.expandFirstNode();
             app.clickTreeNode("pets/index.html");
@@ -1437,18 +1443,14 @@ class BrowserTest {
         }
 
         @Test void shouldShowResponseBoxWithSchemaToggle() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
 
             then(app.hasResponseBox()).isTrue();
             then(app.hasSchemaToggle("response")).isTrue();
         }
 
         @Test void shouldFocusSchemaToggleWithVisibleRingOnClick() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
 
             app.toggleSchema("response");
 
@@ -1457,9 +1459,7 @@ class BrowserTest {
         }
 
         @Test void shouldShowPropertyTreeWithTypeBadges() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
             app.toggleSchema("response");
 
             then(app.schemaPropertyNames("response")).contains("id", "name", "status");
@@ -1468,9 +1468,7 @@ class BrowserTest {
         }
 
         @Test void shouldShowStatusCodeTabs() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
             app.toggleSchema("response");
 
             then(app.statusCodeTabs()).containsExactly("200", "404");
@@ -1478,9 +1476,7 @@ class BrowserTest {
         }
 
         @Test void shouldSwitchSchemaOnStatusCodeTabClick() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
             app.toggleSchema("response");
 
             app.clickStatusCodeTab("404");
@@ -1490,18 +1486,14 @@ class BrowserTest {
         }
 
         @Test void shouldShowAcceptSelectInResponseBox() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
 
             then(app.hasResponseTypeSelect()).isTrue();
             then(app.responseTypeOptions()).containsExactly("application/json", "application/xml");
         }
 
         @Test void shouldSwitchStatusCodeTabWithArrowRight() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
             app.toggleSchema("response");
 
             app.focusStatusCodeTab("200");
@@ -1511,9 +1503,7 @@ class BrowserTest {
         }
 
         @Test void shouldSwitchStatusCodeTabWithArrowLeft() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
             app.toggleSchema("response");
 
             app.focusStatusCodeTab("404");
@@ -1523,9 +1513,7 @@ class BrowserTest {
         }
 
         @Test void shouldNavigateDownFromAcceptSelectToSendButton() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
             app.focusSelect("accept");
 
             app.pressKey("ArrowDown");
@@ -1534,9 +1522,7 @@ class BrowserTest {
         }
 
         @Test void shouldNavigateUpFromSendButtonToCustomHeaderAdd() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
             app.focusSendButton();
 
             app.pressKey("ArrowUp");
@@ -1545,9 +1531,7 @@ class BrowserTest {
         }
 
         @Test void shouldNavigateRightFromAcceptSelectToSchemaToggle() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
             app.focusSelect("accept");
 
             app.pressKey("ArrowRight");
@@ -1556,9 +1540,7 @@ class BrowserTest {
         }
 
         @Test void shouldNavigateLeftFromSchemaToggleToAcceptSelect() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
             app.focusSchemaToggle("response");
 
             app.pressKey("ArrowLeft");
@@ -1567,9 +1549,7 @@ class BrowserTest {
         }
 
         @Test void shouldNavigateDownFromSchemaToggleToSendButton() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
             app.focusSchemaToggle("response");
 
             app.pressKey("ArrowDown");
@@ -1578,9 +1558,7 @@ class BrowserTest {
         }
 
         @Test void shouldBumpOnArrowDownFromSendButton() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
             app.focusSendButton();
 
             app.pressKey("ArrowDown");
@@ -1588,14 +1566,9 @@ class BrowserTest {
             then(app.activeElementSelector()).contains("button").contains("type=submit");
         }
 
-        @ResourceLock("rich-response-try") @Nested class InTryMode {
-            @RegisterExtension static AppFixture app =
-                    launch("rich-response.yaml").withBaseUrlOverride();
-
-        }
     }
 
-    @ResourceLock("url-nav") @Nested class GivenUrlNavigation {
+    @ResourceLock("url-nav") @Nested class UrlHashNavigation {
         @RegisterExtension static AppFixture app = launch("multi-method.yaml");
 
         @Test void shouldUpdateHashWhenClickingTreeItem() {
@@ -1717,7 +1690,7 @@ class BrowserTest {
             then(app.customHeaderRowCount()).isEqualTo(0);
         }
 
-        @Test void perOperationHeaderShouldOverrideGlobalHeader() {
+        @Test void shouldOverrideGlobalHeaderWithPerOperationHeader() {
             app.clickGlobalHeadersToggle();
             app.clickGlobalHeaderButton("+ Add global header");
             app.fillGlobalHeader(0, "X-Debug", "global");
@@ -1846,10 +1819,14 @@ class BrowserTest {
     @ResourceLock("nested-schema") @Nested class GivenAppWithNestedSchema {
         @RegisterExtension static AppFixture app = launch("nested-schema.yaml");
 
-        @Test void shouldShowNestedPropertiesCollapsedByDefault() {
+        private void navigateToPetDetail() {
             app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");
             app.waitForDetailContent("Get a pet");
+        }
+
+        @Test void shouldShowNestedPropertiesCollapsedByDefault() {
+            navigateToPetDetail();
             app.toggleSchema("response");
 
             then(app.hasNestedToggle("response")).isTrue();
@@ -1857,9 +1834,7 @@ class BrowserTest {
         }
 
         @Test void shouldExpandNestedPropertiesOnClick() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
             app.toggleSchema("response");
 
             app.clickNestedToggle("response");
@@ -1870,9 +1845,7 @@ class BrowserTest {
         }
 
         @Test void shouldCollapseNestedPropertiesOnSecondClick() {
-            app.expandFirstNode();
-            app.clickTreeNode("pets/{petId}/index.html");
-            app.waitForDetailContent("Get a pet");
+            navigateToPetDetail();
             app.toggleSchema("response");
             app.clickNestedToggle("response");
 
@@ -1896,7 +1869,7 @@ class BrowserTest {
         }
     }
 
-    @ResourceLock("multi-method") @Nested class GivenDomCache {
+    @ResourceLock("multi-method") @Nested class NavigationStatePreservation {
         @RegisterExtension static AppFixture app = launch("multi-method.yaml");
 
         @Test void shouldPreserveFieldValueAcrossNavigation() {
@@ -2040,9 +2013,6 @@ class BrowserTest {
             then(app.undocumentedHeadersVisible()).isTrue();
             then(app.responseHeaderText("content-type")).contains("application/json");
         }
-
-        @Disabled("tested in GivenAppWithOneGet.InTryMode")
-        @Test void shouldNotShowShowAllWhenNoDocumentedHeaders() {}
 
         @Test void shouldAutoExpandOnFirstSendWhenDocumentedHeadersExist() {
             app.mockEndpointWithHeaders("/pets", "application/json", "{\"id\":\"1\"}",

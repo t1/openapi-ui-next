@@ -9,6 +9,8 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
+
 @Provider
 class ConstraintViolationExceptionMapper implements ExceptionMapper<ConstraintViolationException> {
     @Override public Response toResponse(ConstraintViolationException exception) {
@@ -18,12 +20,12 @@ class ConstraintViolationExceptionMapper implements ExceptionMapper<ConstraintVi
                 .forEach(v -> violations.add(Json.createObjectBuilder()
                         .add("field", fieldName(v.getPropertyPath()))
                         .add("message", v.getMessage())));
-        return Response.status(400)
-                .type("application/problem+json")
+        return Response.status(BAD_REQUEST)
+                .type(ProblemDetails.MEDIA_TYPE)
                 .entity(Json.createObjectBuilder()
                         .add("type", "urn:problem-type:constraint-violation")
-                        .add("title", "Bad Request")
-                        .add("status", 400)
+                        .add("title", BAD_REQUEST.getReasonPhrase())
+                        .add("status", BAD_REQUEST.getStatusCode())
                         .add("violations", violations)
                         .build()
                         .toString())

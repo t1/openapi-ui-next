@@ -20,7 +20,7 @@ class DelayResponseFilter implements ContainerRequestFilter {
             Thread.sleep(delayMillis);
         } catch (NumberFormatException e) {
             request.abortWith(Response.status(BAD_REQUEST)
-                    .type("application/problem+json")
+                    .type(ProblemDetails.MEDIA_TYPE)
                     .entity(new ProblemDetails(
                             URI.create("urn:problem-type:invalid-delay-value"),
                             "Bad Request", BAD_REQUEST.getStatusCode(),

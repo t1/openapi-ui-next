@@ -1,3 +1,15 @@
+:root {
+    --mono-font: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+}
+.desc-toggle:focus,
+.response-headers-toggle:focus,
+.schema-toggle:focus,
+.schema-nested-toggle:focus,
+.global-headers-toggle:focus {
+    outline: 2px solid var(--bulma-link);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
 .section {
     padding-top: 1.5rem;
     min-height: 100vh;
@@ -71,7 +83,7 @@ section > .container > .split-layout > .split-second {
     padding-right: 2rem;
 }
 #detail .endpoint-path {
-    font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+    font-family: var(--mono-font);
     font-weight: 500;
     color: var(--bulma-text-strong);
 }
@@ -103,11 +115,6 @@ section > .container > .split-layout > .split-second {
     right: 0;
     bottom: 0;
 }
-.desc-toggle:focus {
-    outline: 2px solid var(--bulma-link);
-    outline-offset: 2px;
-    border-radius: 2px;
-}
 .op-description-wrapper.is-clamped .desc-toggle {
     display: inline;
 }
@@ -125,14 +132,14 @@ section > .container > .split-layout > .split-second {
     text-decoration: underline;
 }
 #detail pre {
-    font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+    font-family: var(--mono-font);
     font-size: 0.875rem;
 }
 #detail .field {
     margin-bottom: 1rem;
 }
 #detail textarea[data-request-body] {
-    font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+    font-family: var(--mono-font);
     font-size: 0.875rem;
     resize: vertical;
 }
@@ -146,8 +153,8 @@ section > .container > .split-layout > .split-second {
     25% { transform: translateX(-2px); }
     75% { transform: translateX(2px); }
 }
-.bump-v { animation: bump-vertical 0.2s ease; }
-.bump-h { animation: bump-horizontal 0.2s ease; }
+.bump-vertical { animation: bump-vertical 0.2s ease; }
+.bump-horizontal { animation: bump-horizontal 0.2s ease; }
 .method-tag {
     min-width: 4.5rem;
     justify-content: center;
@@ -167,7 +174,7 @@ section > .container > .split-layout > .split-second {
     margin-bottom: 0.75rem;
 }
 .response-status {
-    font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+    font-family: var(--mono-font);
     font-weight: 600;
     font-size: 0.85rem;
 }
@@ -196,14 +203,9 @@ section > .container > .split-layout > .split-second {
 .response-headers-toggle {
     cursor: pointer;
 }
-.response-headers-toggle:focus {
-    outline: 2px solid var(--bulma-link);
-    outline-offset: 2px;
-    border-radius: 2px;
-}
 .response-headers {
     position: relative;
-    font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+    font-family: var(--mono-font);
     font-size: 0.75rem;
     color: var(--bulma-text);
     margin-bottom: 0.75rem;
@@ -296,11 +298,6 @@ section > .container > .split-layout > .split-second {
     cursor: pointer;
     padding: 0.25rem;
 }
-.schema-toggle:focus {
-    outline: 2px solid var(--bulma-link);
-    outline-offset: 2px;
-    border-radius: 2px;
-}
 .schema-box-content {
     margin-top: 0.5rem;
 }
@@ -351,7 +348,7 @@ section > .container > .split-layout > .split-second {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 0.125rem 0.625rem;
-    font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+    font-family: var(--mono-font);
     font-size: 0.875rem;
 }
 .schema-prop-name { color: var(--bulma-warning); font-weight: 500; }
@@ -382,14 +379,6 @@ section > .container > .split-layout > .split-second {
     border-radius: 3px;
     font-size: 0.625rem;
 }
-.schema-prop-required {
-    background: hsl(348, 86%, 93%);
-    color: hsl(348, 86%, 43%);
-    padding: 1px 5px;
-    border-radius: 3px;
-    font-size: 0.5625rem;
-    font-weight: 600;
-}
 .schema-prop-example {
     color: var(--bulma-text-weak);
     font-style: italic;
@@ -418,11 +407,6 @@ section > .container > .split-layout > .split-second {
     color: var(--bulma-text-weak);
     transition: transform 0.15s ease;
     vertical-align: middle;
-}
-.schema-nested-toggle:focus {
-    outline: 2px solid var(--bulma-link);
-    outline-offset: 2px;
-    border-radius: 2px;
 }
 .schema-nested-toggle[aria-expanded="true"] {
     transform: rotate(90deg);
@@ -512,11 +496,6 @@ pre.response code.hljs {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-}
-.global-headers-toggle:focus {
-    outline: 2px solid var(--bulma-link);
-    outline-offset: 2px;
-    border-radius: 6px;
 }
 .global-headers-count {
     background: var(--bulma-scheme-main-ter);

@@ -18,8 +18,7 @@ public class GenerateMojo extends AbstractMojo {
                defaultValue = "${project.build.directory}/openapi-ui")
     File outputDirectory;
 
-    @Override
-    public void execute() throws MojoExecutionException {
+    @Override public void execute() throws MojoExecutionException {
         try {
             new OpenApiUiGenerator(specFile.toPath(), outputDirectory.toPath())
                     .generate();

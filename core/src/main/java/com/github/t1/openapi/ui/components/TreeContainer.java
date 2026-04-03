@@ -11,7 +11,7 @@ public interface TreeContainer {
 
     TreeContainer item(Renderable label);
 
-    TreeContainer item(Renderable label, Consumer<Element> extra);
+    TreeContainer item(Renderable label, Consumer<Element> customizer);
 
     TreeContainer node(String label, Consumer<Tree.Node> children);
 

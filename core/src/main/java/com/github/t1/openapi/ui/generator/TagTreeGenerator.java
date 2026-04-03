@@ -17,11 +17,11 @@ import static com.github.t1.openapi.ui.components.Tree.tree;
 import static com.github.t1.openapi.ui.generator.OpenApiUiGenerator.methodColor;
 
 class TagTreeGenerator {
-    record TaggedOperation(HttpMethod method, String path, io.swagger.v3.oas.models.Operation operation, List<String> allTags) {}
+    record TaggedOperation(HttpMethod method, ApiPath path, io.swagger.v3.oas.models.Operation operation, List<String> allTags) {}
 
     static Renderable buildTagTree(OpenAPI openApi, OpenApiUiGenerator.PathNode root) {
         var tagOps = new LinkedHashMap<String, List<TaggedOperation>>();
-        collectTaggedOperations(root, "", tagOps);
+        collectTaggedOperations(root, ApiPath.ROOT, tagOps);
 
         var orderedTags = new LinkedHashSet<String>();
         if (openApi.getTags() != null) {
@@ -47,7 +47,7 @@ class TagTreeGenerator {
                 for (var op : ops) {
                     var label = span().content(
                             tag(op.method.name()).is(methodColor(op.method)).classes("method-tag"),
-                            span("/" + op.path).classes("tree-segment").style("margin-left:0.5rem")
+                            span(op.path.display()).classes("tree-segment").style("margin-left:0.5rem")
                     );
                     if (op.allTags.size() > 1) {
                         var otherTags = op.allTags.stream()
@@ -66,11 +66,11 @@ class TagTreeGenerator {
         return tagTree;
     }
 
-    private static void collectTaggedOperations(OpenApiUiGenerator.PathNode node, String pathPrefix, Map<String, List<TaggedOperation>> tagOps) {
+    private static void collectTaggedOperations(OpenApiUiGenerator.PathNode node, ApiPath pathPrefix, Map<String, List<TaggedOperation>> tagOps) {
         for (var entry : node.children.entrySet()) {
             var segment = entry.getKey();
             var child = entry.getValue();
-            var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
+            var fullPath = pathPrefix.resolve(segment);
             for (var opEntry : child.operations.entrySet()) {
                 var operation = opEntry.getValue();
                 var tags = operation.getTags();

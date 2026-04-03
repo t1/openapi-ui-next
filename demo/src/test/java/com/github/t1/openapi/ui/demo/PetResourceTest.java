@@ -166,8 +166,8 @@ class PetResourceTest {
                 .then()
                 .statusCode(400)
                 .contentType("application/problem+json")
-                .body("type", is("urn:problem-type:invalid-owner-id"))
-                .body("detail", is("Owner with ID 999 does not exist"));
+                .body("type", is("urn:problem-type:owner-not-found"))
+                .body("detail", is("Owner with ID 999 not found"));
     }
 
     @Test void shouldDeletePet() {

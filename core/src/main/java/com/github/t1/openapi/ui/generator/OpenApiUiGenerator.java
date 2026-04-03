@@ -33,6 +33,7 @@ import static com.github.t1.bulmajava.basic.Color.WARNING;
 import static com.github.t1.bulmajava.elements.Box.box;
 import static com.github.t1.bulmajava.elements.Tag.tag;
 import static com.github.t1.bulmajava.elements.Tag.tagsAddon;
+import static com.github.t1.bulmajava.elements.Title.title;
 import static com.github.t1.bulmajava.layout.Container.container;
 import static com.github.t1.bulmajava.layout.Section.section;
 import static com.github.t1.htmljava.Html.html;
@@ -71,6 +72,11 @@ public class OpenApiUiGenerator {
         var pathTree = buildTree(root);
         var tagTree = TagTreeGenerator.buildTagTree(openApi, root);
 
+        var page = buildPageLayout(openApi, pathTree, tagTree, shouldDefaultToTagView(openApi, pathCount));
+        writeOutput(page, root, tagTree, pathTree);
+    }
+
+    private boolean shouldDefaultToTagView(io.swagger.v3.oas.models.OpenAPI openApi, int pathCount) {
         var uniqueTags = openApi.getPaths().values().stream()
                 .flatMap(p -> p.readOperationsMap().values().stream())
                 .filter(op -> op.getTags() != null)
@@ -78,10 +84,7 @@ public class OpenApiUiGenerator {
                 .distinct().count();
         var singleSegmentPaths = openApi.getPaths().keySet().stream()
                 .filter(p -> splitSegments(p).size() == 1).count();
-        var defaultToTags = uniqueTags > 1 && singleSegmentPaths > pathCount / 2;
-
-        var page = buildPageLayout(openApi, pathTree, tagTree, defaultToTags);
-        writeOutput(page, root, tagTree, pathTree);
+        return uniqueTags > 1 && singleSegmentPaths > pathCount / 2;
     }
 
     private io.swagger.v3.oas.models.OpenAPI parseSpec() {
@@ -113,7 +116,7 @@ public class OpenApiUiGenerator {
         var pageTitle = openApi.getInfo().getTitle();
         var detail = div().id("detail").attr("tabindex", "0");
         var detailHeader = div().classes("detail-header").content(
-                element("h1").classes("title").content(pageTitle),
+                title(pageTitle),
                 modeToggle
         );
         var globalHeaders = div().id("global-headers").classes("global-headers", "is-collapsed")
@@ -153,7 +156,7 @@ public class OpenApiUiGenerator {
         Files.createDirectories(outputDir);
         Files.writeString(outputDir.resolve("index.html"), page.render());
         Files.writeString(outputDir.resolve("openapi-ui.css"), Toggle.css() + Tree.css() + SplitPane.css() + loadResource("app.css"));
-        generateFragments(root, "");
+        generateFragments(root, ApiPath.ROOT);
         Files.writeString(outputDir.resolve("tag-tree.html"), tagTree.render());
         Files.writeString(outputDir.resolve("path-tree.html"), pathTree.render());
         copyWebJarResource("bulma", "css/bulma.min.css", "bulma.min.css");
@@ -190,15 +193,15 @@ public class OpenApiUiGenerator {
 
     private Tree buildTree(PathNode root) {
         var t = tree();
-        addNodes(t, root, "");
+        addNodes(t, root, ApiPath.ROOT);
         return t;
     }
 
-    private void addNodes(TreeContainer tree, PathNode node, String pathPrefix) {
+    private void addNodes(TreeContainer tree, PathNode node, ApiPath pathPrefix) {
         for (var entry : node.children.entrySet()) {
             var segment = entry.getKey();
             var child = entry.getValue();
-            var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
+            var fullPath = pathPrefix.resolve(segment);
             var label = span().content(span(segment).classes(segmentClass(segment)));
             if (!child.operations.isEmpty()) {
                 var group = tagsAddon();
@@ -230,15 +233,15 @@ public class OpenApiUiGenerator {
         return PathNode.isPathParam(segment) ? "tree-param" : "tree-segment";
     }
 
-    private void generateFragments(PathNode node, String pathPrefix) throws IOException {
+    private void generateFragments(PathNode node, ApiPath pathPrefix) throws IOException {
         for (var entry : node.children.entrySet()) {
             var segment = entry.getKey();
             var child = entry.getValue();
-            var fullPath = pathPrefix.isEmpty() ? segment : pathPrefix + "/" + segment;
+            var fullPath = pathPrefix.resolve(segment);
             for (var opEntry : child.operations.entrySet()) {
                 var ctx = new OperationContext(opEntry.getKey(), opEntry.getValue(), fullPath);
                 var fragment = MethodFragmentGenerator.buildContent(ctx);
-                var fragmentDir = outputDir.resolve(fullPath);
+                var fragmentDir = outputDir.resolve(fullPath.toString());
                 Files.createDirectories(fragmentDir);
                 Files.writeString(fragmentDir.resolve(opEntry.getKey().name() + ".html"), fragment.render());
                 for (var responseEntry : MethodFragmentGenerator.buildResponseFragments(ctx).entrySet()) {
@@ -247,7 +250,7 @@ public class OpenApiUiGenerator {
             }
             if (!child.operations.isEmpty()) {
                 var pathFragment = PathFragmentGenerator.buildContent(fullPath, child.operations);
-                var pathFragmentDir = outputDir.resolve(fullPath);
+                var pathFragmentDir = outputDir.resolve(fullPath.toString());
                 Files.createDirectories(pathFragmentDir);
                 Files.writeString(pathFragmentDir.resolve("index.html"), pathFragment.render());
             }

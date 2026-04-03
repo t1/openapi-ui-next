@@ -1,5 +1,9 @@
 package com.github.t1.openapi.ui.generator;
 
+import com.github.valfirst.slf4jtest.LoggingEvent;
+import com.github.valfirst.slf4jtest.TestLogger;
+import com.github.valfirst.slf4jtest.TestLoggerFactory;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -9,44 +13,43 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.BDDAssertions.then;
 
 class OpenApiUiGeneratorTest {
     @TempDir Path outputDir;
+
+    TestLogger log = TestLoggerFactory.getTestLogger(OpenApiUiGenerator.class);
+
+    @BeforeEach void clearLogs() { log.clear(); }
 
     void generate(String path) throws URISyntaxException, IOException {
         var specPath = Path.of(requireNonNull(getClass().getResource(path)).toURI());
         new OpenApiUiGenerator(specPath, outputDir).generate();
     }
 
-    String generateCapturingLogs(String path) throws URISyntaxException, IOException {
-        var original = System.err;
-        var capture = new java.io.ByteArrayOutputStream();
-        System.setErr(new java.io.PrintStream(capture));
-        try {
-            generate(path);
-        } finally {
-            System.setErr(original);
-        }
-        return capture.toString();
+    String logMessages() {
+        return log.getLoggingEvents().stream()
+                .map(LoggingEvent::getFormattedMessage)
+                .collect(joining("\n"));
     }
 
     @Test void shouldLogParsingStep() throws Exception {
-        var logs = generateCapturingLogs("/one-get.yaml");
+        generate("/one-get.yaml");
 
-        then(logs).contains("Parsing");
+        then(logMessages()).contains("Parsing");
     }
 
     @Test void shouldLogPathAndOperationCount() throws Exception {
-        var logs = generateCapturingLogs("/nested-paths.yaml");
+        generate("/nested-paths.yaml");
 
-        then(logs).contains("2 paths").contains("2 operations");
+        then(logMessages()).contains("2 paths").contains("2 operations");
     }
 
     @Test void shouldLogCompletion() throws Exception {
-        var logs = generateCapturingLogs("/one-get.yaml");
+        generate("/one-get.yaml");
 
-        then(logs).contains("Done");
+        then(logMessages()).contains("Done");
     }
 
     @Test void shouldGroupPathsBySegments() throws Exception {
@@ -480,7 +483,7 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("https://example.com/docs/pets");
     }
 
-    @Test void methodAddonsAreGrouped() throws Exception {
+    @Test void shouldGroupMethodAddons() throws Exception {
         generate("/nested-paths.yaml");
 
         var indexHtml = Files.readString(outputDir.resolve("index.html"));

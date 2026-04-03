@@ -6,13 +6,12 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.BDDAssertions.then;
 
 class GenerateMojoTest {
     @TempDir Path tempDir;
 
-    @Test
-    void shouldGenerateOutput() throws Exception {
+    @Test void shouldGenerateOutput() throws Exception {
         var specFile = tempDir.resolve("spec.yaml");
         Files.writeString(specFile, """
                 openapi: 3.0.3
@@ -34,7 +33,7 @@ class GenerateMojoTest {
         mojo.outputDirectory = outputDir.toFile();
         mojo.execute();
 
-        assertTrue(Files.exists(outputDir.resolve("index.html")));
-        assertTrue(Files.exists(outputDir.resolve("test/GET.html")));
+        then(outputDir.resolve("index.html")).exists();
+        then(outputDir.resolve("test/GET.html")).exists();
     }
 }

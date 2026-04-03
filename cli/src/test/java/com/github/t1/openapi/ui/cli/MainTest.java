@@ -6,13 +6,13 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.BDDAssertions.then;
+import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 
 class MainTest {
     @TempDir Path tempDir;
 
-    @Test
-    void shouldGenerateFromArgs() throws Exception {
+    private Path writeMinimalSpec() throws Exception {
         var specFile = tempDir.resolve("spec.yaml");
         Files.writeString(specFile, """
                 openapi: 3.0.3
@@ -27,39 +27,30 @@ class MainTest {
                         '200':
                           description: OK
                 """);
+        return specFile;
+    }
+
+    @Test void shouldGenerateFromArgs() throws Exception {
+        var specFile = writeMinimalSpec();
         var outputDir = tempDir.resolve("output");
 
         Main.main(new String[]{specFile.toString(), outputDir.toString()});
 
-        assertTrue(Files.exists(outputDir.resolve("index.html")));
+        then(outputDir.resolve("index.html")).exists();
     }
 
     @Test void shouldAcceptVerboseFlag() throws Exception {
-        var specFile = tempDir.resolve("spec.yaml");
-        Files.writeString(specFile, """
-                openapi: 3.0.3
-                info:
-                  title: Test
-                  version: 1.0.0
-                paths:
-                  /test:
-                    get:
-                      summary: Test endpoint
-                      responses:
-                        '200':
-                          description: OK
-                """);
+        var specFile = writeMinimalSpec();
         var outputDir = tempDir.resolve("output");
 
         Main.main(new String[]{"--verbose", specFile.toString(), outputDir.toString()});
 
-        assertTrue(Files.exists(outputDir.resolve("index.html")));
+        then(outputDir.resolve("index.html")).exists();
     }
 
-    @Test
-    void shouldPrintUsageWithNoArgs() {
-        var ex = assertThrows(IllegalArgumentException.class, () ->
-                Main.main(new String[]{}));
-        assertTrue(ex.getMessage().contains("Usage"));
+    @Test void shouldPrintUsageWithNoArgs() {
+        thenThrownBy(() -> Main.main(new String[]{}))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Usage");
     }
 }

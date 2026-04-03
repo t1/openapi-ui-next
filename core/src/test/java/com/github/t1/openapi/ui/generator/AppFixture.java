@@ -2,10 +2,12 @@ package com.github.t1.openapi.ui.generator;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Locator.FilterOptions;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.ScreenshotOptions;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.ColorScheme;
+import static com.microsoft.playwright.options.WaitForSelectorState.HIDDEN;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -21,9 +23,11 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
 
@@ -216,10 +220,6 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     String selectValue(String name) {return page.locator("#detail select[name='" + name + "']").inputValue();}
 
-    int pinIconRotation(String name) {
-        return readPinRotation(name);
-    }
-
     int pinIconRotationAfterTransition(String name) {
         // wait for transition to complete (150ms CSS transition + margin)
         page.waitForTimeout(200);
@@ -267,14 +267,14 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void waitForResponse() {page.waitForSelector("#detail .response-status");}
 
-    /** Clicks Send and waits for the full request cycle to complete (button goes to "Sending..." and back to "Send"). */
+    /// Clicks Send and waits for the full request cycle to complete (button goes to "Sending..." and back to "Send").
     void resend() {
         clickSend();
         page.waitForFunction("document.querySelector('#detail button[type=submit]').textContent === 'Sending...'");
         page.waitForFunction("document.querySelector('#detail button[type=submit]').textContent === 'Send'");
     }
 
-    /** Clicks Send, waits for headers toggle to disappear and reappear (avoids "Sending..." race condition). */
+    /// Clicks Send, waits for headers toggle to disappear and reappear (avoids "Sending..." race condition).
     void resendAndWaitForHeaders() {
         // Remove existing toggle so we can wait for a fresh one
         page.evaluate("document.querySelector('#detail .response-headers-toggle')?.remove()");
@@ -427,7 +427,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean schemaHeaderHasBadge(String statusCode, int index, String badgeText) {
         var header = page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-response-headers .schema-prop-details").nth(index);
-        return header.locator(".tag").filter(new com.microsoft.playwright.Locator.FilterOptions().setHasText(badgeText)).count() > 0;
+        return header.locator(".tag").filter(new FilterOptions().setHasText(badgeText)).count() > 0;
     }
 
     String responseStatusDescription() {
@@ -478,7 +478,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean isResponseHeaderDeprecated(String name) {
         return page.locator("#detail .response-headers .response-header-name.is-deprecated")
-                .filter(new com.microsoft.playwright.Locator.FilterOptions().setHasText(name)).count() > 0;
+                .filter(new FilterOptions().setHasText(name)).count() > 0;
     }
 
     boolean responseHasHighlighting() {
@@ -755,17 +755,16 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void waitForErrorBannerGone() {
         page.waitForSelector("#error-banner", new Page.WaitForSelectorOptions()
-                .setState(com.microsoft.playwright.options.WaitForSelectorState.HIDDEN));
+                .setState(HIDDEN));
     }
 
     String lastRequestHeader(String name) { return testServer.lastRequestHeader(name); }
-}
 
-class TestServer {
+    private static class TestServer {
     private final HttpServer server;
     private final Path outputDir;
     private volatile boolean blockFragments;
-    private Map<String, String> lastRequestHeaders = new java.util.concurrent.ConcurrentHashMap<>();
+    private Map<String, String> lastRequestHeaders = new ConcurrentHashMap<>();
 
     TestServer(String specFilename) throws Exception {
         outputDir = Files.createTempDirectory("openapi-ui-test");
@@ -946,7 +945,7 @@ class TestServer {
 
     private static void deleteRecursively(Path path) {
         try (var walk = Files.walk(path)) {
-            walk.sorted(java.util.Comparator.reverseOrder())
+            walk.sorted(Comparator.reverseOrder())
                     .forEach(p -> {
                         try {Files.delete(p);} catch (Exception e) {throw new RuntimeException(e);}
                     });
@@ -954,4 +953,5 @@ class TestServer {
             throw new RuntimeException(e);
         }
     }
+}
 }

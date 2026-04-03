@@ -1,29 +1,34 @@
 document.addEventListener('DOMContentLoaded', function() {
-    var detail = document.getElementById('detail');
-    var fieldCache = new Map();
-    var responseCache = new Map();
-    var schemaToggleCache = new Map();
+    const STORAGE_PREFIX_GLOBAL_HEADER = 'openapi-ui-global-header:';
+    const STORAGE_PREFIX_PARAM = 'openapi-ui-param:';
+    const STORAGE_PREFIX_CUSTOM_HEADER = 'openapi-ui-custom-header:';
+    const STORAGE_KEY_VIEW = 'openapi-ui-view';
+
+    const detail = document.getElementById('detail');
+    const fieldCache = new Map();
+    const responseCache = new Map();
+    const schemaToggleCache = new Map();
 
     function opKey(form) {
         return form.getAttribute('data-method') + ':' + form.getAttribute('data-path');
     }
 
     function saveFields(form) {
-        var key = opKey(form);
-        var fields = {};
+        const key = opKey(form);
+        const fields = {};
         form.querySelectorAll('input[name], select[name], textarea[data-request-body]').forEach(function(el) {
-            var name = el.getAttribute('name') || '__body__';
+            const name = el.getAttribute('name') || '__body__';
             fields[name] = el.type === 'checkbox' ? el.checked : el.value;
         });
         fieldCache.set(key, fields);
     }
 
     function restoreFields(form) {
-        var key = opKey(form);
-        var fields = fieldCache.get(key);
+        const key = opKey(form);
+        const fields = fieldCache.get(key);
         if (!fields) return;
         form.querySelectorAll('input[name], select[name], textarea[data-request-body]').forEach(function(el) {
-            var name = el.getAttribute('name') || '__body__';
+            const name = el.getAttribute('name') || '__body__';
             if (!(name in fields)) return;
             if (el.type === 'checkbox') el.checked = fields[name];
             else el.value = fields[name];
@@ -31,8 +36,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function saveSchemaToggles(form) {
-        var key = opKey(form);
-        var state = {};
+        const key = opKey(form);
+        const state = {};
         form.querySelectorAll('.schema-box[data-box]').forEach(function(box) {
             state[box.getAttribute('data-box')] = !box.classList.contains('is-collapsed');
         });
@@ -40,60 +45,60 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function restoreSchemaToggles(form) {
-        var key = opKey(form);
-        var state = schemaToggleCache.get(key);
+        const key = opKey(form);
+        const state = schemaToggleCache.get(key);
         if (!state) return;
         form.querySelectorAll('.schema-box[data-box]').forEach(function(box) {
-            var boxType = box.getAttribute('data-box');
+            const boxType = box.getAttribute('data-box');
             if (boxType in state) {
-                var expanded = state[boxType];
+                const expanded = state[boxType];
                 box.classList.toggle('is-collapsed', !expanded);
-                var toggle = box.querySelector('.schema-toggle');
-                if (toggle) toggle.textContent = expanded ? 'Schema ▾' : 'Schema ▸';
+                const toggle = box.querySelector('.schema-toggle');
+                if (toggle) toggle.textContent = expanded ? 'Schema ▼' : 'Schema ▶';
             }
         });
     }
 
     function restoreResponse(form) {
-        var key = opKey(form);
-        var resp = responseCache.get(key);
+        const key = opKey(form);
+        const resp = responseCache.get(key);
         if (!resp) return;
-        var area = form.querySelector('.response-area');
+        const area = form.querySelector('.response-area');
         if (!area) return;
         showResponse(area, form, resp.status, resp.statusText, resp.headers, resp.body, resp.ct, resp.headersExpanded);
     }
 
-    var shortcutMod = /Mac/.test(navigator.platform) ? 'Ctrl' : 'Alt';
+    const shortcutMod = /Mac/.test(navigator.platform) ? 'Ctrl' : 'Alt';
 
     // Mode toggle consumer
-    var modeContainer = document.querySelector('[data-toggle="mode"]');
+    const modeContainer = document.querySelector('[data-toggle="mode"]');
     if (modeContainer) {
         // Set platform-appropriate keyboard shortcut tooltips
-        var modeButtons = modeContainer.querySelectorAll('[data-toggle-value]');
+        const modeButtons = modeContainer.querySelectorAll('[data-toggle-value]');
         modeButtons.forEach(function(btn, i) {
-            var title = btn.getAttribute('title') || '';
+            const title = btn.getAttribute('title') || '';
             btn.setAttribute('title', title + ' (' + shortcutMod + '+' + (i + 1) + ')');
         });
         modeContainer.addEventListener('toggle', function(e) {
             modeContainer.setAttribute('data-mode', e.detail.value);
-            var isTry = e.detail.value === 'try';
-            var sendBtns = document.querySelectorAll('#detail button[type=submit]');
+            const isTry = e.detail.value === 'try';
+            const sendBtns = document.querySelectorAll('#detail button[type=submit]');
             sendBtns.forEach(function(b) { b.textContent = isTry ? 'Send' : 'Copy'; });
             detail.querySelectorAll('[data-param-in="cookie"]').forEach(function(inp) { inp.disabled = isTry; });
         });
         modeContainer.addEventListener('keydown', function(e) {
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                var viewToggle = document.querySelector('[data-toggle="view"]');
+                const viewToggle = document.querySelector('[data-toggle="view"]');
                 if (viewToggle) viewToggle.focus();
             }
         });
         document.addEventListener('keydown', function(e) {
-            var mod = /Mac/.test(navigator.platform) ? e.ctrlKey : e.altKey;
-            var digit = mod && e.code >= 'Digit1' && e.code <= 'Digit3' ? parseInt(e.code.charAt(5)) : 0;
+            const mod = /Mac/.test(navigator.platform) ? e.ctrlKey : e.altKey;
+            const digit = mod && e.code >= 'Digit1' && e.code <= 'Digit3' ? parseInt(e.code.charAt(5)) : 0;
             if (digit) {
                 e.preventDefault();
-                var values = Array.from(modeContainer.querySelectorAll('[data-toggle-value]')).map(function(el) {
+                const values = Array.from(modeContainer.querySelectorAll('[data-toggle-value]')).map(function(el) {
                     return el.getAttribute('data-toggle-value');
                 });
                 modeContainer._select(values[digit - 1]);
@@ -101,38 +106,48 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function createHeaderRow(name, value, persisted) {
+        const row = document.createElement('div');
+        row.className = 'custom-header-row';
+        if (persisted && name) row.setAttribute('data-prev-name', name);
+        const escapedName = name ? name.replace(/"/g, '&quot;') : '';
+        const escapedValue = value ? value.replace(/"/g, '&quot;') : '';
+        const nameAttr = name ? '' : ' name="' + randomName() + '"';
+        const valueAttr = name ? '' : ' name="' + randomName() + '"';
+        row.innerHTML =
+            '<input type="text" class="input is-small custom-header-name"' + nameAttr + ' placeholder="Header name"' + (name ? ' value="' + escapedName + '"' : '') + '>' +
+            '<div class="control has-icons-right">' +
+            '<input type="text" class="input is-small custom-header-value"' + valueAttr + ' placeholder="Value"' + (value ? ' value="' + escapedValue + '"' : '') + '>' +
+            '<span class="icon is-small is-right persist-toggle" aria-pressed="' + (persisted ? 'true' : 'false') + '" title="Pin value (' + shortcutMod + '+P)"><i class="fa-solid fa-thumbtack"></i></span>' +
+            '</div>' +
+            '<button type="button" class="delete is-small custom-header-remove"></button>';
+        return row;
+    }
+
     // Global headers panel toggle
-    var globalHeadersPanel = document.getElementById('global-headers');
+    const globalHeadersPanel = document.getElementById('global-headers');
     if (globalHeadersPanel) {
         globalHeadersPanel.querySelector('.global-headers-toggle').addEventListener('click', function() {
             globalHeadersPanel.classList.toggle('is-collapsed');
         });
         globalHeadersPanel.addEventListener('click', function(e) {
-            var addBtn = e.target.closest('.custom-header-add');
+            const addBtn = e.target.closest('.custom-header-add');
             if (addBtn) {
-                var body = globalHeadersPanel.querySelector('.global-headers-body');
-                var row = document.createElement('div');
-                row.className = 'custom-header-row';
-                row.innerHTML =
-                    '<input type="text" class="input is-small custom-header-name" name="' + randomName() + '" placeholder="Header name">' +
-                    '<div class="control has-icons-right">' +
-                    '<input type="text" class="input is-small custom-header-value" name="' + randomName() + '" placeholder="Value">' +
-                    '<span class="icon is-small is-right persist-toggle" aria-pressed="false" title="Pin value (' + shortcutMod + '+P)"><i class="fa-solid fa-thumbtack"></i></span>' +
-                    '</div>' +
-                    '<button type="button" class="delete is-small custom-header-remove"></button>';
+                const body = globalHeadersPanel.querySelector('.global-headers-body');
+                const row = createHeaderRow('', '', false);
                 body.insertBefore(row, addBtn);
                 row.querySelector('.custom-header-name').focus();
                 updateGlobalHeaderCount();
                 applyGlobalHeaderPlaceholders();
                 return;
             }
-            var removeBtn = e.target.closest('.custom-header-remove');
+            const removeBtn = e.target.closest('.custom-header-remove');
             if (removeBtn) {
-                var row = removeBtn.closest('.custom-header-row');
-                var persistBtn = row.querySelector('.persist-toggle');
+                const row = removeBtn.closest('.custom-header-row');
+                const persistBtn = row.querySelector('.persist-toggle');
                 if (persistBtn && persistBtn.getAttribute('aria-pressed') === 'true') {
-                    var name = row.querySelector('.custom-header-name').value.trim();
-                    if (name) localStorage.removeItem('openapi-ui-global-header:' + name);
+                    const name = row.querySelector('.custom-header-name').value.trim();
+                    if (name) localStorage.removeItem(STORAGE_PREFIX_GLOBAL_HEADER + name);
                 }
                 row.remove();
                 updateGlobalHeaderCount();
@@ -144,62 +159,62 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateGlobalHeaderCount() {
         if (!globalHeadersPanel) return;
-        var count = globalHeadersPanel.querySelectorAll('.custom-header-row').length;
+        const count = globalHeadersPanel.querySelectorAll('.custom-header-row').length;
         globalHeadersPanel.querySelector('.global-headers-count').textContent = count;
     }
+
+    function toggleHeaderPersistence(persistBtn, storageKeyFn) {
+        const pressed = persistBtn.getAttribute('aria-pressed') === 'true';
+        persistBtn.setAttribute('aria-pressed', String(!pressed));
+        const row = persistBtn.closest('.custom-header-row');
+        const name = row.querySelector('.custom-header-name').value.trim();
+        const value = row.querySelector('.custom-header-value').value;
+        if (!pressed && name) {
+            localStorage.setItem(storageKeyFn(name), value);
+            row.setAttribute('data-prev-name', name);
+        } else if (name) {
+            localStorage.removeItem(storageKeyFn(name));
+            row.removeAttribute('data-prev-name');
+        }
+    }
+
+    function syncPersistedHeader(row, storageKeyFn) {
+        const persistBtn = row.querySelector('.persist-toggle');
+        if (!persistBtn || persistBtn.getAttribute('aria-pressed') !== 'true') return;
+        const name = row.querySelector('.custom-header-name').value.trim();
+        const value = row.querySelector('.custom-header-value').value;
+        const prevName = row.getAttribute('data-prev-name');
+        if (prevName && prevName !== name) localStorage.removeItem(storageKeyFn(prevName));
+        if (name) {
+            localStorage.setItem(storageKeyFn(name), value);
+            row.setAttribute('data-prev-name', name);
+        }
+    }
+
+    function globalHeaderKey(name) { return STORAGE_PREFIX_GLOBAL_HEADER + name; }
 
     // Global header persistence
     if (globalHeadersPanel) {
         globalHeadersPanel.addEventListener('click', function(e) {
-            var persistBtn = e.target.closest('.persist-toggle');
+            const persistBtn = e.target.closest('.persist-toggle');
             if (!persistBtn) return;
-            var pressed = persistBtn.getAttribute('aria-pressed') === 'true';
-            persistBtn.setAttribute('aria-pressed', String(!pressed));
-            var row = persistBtn.closest('.custom-header-row');
-            var name = row.querySelector('.custom-header-name').value.trim();
-            var value = row.querySelector('.custom-header-value').value;
-            if (!pressed && name) {
-                localStorage.setItem('openapi-ui-global-header:' + name, value);
-                row.setAttribute('data-prev-name', name);
-            } else if (name) {
-                localStorage.removeItem('openapi-ui-global-header:' + name);
-                row.removeAttribute('data-prev-name');
-            }
+            toggleHeaderPersistence(persistBtn, globalHeaderKey);
         });
         globalHeadersPanel.addEventListener('input', function(e) {
-            var inp = e.target.closest('.custom-header-name, .custom-header-value');
+            const inp = e.target.closest('.custom-header-name, .custom-header-value');
             if (!inp) return;
             applyGlobalHeaderPlaceholders();
-            var row = inp.closest('.custom-header-row');
-            var persistBtn = row.querySelector('.persist-toggle');
-            if (!persistBtn || persistBtn.getAttribute('aria-pressed') !== 'true') return;
-            var name = row.querySelector('.custom-header-name').value.trim();
-            var value = row.querySelector('.custom-header-value').value;
-            var prevName = row.getAttribute('data-prev-name');
-            if (prevName && prevName !== name) localStorage.removeItem('openapi-ui-global-header:' + prevName);
-            if (name) {
-                localStorage.setItem('openapi-ui-global-header:' + name, value);
-                row.setAttribute('data-prev-name', name);
-            }
+            syncPersistedHeader(inp.closest('.custom-header-row'), globalHeaderKey);
         });
         // Restore persisted global headers
-        for (var i = 0; i < localStorage.length; i++) {
-            var key = localStorage.key(i);
-            if (!key.startsWith('openapi-ui-global-header:')) continue;
-            var ghName = key.substring('openapi-ui-global-header:'.length);
-            var ghValue = localStorage.getItem(key);
-            var body = globalHeadersPanel.querySelector('.global-headers-body');
-            var addBtn = body.querySelector('.custom-header-add');
-            var row = document.createElement('div');
-            row.className = 'custom-header-row';
-            row.setAttribute('data-prev-name', ghName);
-            row.innerHTML =
-                '<input type="text" class="input is-small custom-header-name" placeholder="Header name" value="' + ghName.replace(/"/g, '&quot;') + '">' +
-                '<div class="control has-icons-right">' +
-                '<input type="text" class="input is-small custom-header-value" placeholder="Value" value="' + ghValue.replace(/"/g, '&quot;') + '">' +
-                '<span class="icon is-small is-right persist-toggle" aria-pressed="true" title="Pin value (' + shortcutMod + '+P)"><i class="fa-solid fa-thumbtack"></i></span>' +
-                '</div>' +
-                '<button type="button" class="delete is-small custom-header-remove"></button>';
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!key.startsWith(STORAGE_PREFIX_GLOBAL_HEADER)) continue;
+            const ghName = key.substring(STORAGE_PREFIX_GLOBAL_HEADER.length);
+            const ghValue = localStorage.getItem(key);
+            const body = globalHeadersPanel.querySelector('.global-headers-body');
+            const addBtn = body.querySelector('.custom-header-add');
+            const row = createHeaderRow(ghName, ghValue, true);
             body.insertBefore(row, addBtn);
         }
         updateGlobalHeaderCount();
@@ -207,25 +222,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function applyGlobalHeaderPlaceholders() {
-        var globals = {};
+        const globals = {};
         if (globalHeadersPanel) {
             globalHeadersPanel.querySelectorAll('.custom-header-row').forEach(function(row) {
-                var name = row.querySelector('.custom-header-name').value.trim();
-                var value = row.querySelector('.custom-header-value').value;
+                const name = row.querySelector('.custom-header-name').value.trim();
+                const value = row.querySelector('.custom-header-value').value;
                 if (name) globals[name.toLowerCase()] = value;
             });
         }
         document.querySelectorAll('[data-param-in="header"]').forEach(function(el) {
-            var name = el.getAttribute('name');
+            const name = el.getAttribute('name');
             if (!name) return;
             if (!el.hasAttribute('data-original-placeholder')) {
                 el.setAttribute('data-original-placeholder', el.getAttribute('placeholder') || '');
             }
-            var globalValue = globals[name.toLowerCase()];
+            const globalValue = globals[name.toLowerCase()];
             if (globalValue) {
                 el.setAttribute('placeholder', globalValue + ' \u00A0\u00A0\u00A0// from global headers');
             } else {
-                var original = el.getAttribute('data-original-placeholder');
+                const original = el.getAttribute('data-original-placeholder');
                 if (original) el.setAttribute('placeholder', original);
                 else el.removeAttribute('placeholder');
             }
@@ -233,10 +248,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // View toggle consumer
-    var viewToggle = document.querySelector('[data-toggle="view"]');
+    const viewToggle = document.querySelector('[data-toggle="view"]');
     if (viewToggle) {
         viewToggle.addEventListener('toggle', function(e) {
-            var btn = viewToggle.querySelector('[data-toggle-value=' + e.detail.value + ']');
+            const btn = viewToggle.querySelector('[data-toggle-value=' + e.detail.value + ']');
             htmx.ajax('GET', btn.getAttribute('hx-get'), {target: '#tree-container', swap: 'innerHTML'}).then(function() {
                 viewToggle.focus();
             });
@@ -244,19 +259,19 @@ document.addEventListener('DOMContentLoaded', function() {
         viewToggle.addEventListener('keydown', function(e) {
             if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                var modeToggle = document.querySelector('[data-toggle="mode"]');
+                const modeToggle = document.querySelector('[data-toggle="mode"]');
                 if (modeToggle) modeToggle.focus();
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                var tree = document.querySelector('[role="tree"]');
+                const tree = document.querySelector('[role="tree"]');
                 if (tree) tree.focus();
             } else if (e.key === 'Tab') {
                 e.preventDefault();
                 if (e.shiftKey) {
-                    var modeToggle = document.querySelector('[data-toggle="mode"]');
+                    const modeToggle = document.querySelector('[data-toggle="mode"]');
                     if (modeToggle) modeToggle.focus();
                 } else {
-                    var tree = document.querySelector('[role="tree"]');
+                    const tree = document.querySelector('[role="tree"]');
                     if (tree) tree.focus();
                 }
             }
@@ -264,11 +279,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Override persisted view when URL hash specifies a view
-    if (decodeURIComponent(location.hash).match(/^#\[/)) localStorage.setItem('openapi-ui-view', 'tags');
+    if (decodeURIComponent(location.hash).match(/^#\[/)) localStorage.setItem(STORAGE_KEY_VIEW, 'tags');
 
     // Restore persisted toggle state (after consumers registered)
     document.querySelectorAll('.toggle[data-persist]').forEach(function(container) {
-        var saved = localStorage.getItem(container.getAttribute('data-persist'));
+        const saved = localStorage.getItem(container.getAttribute('data-persist'));
         if (saved && saved !== container.querySelector('.is-active').getAttribute('data-toggle-value')) {
             container._select(saved);
         }
@@ -276,20 +291,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Tab switching — toggle is-active when HTMX swaps method content
     document.body.addEventListener('htmx:afterRequest', function(e) {
-        var tabLink = e.detail.elt;
+        const tabLink = e.detail.elt;
         if (tabLink && tabLink.closest && tabLink.closest('.tabs')) {
-            var tabs = tabLink.closest('.tabs');
+            const tabs = tabLink.closest('.tabs');
             tabs.querySelectorAll('li').forEach(function(li) { li.classList.remove('is-active'); });
             tabLink.closest('li').classList.add('is-active');
-            var hxGet = tabLink.getAttribute('hx-get');
+            const hxGet = tabLink.getAttribute('hx-get');
             if (hxGet) history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
         }
     });
 
     function initDescriptionToggle() {
         document.querySelectorAll('.op-description-wrapper').forEach(function(wrapper) {
-            var desc = wrapper.querySelector('.op-description');
-            var toggle = wrapper.querySelector('.desc-toggle');
+            const desc = wrapper.querySelector('.op-description');
+            const toggle = wrapper.querySelector('.desc-toggle');
             if (!desc || !toggle) return;
             if (desc.scrollHeight > desc.clientHeight) {
                 wrapper.classList.add('is-clamped');
@@ -297,9 +312,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 wrapper.classList.remove('is-clamped');
             }
             toggle.onclick = function() {
-                var expanded = wrapper.classList.toggle('is-expanded');
+                const expanded = wrapper.classList.toggle('is-expanded');
                 wrapper.classList.toggle('is-clamped', !expanded);
-                toggle.querySelector('span').textContent = expanded ? '▾' : '▸';
+                toggle.querySelector('span').textContent = expanded ? '▼' : '▶';
                 toggle.setAttribute('aria-label', expanded ? 'Collapse description' : 'Expand description');
             };
         });
@@ -317,18 +332,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.body.addEventListener('htmx:load', function(e) {
         if (!pendingMethod || !detail || !detail.contains(e.target)) return;
-        var method = pendingMethod;
+        const method = pendingMethod;
         pendingMethod = null;
-        var tabLinks = detail.querySelectorAll('.tabs li a');
+        const tabLinks = detail.querySelectorAll('.tabs li a');
         tabLinks.forEach(function(a) {
             if (a.textContent.trim() === method) { a.click(); a.focus(); }
         });
     });
     document.body.addEventListener('htmx:afterSwap', function(e) {
-        var currentMode = modeContainer ? modeContainer.getAttribute('data-mode') : 'try';
-        var isTry = currentMode === 'try';
+        const currentMode = modeContainer ? modeContainer.getAttribute('data-mode') : 'try';
+        const isTry = currentMode === 'try';
         if (!isTry) {
-            var sendBtns = document.querySelectorAll('#detail button[type=submit]');
+            const sendBtns = document.querySelectorAll('#detail button[type=submit]');
             sendBtns.forEach(function(b) { b.textContent = 'Copy'; });
         }
         detail.querySelectorAll('[data-param-in="cookie"]').forEach(function(inp) { inp.disabled = isTry; });
@@ -341,40 +356,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         // Restore persisted spec-defined parameter values
         document.querySelectorAll('[data-param-in]').forEach(function(el) {
-            var form = el.closest('form[data-path]');
+            const form = el.closest('form[data-path]');
             if (!form) return;
-            var inp = paramControl(el);
-            var key = paramStorageKey(form, el.getAttribute('data-param-in'), inp.getAttribute('name'));
-            var saved = localStorage.getItem(key);
+            const inp = paramControl(el);
+            const key = paramStorageKey(form, el.getAttribute('data-param-in'), inp.getAttribute('name'));
+            const saved = localStorage.getItem(key);
             if (saved !== null) {
                 if (inp.type === 'checkbox') inp.checked = saved === 'true';
                 else inp.value = saved;
-                var persistBtn = inp.closest('.field').querySelector('.persist-toggle');
+                const persistBtn = inp.closest('.field').querySelector('.persist-toggle');
                 if (persistBtn) persistBtn.setAttribute('aria-pressed', 'true');
             }
         });
         // Restore persisted per-op custom headers
-        var form = document.querySelector('#detail form[data-path]');
-        if (form) {
-            var prefix = customHeaderStorageKey(form, '');
-            var container = form.querySelector('.custom-headers');
+        let swapForm = document.querySelector('#detail form[data-path]');
+        if (swapForm) {
+            const prefix = customHeaderStorageKey(swapForm, '');
+            const container = swapForm.querySelector('.custom-headers');
             if (container) {
-                var addBtn = container.querySelector('.custom-header-add');
-                for (var si = 0; si < localStorage.length; si++) {
-                    var sKey = localStorage.key(si);
+                const addBtn = container.querySelector('.custom-header-add');
+                for (let si = 0; si < localStorage.length; si++) {
+                    const sKey = localStorage.key(si);
                     if (!sKey.startsWith(prefix)) continue;
-                    var chName = sKey.substring(prefix.length);
-                    var chValue = localStorage.getItem(sKey);
-                    var chRow = document.createElement('div');
-                    chRow.className = 'custom-header-row';
-                    chRow.setAttribute('data-prev-name', chName);
-                    chRow.innerHTML =
-                        '<input type="text" class="input is-small custom-header-name" placeholder="Header name" value="' + chName.replace(/"/g, '&quot;') + '">' +
-                        '<div class="control has-icons-right">' +
-                        '<input type="text" class="input is-small custom-header-value" placeholder="Value" value="' + chValue.replace(/"/g, '&quot;') + '">' +
-                        '<span class="icon is-small is-right persist-toggle" aria-pressed="true" title="Pin value (' + shortcutMod + '+P)"><i class="fa-solid fa-thumbtack"></i></span>' +
-                        '</div>' +
-                        '<button type="button" class="delete is-small custom-header-remove"></button>';
+                    const chName = sKey.substring(prefix.length);
+                    const chValue = localStorage.getItem(sKey);
+                    const chRow = createHeaderRow(chName, chValue, true);
                     container.insertBefore(chRow, addBtn);
                 }
             }
@@ -382,32 +388,32 @@ document.addEventListener('DOMContentLoaded', function() {
         applyGlobalHeaderPlaceholders();
         document.querySelectorAll('select[data-example-select]').forEach(function(sel) {
             sel.addEventListener('change', function() {
-                var textarea = sel.closest('.field').querySelector('textarea[data-request-body]');
+                const textarea = sel.closest('.field').querySelector('textarea[data-request-body]');
                 if (textarea) textarea.value = sel.value;
             });
         });
         // Restore session-cached field values and response
-        var form = document.querySelector('#detail form[data-path]');
-        if (form) {
-            var area = form.querySelector('.response-area');
+        const restoreForm = document.querySelector('#detail form[data-path]');
+        if (restoreForm) {
+            const area = restoreForm.querySelector('.response-area');
             if (area) initialResponseArea = area.innerHTML;
-            restoreFields(form);
-            restoreResponse(form);
-            restoreSchemaToggles(form);
+            restoreFields(restoreForm);
+            restoreResponse(restoreForm);
+            restoreSchemaToggles(restoreForm);
         }
     });
 
     function prettyPrintXml(xml) {
-        var doc = new DOMParser().parseFromString(xml, 'application/xml');
+        const doc = new DOMParser().parseFromString(xml, 'application/xml');
         if (doc.querySelector('parsererror')) return xml;
-        var xslt = new DOMParser().parseFromString(
+        const xslt = new DOMParser().parseFromString(
             '<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">' +
             '<xsl:output method="xml" indent="yes"/>' +
             '<xsl:template match="@*|node()"><xsl:copy><xsl:apply-templates select="@*|node()"/></xsl:copy></xsl:template>' +
             '</xsl:stylesheet>', 'application/xml');
-        var processor = new XSLTProcessor();
+        const processor = new XSLTProcessor();
         processor.importStylesheet(xslt);
-        var result = processor.transformToDocument(doc);
+        const result = processor.transformToDocument(doc);
         return new XMLSerializer().serializeToString(result);
     }
 
@@ -415,17 +421,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function paramStorageKey(form, paramIn, name) {
         if (paramIn === 'path') {
-            var pathInputs = Array.from(form.querySelectorAll('[data-param-in="path"]'));
-            var paramIndex = 0;
-            for (var p = 0; p < pathInputs.length; p++) {
+            const pathInputs = Array.from(form.querySelectorAll('[data-param-in="path"]'));
+            let paramIndex = 0;
+            for (let p = 0; p < pathInputs.length; p++) {
                 if (pathInputs[p].getAttribute('name') === name) { paramIndex = p; break; }
             }
-            var pathTemplate = form.getAttribute('data-fragment-path');
-            var segments = pathTemplate.split('/');
-            var positionPath = [];
-            var paramCount = 0;
-            for (var i = 0; i < segments.length; i++) {
-                var isParam = segments[i].charAt(0) === '{';
+            const pathTemplate = form.getAttribute('data-fragment-path');
+            const segments = pathTemplate.split('/');
+            const positionPath = [];
+            let paramCount = 0;
+            for (let i = 0; i < segments.length; i++) {
+                const isParam = segments[i].charAt(0) === '{';
                 if (isParam) {
                     positionPath.push('{}');
                     if (paramCount === paramIndex) break;
@@ -434,17 +440,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     positionPath.push(segments[i]);
                 }
             }
-            return 'openapi-ui-param:path:' + positionPath.join('/');
+            return STORAGE_PREFIX_PARAM + 'path:' + positionPath.join('/');
         }
-        return 'openapi-ui-param:' + paramIn + ':' + form.getAttribute('data-method') + ':' + form.getAttribute('data-path') + ':' + name;
+        return STORAGE_PREFIX_PARAM + paramIn + ':' + form.getAttribute('data-method') + ':' + form.getAttribute('data-path') + ':' + name;
     }
 
     function customHeaderStorageKey(form, name) {
-        return 'openapi-ui-custom-header:' + form.getAttribute('data-method') + ':' + form.getAttribute('data-path') + ':' + name;
+        return STORAGE_PREFIX_CUSTOM_HEADER + form.getAttribute('data-method') + ':' + form.getAttribute('data-path') + ':' + name;
     }
 
     function paramControl(el) {
-        var inner = el.querySelector('select');
+        const inner = el.querySelector('select');
         return inner || el;
     }
 
@@ -453,25 +459,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function detectLanguage(contentType) {
-        var mime = (contentType || '').split(';')[0].trim();
-        var subtype = mime.split('/')[1] || '';
-        var suffix = subtype.includes('+') ? subtype.split('+').pop() : subtype;
+        const mime = (contentType || '').split(';')[0].trim();
+        const subtype = mime.split('/')[1] || '';
+        const suffix = subtype.includes('+') ? subtype.split('+').pop() : subtype;
         if (typeof hljs !== 'undefined' && hljs.getLanguage(suffix)) return suffix;
         return null;
     }
 
     // Spec-defined param persistence
     detail.addEventListener('click', function(e) {
-        var persistBtn = e.target.closest('#detail .field .persist-toggle');
+        const persistBtn = e.target.closest('#detail .field .persist-toggle');
         if (!persistBtn) return;
-        var pressed = persistBtn.getAttribute('aria-pressed') === 'true';
+        const pressed = persistBtn.getAttribute('aria-pressed') === 'true';
         persistBtn.setAttribute('aria-pressed', String(!pressed));
-        var fieldEl = persistBtn.closest('.field');
-        var el = fieldEl.querySelector('[data-param-in]');
+        const fieldEl = persistBtn.closest('.field');
+        const el = fieldEl.querySelector('[data-param-in]');
         if (!el) return;
-        var inp = paramControl(el);
-        var form = el.closest('form[data-path]');
-        var key = paramStorageKey(form, el.getAttribute('data-param-in'), inp.getAttribute('name'));
+        const inp = paramControl(el);
+        const form = el.closest('form[data-path]');
+        const key = paramStorageKey(form, el.getAttribute('data-param-in'), inp.getAttribute('name'));
         if (!pressed) {
             localStorage.setItem(key, paramValue(inp));
         } else {
@@ -480,14 +486,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     detail.addEventListener('change', function(e) {
         // Persisted param value change (checkbox or select)
-        var paramEl = e.target.closest('[data-param-in]');
+        const paramEl = e.target.closest('[data-param-in]');
         if (paramEl) {
-            var fieldEl = paramEl.closest('.field');
-            var persistBtn = fieldEl.querySelector('.persist-toggle');
+            const fieldEl = paramEl.closest('.field');
+            const persistBtn = fieldEl.querySelector('.persist-toggle');
             if (persistBtn && persistBtn.getAttribute('aria-pressed') === 'true') {
-                var inp = paramControl(paramEl);
-                var form = paramEl.closest('form[data-path]');
-                var key = paramStorageKey(form, paramEl.getAttribute('data-param-in'), inp.getAttribute('name'));
+                const inp = paramControl(paramEl);
+                const form = paramEl.closest('form[data-path]');
+                const key = paramStorageKey(form, paramEl.getAttribute('data-param-in'), inp.getAttribute('name'));
                 localStorage.setItem(key, paramValue(inp));
             }
             return;
@@ -496,152 +502,123 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     // Per-op custom header persist toggle
     detail.addEventListener('click', function(e) {
-        var persistBtn = e.target.closest('.custom-headers .persist-toggle');
+        const persistBtn = e.target.closest('.custom-headers .persist-toggle');
         if (!persistBtn) return;
-        var pressed = persistBtn.getAttribute('aria-pressed') === 'true';
-        persistBtn.setAttribute('aria-pressed', String(!pressed));
-        var row = persistBtn.closest('.custom-header-row');
-        var form = row.closest('form[data-path]');
-        var name = row.querySelector('.custom-header-name').value.trim();
-        var value = row.querySelector('.custom-header-value').value;
-        var key = customHeaderStorageKey(form, name);
-        if (!pressed && name) {
-            localStorage.setItem(key, value);
-            row.setAttribute('data-prev-name', name);
-        } else if (name) {
-            localStorage.removeItem(key);
-            row.removeAttribute('data-prev-name');
-        }
+        const form = persistBtn.closest('form[data-path]');
+        toggleHeaderPersistence(persistBtn, function(n) { return customHeaderStorageKey(form, n); });
     });
     detail.addEventListener('input', function(e) {
-        var el = e.target.closest('[data-param-in]');
+        const el = e.target.closest('[data-param-in]');
         if (el) {
-            var fieldEl = el.closest('.field');
-            var persistBtn = fieldEl.querySelector('.persist-toggle');
+            const fieldEl = el.closest('.field');
+            const persistBtn = fieldEl.querySelector('.persist-toggle');
             if (!persistBtn || persistBtn.getAttribute('aria-pressed') !== 'true') return;
-            var inp = paramControl(el);
-            var form = el.closest('form[data-path]');
+            const inp = paramControl(el);
+            const form = el.closest('form[data-path]');
             localStorage.setItem(paramStorageKey(form, el.getAttribute('data-param-in'), inp.getAttribute('name')), paramValue(inp));
             return;
         }
         // Per-op custom header input update
-        var customInp = e.target.closest('.custom-headers .custom-header-name, .custom-headers .custom-header-value');
+        const customInp = e.target.closest('.custom-headers .custom-header-name, .custom-headers .custom-header-value');
         if (customInp) {
-            var row = customInp.closest('.custom-header-row');
-            var persistBtn = row.querySelector('.persist-toggle');
-            if (!persistBtn || persistBtn.getAttribute('aria-pressed') !== 'true') return;
-            var form = row.closest('form[data-path]');
-            var name = row.querySelector('.custom-header-name').value.trim();
-            var value = row.querySelector('.custom-header-value').value;
-            var prevName = row.getAttribute('data-prev-name');
-            if (prevName && prevName !== name) localStorage.removeItem(customHeaderStorageKey(form, prevName));
-            if (name) {
-                localStorage.setItem(customHeaderStorageKey(form, name), value);
-                row.setAttribute('data-prev-name', name);
-            }
+            const row = customInp.closest('.custom-header-row');
+            const form = row.closest('form[data-path]');
+            syncPersistedHeader(row, function(n) { return customHeaderStorageKey(form, n); });
         }
     });
 
     // Save field values to session cache on every input
     detail.addEventListener('input', function(e) {
-        var form = e.target.closest('form[data-path]');
+        const form = e.target.closest('form[data-path]');
         if (form) saveFields(form);
     });
 
     // Schema box toggle + custom header management
     detail.addEventListener('click', function(e) {
-        var addBtn = e.target.closest('.custom-header-add');
+        const addBtn = e.target.closest('.custom-header-add');
         if (addBtn) {
-            var container = addBtn.closest('.custom-headers');
-            var row = document.createElement('div');
-            row.className = 'custom-header-row';
-            row.innerHTML =
-                '<input type="text" class="input is-small custom-header-name" name="' + randomName() + '" placeholder="Header name">' +
-                '<div class="control has-icons-right">' +
-                '<input type="text" class="input is-small custom-header-value" name="' + randomName() + '" placeholder="Value">' +
-                '<span class="icon is-small is-right persist-toggle" aria-pressed="false" title="Pin value (' + shortcutMod + '+P)"><i class="fa-solid fa-thumbtack"></i></span>' +
-                '</div>' +
-                '<button type="button" class="delete is-small custom-header-remove"></button>';
+            const container = addBtn.closest('.custom-headers');
+            const row = createHeaderRow('', '', false);
             container.insertBefore(row, addBtn);
             row.querySelector('.custom-header-name').focus();
             return;
         }
-        var removeBtn = e.target.closest('.custom-header-remove');
+        const removeBtn = e.target.closest('.custom-header-remove');
         if (removeBtn) {
-            var row = removeBtn.closest('.custom-header-row');
-            var persistBtn = row.querySelector('.persist-toggle');
+            const row = removeBtn.closest('.custom-header-row');
+            const persistBtn = row.querySelector('.persist-toggle');
             if (persistBtn && persistBtn.getAttribute('aria-pressed') === 'true') {
-                var form = row.closest('form[data-path]');
-                var name = row.querySelector('.custom-header-name').value.trim();
+                const form = row.closest('form[data-path]');
+                const name = row.querySelector('.custom-header-name').value.trim();
                 if (form && name) localStorage.removeItem(customHeaderStorageKey(form, name));
             }
             row.remove();
             return;
         }
-        var toggle = e.target.closest('.schema-toggle');
+        const toggle = e.target.closest('.schema-toggle');
         if (toggle) {
-            var box = toggle.closest('.schema-box');
+            const box = toggle.closest('.schema-box');
             box.classList.toggle('is-collapsed');
-            toggle.textContent = box.classList.contains('is-collapsed') ? 'Schema ▸' : 'Schema ▾';
+            toggle.textContent = box.classList.contains('is-collapsed') ? 'Schema ▶' : 'Schema ▼';
             toggle.focus(); // Safari doesn't focus buttons on click
-            var form = toggle.closest('form[data-path]');
+            const form = toggle.closest('form[data-path]');
             if (form) saveSchemaToggles(form);
             return;
         }
-        var nestedToggle = e.target.closest('.schema-nested-toggle');
+        const nestedToggle = e.target.closest('.schema-nested-toggle');
         if (nestedToggle) {
-            var expanded = nestedToggle.getAttribute('aria-expanded') === 'true';
+            const expanded = nestedToggle.getAttribute('aria-expanded') === 'true';
             nestedToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
             nestedToggle.focus(); // Safari doesn't focus buttons on click
             // find the .schema-nested sibling: it's in the same grid, after the details span
-            var propName = nestedToggle.closest('.schema-prop-name');
-            var row = propName;
-            while (row && !(row.nextElementSibling && row.nextElementSibling.classList.contains('schema-nested'))) {
-                row = row.nextElementSibling;
+            const propName = nestedToggle.closest('.schema-prop-name');
+            let sibling = propName;
+            while (sibling && !(sibling.nextElementSibling && sibling.nextElementSibling.classList.contains('schema-nested'))) {
+                sibling = sibling.nextElementSibling;
             }
-            if (row && row.nextElementSibling) row.nextElementSibling.classList.toggle('is-expanded');
+            if (sibling && sibling.nextElementSibling) sibling.nextElementSibling.classList.toggle('is-expanded');
             return;
         }
-        var tab = e.target.closest('.schema-status-tab');
+        const tab = e.target.closest('.schema-status-tab');
         if (tab) activateStatusTab(tab);
     });
 
     function activateStatusTab(tab) {
-        var tabs = tab.closest('.schema-status-tabs');
+        const tabs = tab.closest('.schema-status-tabs');
         tabs.querySelectorAll('.schema-status-tab').forEach(function(t) { t.classList.remove('is-active'); });
         tab.classList.add('is-active');
         tab.focus();
-        var box = tab.closest('.schema-box');
+        const box = tab.closest('.schema-box');
         box.querySelectorAll('.schema-status-panel').forEach(function(p) { p.style.display = 'none'; });
-        var panel = box.querySelector('.schema-status-panel[data-status="' + tab.textContent + '"]');
+        const panel = box.querySelector('.schema-status-panel[data-status="' + tab.textContent + '"]');
         if (panel) panel.style.display = '';
     }
 
-    var fragmentCache = new Map();
-    var initialResponseArea = null;
+    const fragmentCache = new Map();
+    let initialResponseArea = null;
 
     function fragmentBaseUrl(form) {
-        var path = form.getAttribute('data-fragment-path');
-        var method = form.getAttribute('data-method');
+        const path = form.getAttribute('data-fragment-path');
+        const method = form.getAttribute('data-method');
         return path + '/' + method + '-response-';
     }
 
     function clearPreviousResponse() {
-        var area = detail.querySelector('.response-area');
+        const area = detail.querySelector('.response-area');
         if (!area) return;
         if (!initialResponseArea) initialResponseArea = area.innerHTML;
         area.innerHTML = initialResponseArea;
     }
 
-    function showResponse(area, form, status, statusText, headers, body, ct, headersExpanded) {
-        var base = fragmentBaseUrl(form);
-        var specificUrl = base + status + '.html';
-        var fallbackUrl = base + 'fallback.html';
-        var isFallback = false;
+    function showResponse(area, form, status, statusText, headers, body, contentType, headersExpanded) {
+        const base = fragmentBaseUrl(form);
+        const specificUrl = base + status + '.html';
+        const fallbackUrl = base + 'fallback.html';
+        let isFallback = false;
 
         function populate(html) {
             area.innerHTML = html;
-            var badge = area.querySelector('.response-status');
+            const badge = area.querySelector('.response-status');
             if (isFallback && badge) {
                 badge.textContent = status + ' ' + statusText;
                 if (status >= 200 && status < 300) badge.classList.add('is-success');
@@ -649,16 +626,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             // populate documented header values
             if (headers && headers.length > 0) {
-                var headersByName = {};
+                const headersByName = {};
                 headers.forEach(function(h) { headersByName[h.name.toLowerCase()] = h.value; });
                 area.querySelectorAll('.response-header-value[data-header]').forEach(function(el) {
-                    var name = el.getAttribute('data-header');
+                    const name = el.getAttribute('data-header');
                     if (headersByName[name] !== undefined) {
                         el.textContent = headersByName[name];
                     } else if (el.hasAttribute('data-required')) {
                         el.textContent = '(missing)';
                         el.classList.add('response-header-missing');
-                        var nameEl = el.previousElementSibling;
+                        const nameEl = el.previousElementSibling;
                         if (nameEl) nameEl.classList.add('response-header-missing');
                     } else {
                         if (name === 'set-cookie') {
@@ -670,25 +647,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
                 // append undocumented headers
-                var docGrid = area.querySelector('.response-documented-headers');
-                var undocGrid = area.querySelector('.response-headers-undocumented');
+                const docGrid = area.querySelector('.response-documented-headers');
+                let undocGrid = area.querySelector('.response-headers-undocumented');
                 if (!undocGrid) {
                     undocGrid = document.createElement('div');
                     undocGrid.className = 'response-header-rows response-headers-undocumented';
-                    var headersContainer = area.querySelector('.response-headers');
+                    const headersContainer = area.querySelector('.response-headers');
                     if (headersContainer) headersContainer.appendChild(undocGrid);
                 }
-                var documentedNames = {};
+                const documentedNames = {};
                 area.querySelectorAll('.response-documented-headers .response-header-name').forEach(function(el) {
                     documentedNames[el.textContent.toLowerCase()] = true;
                 });
-                var hasDocumented = Object.keys(documentedNames).length > 0;
-                var undocumented = [];
+                const hasDocumented = Object.keys(documentedNames).length > 0;
+                const undocumented = [];
                 headers.forEach(function(h) {
                     if (hasDocumented && documentedNames[h.name.toLowerCase()]) return;
                     if (!hasDocumented) {
                         // no documented headers in fragment — show all in main grid
-                        var grid = docGrid || undocGrid;
+                        const grid = docGrid || undocGrid;
                         appendHeaderRow(grid, h.name, h.value);
                     } else {
                         undocumented.push(h);
@@ -700,45 +677,45 @@ document.addEventListener('DOMContentLoaded', function() {
                 // show-all button
                 if (hasDocumented && undocumented.length > 0) {
                     undocGrid.style.display = 'none';
-                    var showAllBtn = document.createElement('button');
+                    const showAllBtn = document.createElement('button');
                     showAllBtn.type = 'button';
                     showAllBtn.className = 'response-headers-show-all';
                     showAllBtn.textContent = 'Show all (' + undocumented.length + ' more)';
-                    var headersContainer = area.querySelector('.response-headers');
+                    const headersContainer = area.querySelector('.response-headers');
                     headersContainer.insertBefore(showAllBtn, undocGrid);
                 }
                 // auto-detect: expand if any documented header has an actual value
                 if (headersExpanded === null) {
-                    var hasMatch = false;
+                    let hasMatch = false;
                     area.querySelectorAll('.response-documented-headers .response-header-value[data-header]').forEach(function(el) {
                         if (el.textContent && el.textContent !== '(missing)' && el.textContent !== '\u2014') hasMatch = true;
                     });
                     headersExpanded = hasMatch;
                 }
                 // update toggle text with count
-                var toggle = area.querySelector('.response-headers-toggle');
+                const toggle = area.querySelector('.response-headers-toggle');
                 if (toggle) {
-                    toggle.textContent = 'Headers (' + headers.length + ') ' + (headersExpanded ? '\u25BE' : '\u25B8');
+                    toggle.textContent = 'Headers (' + headers.length + ') ' + (headersExpanded ? '▼' : '▶');
                 }
                 // expand headers if requested
-                var headersContainer = area.querySelector('.response-headers');
+                const headersContainer = area.querySelector('.response-headers');
                 if (headersContainer && headersExpanded) headersContainer.classList.add('is-expanded');
             } else {
-                var headersBox = area.querySelector('.response-headers');
+                const headersBox = area.querySelector('.response-headers');
                 if (headersBox) {
-                    var toggle = headersBox.querySelector('.response-headers-toggle');
+                    const toggle = headersBox.querySelector('.response-headers-toggle');
                     if (toggle) toggle.style.display = 'none';
-                    var emptyMsg = headersBox.querySelector('.response-empty');
+                    const emptyMsg = headersBox.querySelector('.response-empty');
                     if (emptyMsg) emptyMsg.style.display = '';
                 }
             }
             // populate body
-            var pre = area.querySelector('pre.response');
+            const pre = area.querySelector('pre.response');
             if (body && body.trim()) {
                 if (pre) {
-                    var lang = detectLanguage(ct);
+                    const lang = detectLanguage(contentType);
                     if (lang && typeof hljs !== 'undefined') {
-                        var code = document.createElement('code');
+                        const code = document.createElement('code');
                         code.className = 'language-' + lang;
                         code.textContent = body;
                         pre.appendChild(code);
@@ -749,7 +726,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else {
                 if (pre) pre.style.display = 'none';
-                var emptyBody = area.querySelector('p.response-empty.box');
+                const emptyBody = area.querySelector('p.response-empty.box');
                 if (emptyBody) emptyBody.style.display = '';
             }
         }
@@ -775,10 +752,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function appendHeaderRow(grid, name, value) {
-        var nameEl = document.createElement('span');
+        const nameEl = document.createElement('span');
         nameEl.className = 'response-header-name';
         nameEl.textContent = name;
-        var valueEl = document.createElement('span');
+        const valueEl = document.createElement('span');
         valueEl.className = 'response-header-value';
         valueEl.setAttribute('data-header', name.toLowerCase());
         valueEl.textContent = value;
@@ -789,35 +766,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // event delegation for response-area toggle/show-all clicks
     detail.addEventListener('keydown', function(e) {
         if (e.key !== 'Enter' && e.key !== ' ') return;
-        var toggle = e.target.closest('.response-headers-toggle');
+        const toggle = e.target.closest('.response-headers-toggle');
         if (toggle) {
             e.preventDefault();
             toggle.click();
         }
     });
     detail.addEventListener('click', function(e) {
-        var toggle = e.target.closest('.response-headers-toggle');
+        const toggle = e.target.closest('.response-headers-toggle');
         if (toggle) {
-            var area = toggle.closest('.response-area');
+            const area = toggle.closest('.response-area');
             if (!area) return;
-            var container = toggle.closest('.response-headers');
+            const container = toggle.closest('.response-headers');
             if (container) {
-                var expanded = container.classList.toggle('is-expanded');
-                var count = toggle.textContent.match(/\((\d+)\)/);
-                var num = count ? count[1] : '';
-                toggle.textContent = 'Headers' + (num ? ' (' + num + ') ' : ' ') + (expanded ? '\u25BE' : '\u25B8');
+                const expanded = container.classList.toggle('is-expanded');
+                const count = toggle.textContent.match(/\((\d+)\)/);
+                const num = count ? count[1] : '';
+                toggle.textContent = 'Headers' + (num ? ' (' + num + ') ' : ' ') + (expanded ? '▼' : '▶');
             }
             return;
         }
-        var showAll = e.target.closest('.response-headers-show-all');
+        const showAll = e.target.closest('.response-headers-show-all');
         if (showAll) {
-            var area = showAll.closest('.response-area');
+            const area = showAll.closest('.response-area');
             if (!area) return;
-            var undocGrid = area.querySelector('.response-headers-undocumented');
+            const undocGrid = area.querySelector('.response-headers-undocumented');
             if (undocGrid) {
-                var visible = undocGrid.style.display !== 'none';
+                const visible = undocGrid.style.display !== 'none';
                 undocGrid.style.display = visible ? 'none' : '';
-                var count = showAll.textContent.match(/\((\d+)/);
+                const count = showAll.textContent.match(/\((\d+)/);
                 showAll.textContent = visible
                     ? 'Show all (' + (count ? count[1] : '') + ' more)'
                     : 'Show less';
@@ -827,7 +804,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function showCopied(btn) {
-        var original = btn.textContent;
+        const original = btn.textContent;
         btn.textContent = 'Copied!';
         btn.focus();
         setTimeout(function() { btn.textContent = original; }, 1500);
@@ -835,13 +812,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Pin shortcut (Ctrl+P / Alt+P) — works in both detail pane and global headers
     document.addEventListener('keydown', function(e) {
-        var persistMod = /Mac/.test(navigator.platform) ? e.ctrlKey : e.altKey;
+        const persistMod = /Mac/.test(navigator.platform) ? e.ctrlKey : e.altKey;
         if (e.code === 'KeyP' && persistMod) {
-            var el = document.activeElement;
-            var fieldEl = el.closest('.field');
-            var persistBtn = fieldEl ? fieldEl.querySelector('.persist-toggle') : null;
+            const el = document.activeElement;
+            const fieldEl = el.closest('.field');
+            let persistBtn = fieldEl ? fieldEl.querySelector('.persist-toggle') : null;
             if (!persistBtn) {
-                var row = el.closest('.custom-header-row');
+                const row = el.closest('.custom-header-row');
                 persistBtn = row ? row.querySelector('.persist-toggle') : null;
             }
             if (persistBtn) {
@@ -853,59 +830,60 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function findSpatialTarget(el, direction) {
-        var rect = el.getBoundingClientRect();
-        var cx = rect.left + rect.width / 2;
-        var cy = rect.top + rect.height / 2;
-        var candidates = Array.from(document.querySelectorAll(
+        const rect = el.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const candidates = Array.from(document.querySelectorAll(
             '#method-content input, #method-content select, #method-content textarea, #method-content button, #method-content [tabindex="0"],'
             + ' .tabs a[tabindex="0"],'
             + ' [role="tree"]'
-        ));
-        var elIsTab = el.closest && el.closest('.tabs');
-        var elIsStatusTab = el.classList.contains('schema-status-tab');
-        candidates = candidates.filter(function(c) {
+        )).filter(function(c) {
             if (c === el) return false;
             if (c.disabled) return false;
             if (!c.offsetParent && c.getAttribute('role') !== 'tree') return false;
             if (c.closest && c.closest('.toggle')) return false;
             // when navigating from outside tabs, only the active tab is a candidate
+            const elIsTab = el.closest && el.closest('.tabs');
             if (!elIsTab && c.closest && c.closest('.tabs') && !c.closest('li').classList.contains('is-active')) return false;
+            const elIsStatusTab = el.classList.contains('schema-status-tab');
             if (!elIsStatusTab && c.classList.contains('schema-status-tab') && !c.classList.contains('is-active')) return false;
             return true;
         });
 
-        var best = null;
-        var bestDist = Infinity;
-        var bestCorridor = false;
+        let best = null;
+        let bestDist = Infinity;
+        let bestCorridor = false;
+        const elIsTab = el.closest && el.closest('.tabs');
+        const elIsStatusTab = el.classList.contains('schema-status-tab');
 
         candidates.forEach(function(c) {
-            var cr = c.getBoundingClientRect();
+            let candidateRect = c.getBoundingClientRect();
             // for tab links, use the tab bar's rect so the whole bar acts as one spatial unit
-            if (!elIsTab && c.closest && c.closest('.tabs')) cr = c.closest('.tabs').getBoundingClientRect();
-            if (!elIsStatusTab && c.classList.contains('schema-status-tab')) cr = c.closest('.schema-status-tabs').getBoundingClientRect();
-            var ccx = cr.left + cr.width / 2;
-            var ccy = cr.top + cr.height / 2;
+            if (!elIsTab && c.closest && c.closest('.tabs')) candidateRect = c.closest('.tabs').getBoundingClientRect();
+            if (!elIsStatusTab && c.classList.contains('schema-status-tab')) candidateRect = c.closest('.schema-status-tabs').getBoundingClientRect();
+            const candidateCenterX = candidateRect.left + candidateRect.width / 2;
+            const candidateCenterY = candidateRect.top + candidateRect.height / 2;
 
             // filter by direction
-            if (direction === 'down' && ccy <= cy) return;
-            if (direction === 'up' && ccy >= cy) return;
-            if (direction === 'right' && ccx <= cx) return;
-            if (direction === 'left' && ccx >= cx) return;
+            if (direction === 'down' && candidateCenterY <= centerY) return;
+            if (direction === 'up' && candidateCenterY >= centerY) return;
+            if (direction === 'right' && candidateCenterX <= centerX) return;
+            if (direction === 'left' && candidateCenterX >= centerX) return;
 
             // check corridor overlap on cross-axis
-            var corridor;
+            let corridor;
             if (direction === 'down' || direction === 'up') {
-                corridor = rect.right > cr.left && cr.right > rect.left; // horizontal overlap
+                corridor = rect.right > candidateRect.left && candidateRect.right > rect.left; // horizontal overlap
             } else {
-                corridor = rect.bottom > cr.top && cr.bottom > rect.top; // vertical overlap
+                corridor = rect.bottom > candidateRect.top && candidateRect.bottom > rect.top; // vertical overlap
             }
 
             // distance: primary axis for corridor, euclidean for fallback
-            var dist;
+            let dist;
             if (corridor) {
-                dist = (direction === 'down' || direction === 'up') ? Math.abs(ccy - cy) : Math.abs(ccx - cx);
+                dist = (direction === 'down' || direction === 'up') ? Math.abs(candidateCenterY - centerY) : Math.abs(candidateCenterX - centerX);
             } else {
-                dist = Math.sqrt((ccx - cx) * (ccx - cx) + (ccy - cy) * (ccy - cy));
+                dist = Math.sqrt((candidateCenterX - centerX) * (candidateCenterX - centerX) + (candidateCenterY - centerY) * (candidateCenterY - centerY));
             }
 
             // corridor candidates beat non-corridor
@@ -924,13 +902,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Spatial arrow-key navigation for detail pane and tabs
     document.addEventListener('keydown', function(e) {
-        var el = document.activeElement;
+        const el = document.activeElement;
         if (!el || !el.closest) return;
         // don't interfere with tree or toggle internal navigation
         if (el.closest('[role="tree"]')) return;
         if (el.closest('.toggle')) return;
 
-        var isArrow = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.key) >= 0;
+        const isArrow = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.key) >= 0;
         if (!isArrow && e.key !== 'Enter' && e.key !== 'Escape') return;
 
         // text input/textarea: Left/Right stay native
@@ -939,8 +917,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // textarea multi-line: Up/Down navigate away only at first/last line
         if (el.tagName === 'TEXTAREA' && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
-            var val = el.value;
-            var pos = el.selectionStart;
+            const val = el.value;
+            const pos = el.selectionStart;
             if (e.key === 'ArrowDown') {
                 if (val.indexOf('\n', pos) >= 0) return; // not at last line
             } else {
@@ -949,14 +927,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (isArrow) {
-            var direction = e.key === 'ArrowDown' ? 'down'
+            const direction = e.key === 'ArrowDown' ? 'down'
                 : e.key === 'ArrowUp' ? 'up'
                 : e.key === 'ArrowRight' ? 'right' : 'left';
-            var target = findSpatialTarget(el, direction);
+            const target = findSpatialTarget(el, direction);
             if (target) {
                 target.focus();
             } else {
-                var bumpDir = (direction === 'left' || direction === 'right') ? 'h' : 'v';
+                const bumpDir = (direction === 'left' || direction === 'right') ? 'h' : 'v';
                 bump(el, bumpDir);
             }
             e.preventDefault();
@@ -965,14 +943,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (el.classList.contains('schema-toggle')) {
                 el.click();
             } else if (el.tagName !== 'SELECT') {
-                var mc = document.getElementById('method-content') || document.getElementById('detail');
-                var sendBtn = mc ? mc.querySelector('button[type=submit]') : null;
+                const mc = document.getElementById('method-content') || document.getElementById('detail');
+                const sendBtn = mc ? mc.querySelector('button[type=submit]') : null;
                 if (sendBtn) sendBtn.click();
             }
             e.preventDefault();
             e.stopPropagation();
         } else if (e.key === 'Escape') {
-            var tree = document.querySelector('[role="tree"]');
+            const tree = document.querySelector('[role="tree"]');
             if (tree) tree.focus();
             e.preventDefault();
             e.stopPropagation();
@@ -981,15 +959,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Activate method tabs on focus (spatial navigation focuses them)
     document.addEventListener('focusin', function(e) {
-        var link = e.target.closest('.tabs a');
+        const link = e.target.closest('.tabs a');
         if (!link) return;
-        var li = link.closest('li');
+        const li = link.closest('li');
         if (!li || li.classList.contains('is-active')) return;
-        var tabs = li.closest('.tabs');
+        const tabs = li.closest('.tabs');
         tabs.querySelectorAll('li').forEach(function(l) { l.classList.remove('is-active'); });
         li.classList.add('is-active');
         clearPreviousResponse();
-        var hxGet = link.getAttribute('hx-get');
+        const hxGet = link.getAttribute('hx-get');
         htmx.ajax('GET', hxGet, link.getAttribute('hx-target'));
         history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
     });
@@ -1002,35 +980,35 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // When clicking a method badge in the tree, navigate to that tab
-    var pendingMethod = null;
+    let pendingMethod = null;
     document.addEventListener('click', function(e) {
-        var badge = e.target.closest('[role="treeitem"] .tag');
+        const badge = e.target.closest('[role="treeitem"] .tag');
         if (!badge) return;
         pendingMethod = badge.textContent.trim();
     }, true);
 
     // Navigate from URL hash or auto-load first operation
-    var HTTP_METHODS = ['GET','POST','PUT','DELETE','PATCH','HEAD','OPTIONS','TRACE'];
+    const HTTP_METHODS = ['GET','POST','PUT','DELETE','PATCH','HEAD','OPTIONS','TRACE'];
     window._hashNavPending = false;
     function navigateFromHash() {
-        var route = decodeURIComponent(location.hash.replace(/^#/, ''));
+        let route = decodeURIComponent(location.hash.replace(/^#/, ''));
         if (!route) return false;
         // Parse [tag] prefix for tag tree navigation
-        var tagFromHash = null;
-        var tagMatch = route.match(/^\[([^\]]+)\](.*)/);
+        let tagFromHash = null;
+        const tagMatch = route.match(/^\[([^\]]+)\](.*)/);
         if (tagMatch) {
             tagFromHash = tagMatch[1];
             route = tagMatch[2];
         }
-        var parts = route.split('/');
-        var last = parts[parts.length - 1];
-        var methodFromHash = null;
-        var treePath = route;
+        const parts = route.split('/');
+        const last = parts[parts.length - 1];
+        let methodFromHash = null;
+        let treePath = route;
         if (HTTP_METHODS.indexOf(last) >= 0) {
             methodFromHash = last;
             treePath = parts.slice(0, -1).join('/');
         }
-        var hxGet, hxEl;
+        let hxGet, hxEl;
         if (tagFromHash) {
             // Tag tree: hx-get is "path/METHOD.html", find by data-tag + hx-get
             hxGet = route + '.html';
@@ -1038,9 +1016,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!hxEl) {
                 // Tag tree may not be loaded yet — switch to tags view; afterSettle will retry
                 window._hashNavPending = true;
-                var vt = document.querySelector('[data-toggle="view"]');
+                const vt = document.querySelector('[data-toggle="view"]');
                 if (vt) {
-                    var tagsBtn = document.querySelector('[data-toggle-value="tags"]');
+                    const tagsBtn = document.querySelector('[data-toggle-value="tags"]');
                     if (tagsBtn && !tagsBtn.classList.contains('is-active')) vt._select('tags');
                 }
                 return true;
@@ -1051,8 +1029,8 @@ document.addEventListener('DOMContentLoaded', function() {
             hxEl = document.querySelector('[hx-get="' + hxGet + '"]');
             if (!hxEl) return false;
         }
-        var item = hxEl.closest('[role="treeitem"]');
-        var tree = document.querySelector('[role="tree"]');
+        const item = hxEl.closest('[role="treeitem"]');
+        const tree = document.querySelector('[role="tree"]');
         if (item && tree) {
             tree._expandParentsOf(item);
             tree.querySelectorAll('[aria-selected="true"]').forEach(function(el) { el.removeAttribute('aria-selected'); });
@@ -1063,13 +1041,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
     if (!navigateFromHash()) {
-        var firstHxEl = document.querySelector('#tree-container [hx-get]');
+        const firstHxEl = document.querySelector('#tree-container [hx-get]');
         if (firstHxEl) {
-            var hxGet = firstHxEl.getAttribute('hx-get');
+            const hxGet = firstHxEl.getAttribute('hx-get');
             htmx.ajax('GET', hxGet, '#detail');
-            var route = hxGetToRoute(hxGet);
-            var tag = firstHxEl.getAttribute('data-tag');
-            var hash = tag ? '#[' + tag + ']' + route : '#' + route;
+            const route = hxGetToRoute(hxGet);
+            const tag = firstHxEl.getAttribute('data-tag');
+            const hash = tag ? '#[' + tag + ']' + route : '#' + route;
             history.replaceState(null, '', hash);
         }
     }
@@ -1084,27 +1062,27 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         detail.addEventListener('submit', function(e) {
             e.preventDefault();
-            var sendForm = e.target.closest('form[data-path]');
+            const sendForm = e.target.closest('form[data-path]');
             if (!sendForm) return;
-            var sendBtn = sendForm.querySelector('button[type=submit]');
+            const sendBtn = sendForm.querySelector('button[type=submit]');
 
-            var pathTemplate = sendForm.getAttribute('data-path');
-            var method = sendForm.getAttribute('data-method');
-            var modeEl = document.querySelector('[data-toggle="mode"]');
-            var mode = modeEl ? modeEl.getAttribute('data-mode') : 'try';
-            var baseUrl = modeEl ? (modeEl.getAttribute('data-base-url') || '') : '';
+            const pathTemplate = sendForm.getAttribute('data-path');
+            const method = sendForm.getAttribute('data-method');
+            const modeEl = document.querySelector('[data-toggle="mode"]');
+            const mode = modeEl ? modeEl.getAttribute('data-mode') : 'try';
+            const baseUrl = modeEl ? (modeEl.getAttribute('data-base-url') || '') : '';
 
             // Collect input values
-            var inputs = sendForm.querySelectorAll('input[name], select[name]');
-            var resolvedPath = pathTemplate;
-            var queryParams = [];
-            var requestHeaders = {};
-            var cookieParts = [];
+            const inputs = sendForm.querySelectorAll('input[name], select[name]');
+            let resolvedPath = pathTemplate;
+            const queryParams = [];
+            let requestHeaders = {};
+            const cookieParts = [];
             inputs.forEach(function(inp) {
-                var name = inp.getAttribute('name');
-                var paramIn = inp.getAttribute('data-param-in') || 'query';
-                var isCheckbox = inp.type === 'checkbox';
-                var val = isCheckbox ? (inp.checked ? 'true' : '') : inp.value;
+                const name = inp.getAttribute('name');
+                const paramIn = inp.getAttribute('data-param-in') || 'query';
+                const isCheckbox = inp.type === 'checkbox';
+                const val = isCheckbox ? (inp.checked ? 'true' : '') : inp.value;
                 if (paramIn === 'path' || pathTemplate.includes('{' + name + '}')) {
                     resolvedPath = resolvedPath.replace('{' + name + '}', encodeURIComponent(val));
                 } else if (paramIn === 'header') {
@@ -1117,38 +1095,38 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             if (cookieParts.length > 0) requestHeaders['Cookie'] = cookieParts.join('; ');
             sendForm.querySelectorAll('.custom-header-row').forEach(function(row) {
-                var name = row.querySelector('.custom-header-name').value.trim();
-                var value = row.querySelector('.custom-header-value').value;
+                const name = row.querySelector('.custom-header-name').value.trim();
+                const value = row.querySelector('.custom-header-value').value;
                 if (name) requestHeaders[name] = value;
             });
             // Collect global headers (lowest priority) and merge
-            var globalHeaders = {};
-            var ghPanel = document.getElementById('global-headers');
+            const globalHeaders = {};
+            const ghPanel = document.getElementById('global-headers');
             if (ghPanel) {
                 ghPanel.querySelectorAll('.custom-header-row').forEach(function(row) {
-                    var name = row.querySelector('.custom-header-name').value.trim();
-                    var value = row.querySelector('.custom-header-value').value;
+                    const name = row.querySelector('.custom-header-name').value.trim();
+                    const value = row.querySelector('.custom-header-value').value;
                     if (name) globalHeaders[name] = value;
                 });
             }
-            var mergedHeaders = {};
+            const mergedHeaders = {};
             Object.keys(globalHeaders).forEach(function(h) { mergedHeaders[h] = globalHeaders[h]; });
             Object.keys(requestHeaders).forEach(function(h) { mergedHeaders[h] = requestHeaders[h]; });
             requestHeaders = mergedHeaders;
-            var url = baseUrl.startsWith('http') ? baseUrl + resolvedPath
+            let url = baseUrl.startsWith('http') ? baseUrl + resolvedPath
                     : new URL((baseUrl + resolvedPath).replace(/\/+/g, '/'), window.location.origin).href;
             if (queryParams.length > 0) url += '?' + queryParams.join('&');
 
-            var bodyTextarea = sendForm.querySelector('textarea[data-request-body]');
-            var bodyValue = bodyTextarea ? bodyTextarea.value : '';
+            const bodyTextarea = sendForm.querySelector('textarea[data-request-body]');
+            const bodyValue = bodyTextarea ? bodyTextarea.value : '';
 
             if (mode === 'curl') {
-                var headerFlags = Object.keys(requestHeaders).filter(function(h) {
+                const headerFlags = Object.keys(requestHeaders).filter(function(h) {
                     return h !== 'Cookie';
                 }).map(function(h) {
                     return "-H '" + h + ": " + requestHeaders[h] + "'";
                 }).join(' ');
-                var cmd = 'curl -X ' + method;
+                let cmd = 'curl -X ' + method;
                 if (headerFlags) cmd += ' ' + headerFlags;
                 if (cookieParts.length > 0) cmd += " -b '" + cookieParts.join('; ') + "'";
                 if (bodyValue) cmd += " -H 'Content-Type: application/json' -d '" + bodyValue + "'";
@@ -1156,12 +1134,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 navigator.clipboard.writeText(cmd);
                 showCopied(sendBtn);
             } else if (mode === 'httpie') {
-                var headerArgs = Object.keys(requestHeaders).filter(function(h) {
+                const headerArgs = Object.keys(requestHeaders).filter(function(h) {
                     return h !== 'Cookie';
                 }).map(function(h) {
                     return h + ':' + requestHeaders[h];
                 }).join(' ');
-                var cmd = bodyValue
+                let cmd = bodyValue
                         ? "echo '" + bodyValue + "' | http " + method + ' ' + url + " Content-Type:application/json"
                         : 'http ' + method + ' ' + url;
                 if (headerArgs) cmd += ' ' + headerArgs;
@@ -1171,46 +1149,46 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (mode === 'try') {
                 sendBtn.disabled = true;
                 sendBtn.textContent = 'Sending...';
-                var fetchOptions = { method: method, headers: {} };
+                const fetchOptions = { method: method, headers: {} };
                 if (bodyValue) {
                     fetchOptions.body = bodyValue;
                     fetchOptions.headers['Content-Type'] = 'application/json';
                 }
-                var acceptSelect = detail.querySelector('[data-accept] select');
+                const acceptSelect = detail.querySelector('[data-accept] select');
                 if (acceptSelect && acceptSelect.value) {
                     fetchOptions.headers['Accept'] = acceptSelect.value;
                 }
                 Object.keys(requestHeaders).forEach(function(h) {
                     if (h !== 'Cookie') fetchOptions.headers[h] = requestHeaders[h];
                 });
-                var area = sendForm.querySelector('.response-area');
+                const area = sendForm.querySelector('.response-area');
                 fetch(url, fetchOptions).then(function(resp) {
-                    var ct = resp.headers.get('Content-Type') || '';
-                    var headers = [];
+                    const contentType = resp.headers.get('Content-Type') || '';
+                    const headers = [];
                     resp.headers.forEach(function(value, name) {
                         headers.push({name: name, value: value});
                     });
                     return resp.text().then(function(text) {
-                        var headersWereVisible = area.querySelector('.response-headers.is-expanded') !== null;
+                        let headersWereVisible = area.querySelector('.response-headers.is-expanded') !== null;
                         if (!area.querySelector('.response-headers')) headersWereVisible = null; // auto-detect
-                        if (ct.includes('json')) {
+                        if (contentType.includes('json')) {
                             try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
-                        } else if (ct.includes('xml')) {
+                        } else if (contentType.includes('xml')) {
                             try { text = prettyPrintXml(text); } catch(e) {}
                         }
-                        return showResponse(area, sendForm, resp.status, resp.statusText, headers, text, ct, headersWereVisible).then(function() {
-                            var currentlyVisible = area.querySelector('.response-headers.is-expanded') !== null;
+                        return showResponse(area, sendForm, resp.status, resp.statusText, headers, text, contentType, headersWereVisible).then(function() {
+                            const currentlyVisible = area.querySelector('.response-headers.is-expanded') !== null;
                             responseCache.set(opKey(sendForm), {
                                 status: resp.status, statusText: resp.statusText,
                                 headers: headers, headersExpanded: currentlyVisible,
-                                body: text, ct: ct
+                                body: text, ct: contentType
                             });
                         });
                     });
                 }).catch(function(err) {
                     return showResponse(area, sendForm, 0, 'Network error', [], err.message, '', false);
                 }).finally(function() {
-                    var btn = area.querySelector('button[type=submit]');
+                    const btn = area.querySelector('button[type=submit]');
                     if (btn) {
                         btn.disabled = false;
                         btn.textContent = 'Send';
@@ -1221,8 +1199,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     // htmx error retry with banner
-    var banner = document.getElementById('error-banner');
-    var activeRetries = 0;
+    const banner = document.getElementById('error-banner');
+    let activeRetries = 0;
     function showBanner() {
         activeRetries++;
         banner.style.display = '';
@@ -1236,7 +1214,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     function retryHtmx(url, targetEl) {
         showBanner();
-        var interval = setInterval(function() {
+        const interval = setInterval(function() {
             fetch(url).then(function(resp) {
                 if (!resp.ok) return;
                 clearInterval(interval);
@@ -1253,12 +1231,12 @@ document.addEventListener('DOMContentLoaded', function() {
             || (e.detail.elt && e.detail.elt.getAttribute('hx-get'));
     }
     document.body.addEventListener('htmx:sendError', function(e) {
-        var url = htmxErrorUrl(e);
+        const url = htmxErrorUrl(e);
         if (!url) return;
         retryHtmx(url, e.detail.target || document.getElementById('detail'));
     });
     document.body.addEventListener('htmx:responseError', function(e) {
-        var url = htmxErrorUrl(e);
+        const url = htmxErrorUrl(e);
         if (!url) return;
         retryHtmx(url, e.detail.target || document.getElementById('detail'));
     });
