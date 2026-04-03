@@ -44,6 +44,11 @@
             <version>11.11.1</version>
         </dependency>
         <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>fortawesome__fontawesome-free</artifactId>
+            <version>7.1.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>2.0.17</version>

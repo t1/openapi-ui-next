@@ -16,6 +16,7 @@ import static com.github.t1.bulmajava.basic.Color.PRIMARY;
 import static com.github.t1.bulmajava.basic.Size.MEDIUM;
 import static com.github.t1.bulmajava.basic.Size.NORMAL;
 import static com.github.t1.bulmajava.basic.Size.SMALL;
+import static com.github.t1.bulmajava.basic.Style.FULLWIDTH;
 import static com.github.t1.bulmajava.components.Message.message;
 import static com.github.t1.bulmajava.components.Message.messageBody;
 import static com.github.t1.bulmajava.elements.Box.box;
@@ -95,12 +96,9 @@ class MethodFragmentGenerator {
                 var required = Boolean.TRUE.equals(param.getRequired());
                 var badges = tagsAddon().content(tag(param.getIn())).classes("is-inline-flex", "ml-2");
                 if (required) badges.content(tag("required").is(DANGER));
-                var inputField = field().label(span(param.getName()), badges,
-                        span().classes("checkbox", "is-size-7", "param-persist")
-                                .content(element("input").attr("type", "checkbox").classes("param-persist-check"),
-                                        span(" persist")));
+                var inputField = field().label(span(param.getName()), badges);
                 if (enumValues != null && !enumValues.isEmpty()) {
-                    var sel = select(param.getName()).option("", "(any)");
+                    var sel = select(param.getName()).is(FULLWIDTH).option("", "(any)");
                     sel.attr("data-param-in", param.getIn());
                     if (required) sel.attr("required", "");
                     for (var value : enumValues) {
@@ -117,6 +115,7 @@ class MethodFragmentGenerator {
                     if (required) inp.attr("required", "");
                     inputField.content(inp);
                 }
+                inputField.iconRight("thumbtack");
                 if ("cookie".equals(param.getIn())) {
                     var help = p().classes("help");
                     if (param.getDescription() != null) help.content(span(param.getDescription() + " — "));

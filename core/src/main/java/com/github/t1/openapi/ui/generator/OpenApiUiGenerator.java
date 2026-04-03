@@ -105,9 +105,9 @@ public class OpenApiUiGenerator {
         var baseUrl = (servers != null && !servers.isEmpty()) ? servers.getFirst().getUrl() : "/";
 
         var modeToggle = toggle("mode")
-                .activeOption("try", o -> o.attr("title", "Send requests directly from the browser (1)"))
-                .option("httpie", o -> o.attr("title", "Copy as HTTPie command (2)"))
-                .option("curl", o -> o.attr("title", "Copy as curl command (3)"))
+                .activeOption("try", o -> o.attr("title", "Send requests directly from the browser"))
+                .option("httpie", o -> o.attr("title", "Copy as HTTPie command"))
+                .option("curl", o -> o.attr("title", "Copy as curl command"))
                 .attr("data-mode", "try").attr("data-base-url", baseUrl);
 
         var pageTitle = openApi.getInfo().getTitle();
@@ -138,6 +138,7 @@ public class OpenApiUiGenerator {
         ), errorBanner);
         return html(pageTitle)
                 .stylesheet("bulma.min.css")
+                .stylesheet("css/all.min.css")
                 .stylesheet("openapi-ui.css")
                 .script("htmx.min.js")
                 .script("highlight.min.js")
@@ -158,6 +159,11 @@ public class OpenApiUiGenerator {
         copyWebJarResource("bulma", "css/bulma.min.css", "bulma.min.css");
         copyWebJarResource("htmx.org", "dist/htmx.min.js", "htmx.min.js");
         copyWebJarResource("highlightjs", "highlight.min.js", "highlight.min.js");
+        Files.createDirectories(outputDir.resolve("css"));
+        Files.createDirectories(outputDir.resolve("webfonts"));
+        copyWebJarResource("fortawesome__fontawesome-free", "css/all.min.css", "css/all.min.css");
+        copyWebJarResource("fortawesome__fontawesome-free", "webfonts/fa-solid-900.woff2", "webfonts/fa-solid-900.woff2");
+        copyWebJarResource("fortawesome__fontawesome-free", "webfonts/fa-regular-400.woff2", "webfonts/fa-regular-400.woff2");
         log.info("Done. Output written to {}", outputDir);
     }
 

@@ -63,9 +63,17 @@ document.addEventListener('DOMContentLoaded', function() {
         showResponse(area, form, resp.status, resp.statusText, resp.headers, resp.body, resp.ct, resp.headersExpanded);
     }
 
+    var shortcutMod = /Mac/.test(navigator.platform) ? 'Ctrl' : 'Alt';
+
     // Mode toggle consumer
     var modeContainer = document.querySelector('[data-toggle="mode"]');
     if (modeContainer) {
+        // Set platform-appropriate keyboard shortcut tooltips
+        var modeButtons = modeContainer.querySelectorAll('[data-toggle-value]');
+        modeButtons.forEach(function(btn, i) {
+            var title = btn.getAttribute('title') || '';
+            btn.setAttribute('title', title + ' (' + shortcutMod + '+' + (i + 1) + ')');
+        });
         modeContainer.addEventListener('toggle', function(e) {
             modeContainer.setAttribute('data-mode', e.detail.value);
             var isTry = e.detail.value === 'try';
@@ -81,15 +89,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         document.addEventListener('keydown', function(e) {
-            if (e.key >= '1' && e.key <= '3') {
-                var tag = document.activeElement.tagName;
-                if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-                if (document.activeElement.isContentEditable) return;
+            var mod = /Mac/.test(navigator.platform) ? e.ctrlKey : e.altKey;
+            var digit = mod && e.code >= 'Digit1' && e.code <= 'Digit3' ? parseInt(e.code.charAt(5)) : 0;
+            if (digit) {
                 e.preventDefault();
                 var values = Array.from(modeContainer.querySelectorAll('[data-toggle-value]')).map(function(el) {
                     return el.getAttribute('data-toggle-value');
                 });
-                modeContainer._select(values[parseInt(e.key) - 1]);
+                modeContainer._select(values[digit - 1]);
             }
         });
     }
@@ -108,8 +115,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.className = 'custom-header-row';
                 row.innerHTML =
                     '<input type="text" class="input is-small custom-header-name" name="' + randomName() + '" placeholder="Header name">' +
+                    '<div class="control has-icons-right">' +
                     '<input type="text" class="input is-small custom-header-value" name="' + randomName() + '" placeholder="Value">' +
-                    '<label class="checkbox is-size-7 custom-header-persist"><input type="checkbox" class="custom-header-persist-check"> persist</label>' +
+                    '<span class="icon is-small is-right persist-toggle" aria-pressed="false" title="Pin value (' + shortcutMod + '+P)"><i class="fa-solid fa-thumbtack"></i></span>' +
+                    '</div>' +
                     '<button type="button" class="delete is-small custom-header-remove"></button>';
                 body.insertBefore(row, addBtn);
                 row.querySelector('.custom-header-name').focus();
@@ -120,8 +129,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var removeBtn = e.target.closest('.custom-header-remove');
             if (removeBtn) {
                 var row = removeBtn.closest('.custom-header-row');
-                var persistCheck = row.querySelector('.custom-header-persist-check');
-                if (persistCheck && persistCheck.checked) {
+                var persistBtn = row.querySelector('.persist-toggle');
+                if (persistBtn && persistBtn.getAttribute('aria-pressed') === 'true') {
                     var name = row.querySelector('.custom-header-name').value.trim();
                     if (name) localStorage.removeItem('openapi-ui-global-header:' + name);
                 }
@@ -141,13 +150,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Global header persistence
     if (globalHeadersPanel) {
-        globalHeadersPanel.addEventListener('change', function(e) {
-            var checkbox = e.target.closest('.custom-header-persist-check');
-            if (!checkbox) return;
-            var row = checkbox.closest('.custom-header-row');
+        globalHeadersPanel.addEventListener('click', function(e) {
+            var persistBtn = e.target.closest('.persist-toggle');
+            if (!persistBtn) return;
+            var pressed = persistBtn.getAttribute('aria-pressed') === 'true';
+            persistBtn.setAttribute('aria-pressed', String(!pressed));
+            var row = persistBtn.closest('.custom-header-row');
             var name = row.querySelector('.custom-header-name').value.trim();
             var value = row.querySelector('.custom-header-value').value;
-            if (checkbox.checked && name) {
+            if (!pressed && name) {
                 localStorage.setItem('openapi-ui-global-header:' + name, value);
                 row.setAttribute('data-prev-name', name);
             } else if (name) {
@@ -160,8 +171,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!inp) return;
             applyGlobalHeaderPlaceholders();
             var row = inp.closest('.custom-header-row');
-            var checkbox = row.querySelector('.custom-header-persist-check');
-            if (!checkbox || !checkbox.checked) return;
+            var persistBtn = row.querySelector('.persist-toggle');
+            if (!persistBtn || persistBtn.getAttribute('aria-pressed') !== 'true') return;
             var name = row.querySelector('.custom-header-name').value.trim();
             var value = row.querySelector('.custom-header-value').value;
             var prevName = row.getAttribute('data-prev-name');
@@ -184,8 +195,10 @@ document.addEventListener('DOMContentLoaded', function() {
             row.setAttribute('data-prev-name', ghName);
             row.innerHTML =
                 '<input type="text" class="input is-small custom-header-name" placeholder="Header name" value="' + ghName.replace(/"/g, '&quot;') + '">' +
+                '<div class="control has-icons-right">' +
                 '<input type="text" class="input is-small custom-header-value" placeholder="Value" value="' + ghValue.replace(/"/g, '&quot;') + '">' +
-                '<label class="checkbox is-size-7 custom-header-persist"><input type="checkbox" class="custom-header-persist-check" checked> persist</label>' +
+                '<span class="icon is-small is-right persist-toggle" aria-pressed="true" title="Pin value (' + shortcutMod + '+P)"><i class="fa-solid fa-thumbtack"></i></span>' +
+                '</div>' +
                 '<button type="button" class="delete is-small custom-header-remove"></button>';
             body.insertBefore(row, addBtn);
         }
@@ -320,6 +333,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         detail.querySelectorAll('[data-param-in="cookie"]').forEach(function(inp) { inp.disabled = isTry; });
         initDescriptionToggle();
+        // Initialize persist toggle icons on server-rendered param fields
+        detail.querySelectorAll('.field .icon.is-right').forEach(function(icon) {
+            icon.classList.add('persist-toggle');
+            icon.setAttribute('aria-pressed', 'false');
+            icon.setAttribute('title', 'Pin value (' + shortcutMod + '+P)');
+        });
         // Restore persisted spec-defined parameter values
         document.querySelectorAll('[data-param-in]').forEach(function(el) {
             var form = el.closest('form[data-path]');
@@ -330,8 +349,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (saved !== null) {
                 if (inp.type === 'checkbox') inp.checked = saved === 'true';
                 else inp.value = saved;
-                var persistCheck = inp.closest('.field').querySelector('.param-persist-check');
-                if (persistCheck) persistCheck.checked = true;
+                var persistBtn = inp.closest('.field').querySelector('.persist-toggle');
+                if (persistBtn) persistBtn.setAttribute('aria-pressed', 'true');
             }
         });
         // Restore persisted per-op custom headers
@@ -351,8 +370,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     chRow.setAttribute('data-prev-name', chName);
                     chRow.innerHTML =
                         '<input type="text" class="input is-small custom-header-name" placeholder="Header name" value="' + chName.replace(/"/g, '&quot;') + '">' +
+                        '<div class="control has-icons-right">' +
                         '<input type="text" class="input is-small custom-header-value" placeholder="Value" value="' + chValue.replace(/"/g, '&quot;') + '">' +
-                        '<label class="checkbox is-size-7 custom-header-persist"><input type="checkbox" class="custom-header-persist-check" checked> persist</label>' +
+                        '<span class="icon is-small is-right persist-toggle" aria-pressed="true" title="Pin value (' + shortcutMod + '+P)"><i class="fa-solid fa-thumbtack"></i></span>' +
+                        '</div>' +
                         '<button type="button" class="delete is-small custom-header-remove"></button>';
                     container.insertBefore(chRow, addBtn);
                 }
@@ -440,28 +461,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Spec-defined param persistence
-    detail.addEventListener('change', function(e) {
-        var checkbox = e.target.closest('.param-persist-check');
-        if (checkbox) {
-            var fieldEl = checkbox.closest('.field');
-            var el = fieldEl.querySelector('[data-param-in]');
-            if (!el) return;
-            var inp = paramControl(el);
-            var form = el.closest('form[data-path]');
-            var key = paramStorageKey(form, el.getAttribute('data-param-in'), inp.getAttribute('name'));
-            if (checkbox.checked) {
-                localStorage.setItem(key, paramValue(inp));
-            } else {
-                localStorage.removeItem(key);
-            }
-            return;
+    detail.addEventListener('click', function(e) {
+        var persistBtn = e.target.closest('#detail .field .persist-toggle');
+        if (!persistBtn) return;
+        var pressed = persistBtn.getAttribute('aria-pressed') === 'true';
+        persistBtn.setAttribute('aria-pressed', String(!pressed));
+        var fieldEl = persistBtn.closest('.field');
+        var el = fieldEl.querySelector('[data-param-in]');
+        if (!el) return;
+        var inp = paramControl(el);
+        var form = el.closest('form[data-path]');
+        var key = paramStorageKey(form, el.getAttribute('data-param-in'), inp.getAttribute('name'));
+        if (!pressed) {
+            localStorage.setItem(key, paramValue(inp));
+        } else {
+            localStorage.removeItem(key);
         }
+    });
+    detail.addEventListener('change', function(e) {
         // Persisted param value change (checkbox or select)
         var paramEl = e.target.closest('[data-param-in]');
         if (paramEl) {
             var fieldEl = paramEl.closest('.field');
-            var persistCheck = fieldEl.querySelector('.param-persist-check');
-            if (persistCheck && persistCheck.checked) {
+            var persistBtn = fieldEl.querySelector('.persist-toggle');
+            if (persistBtn && persistBtn.getAttribute('aria-pressed') === 'true') {
                 var inp = paramControl(paramEl);
                 var form = paramEl.closest('form[data-path]');
                 var key = paramStorageKey(form, paramEl.getAttribute('data-param-in'), inp.getAttribute('name'));
@@ -469,29 +492,33 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             return;
         }
-        // Per-op custom header persistence
-        var customCheckbox = e.target.closest('.custom-headers .custom-header-persist-check');
-        if (customCheckbox) {
-            var row = customCheckbox.closest('.custom-header-row');
-            var form = row.closest('form[data-path]');
-            var name = row.querySelector('.custom-header-name').value.trim();
-            var value = row.querySelector('.custom-header-value').value;
-            var key = customHeaderStorageKey(form, name);
-            if (customCheckbox.checked && name) {
-                localStorage.setItem(key, value);
-                row.setAttribute('data-prev-name', name);
-            } else if (name) {
-                localStorage.removeItem(key);
-                row.removeAttribute('data-prev-name');
-            }
+        // Per-op custom header persistence — handled via click on persist-toggle
+    });
+    // Per-op custom header persist toggle
+    detail.addEventListener('click', function(e) {
+        var persistBtn = e.target.closest('.custom-headers .persist-toggle');
+        if (!persistBtn) return;
+        var pressed = persistBtn.getAttribute('aria-pressed') === 'true';
+        persistBtn.setAttribute('aria-pressed', String(!pressed));
+        var row = persistBtn.closest('.custom-header-row');
+        var form = row.closest('form[data-path]');
+        var name = row.querySelector('.custom-header-name').value.trim();
+        var value = row.querySelector('.custom-header-value').value;
+        var key = customHeaderStorageKey(form, name);
+        if (!pressed && name) {
+            localStorage.setItem(key, value);
+            row.setAttribute('data-prev-name', name);
+        } else if (name) {
+            localStorage.removeItem(key);
+            row.removeAttribute('data-prev-name');
         }
     });
     detail.addEventListener('input', function(e) {
         var el = e.target.closest('[data-param-in]');
         if (el) {
             var fieldEl = el.closest('.field');
-            var persistCheck = fieldEl.querySelector('.param-persist-check');
-            if (!persistCheck || !persistCheck.checked) return;
+            var persistBtn = fieldEl.querySelector('.persist-toggle');
+            if (!persistBtn || persistBtn.getAttribute('aria-pressed') !== 'true') return;
             var inp = paramControl(el);
             var form = el.closest('form[data-path]');
             localStorage.setItem(paramStorageKey(form, el.getAttribute('data-param-in'), inp.getAttribute('name')), paramValue(inp));
@@ -501,8 +528,8 @@ document.addEventListener('DOMContentLoaded', function() {
         var customInp = e.target.closest('.custom-headers .custom-header-name, .custom-headers .custom-header-value');
         if (customInp) {
             var row = customInp.closest('.custom-header-row');
-            var checkbox = row.querySelector('.custom-header-persist-check');
-            if (!checkbox || !checkbox.checked) return;
+            var persistBtn = row.querySelector('.persist-toggle');
+            if (!persistBtn || persistBtn.getAttribute('aria-pressed') !== 'true') return;
             var form = row.closest('form[data-path]');
             var name = row.querySelector('.custom-header-name').value.trim();
             var value = row.querySelector('.custom-header-value').value;
@@ -530,8 +557,10 @@ document.addEventListener('DOMContentLoaded', function() {
             row.className = 'custom-header-row';
             row.innerHTML =
                 '<input type="text" class="input is-small custom-header-name" name="' + randomName() + '" placeholder="Header name">' +
+                '<div class="control has-icons-right">' +
                 '<input type="text" class="input is-small custom-header-value" name="' + randomName() + '" placeholder="Value">' +
-                '<label class="checkbox is-size-7 custom-header-persist"><input type="checkbox" class="custom-header-persist-check"> persist</label>' +
+                '<span class="icon is-small is-right persist-toggle" aria-pressed="false" title="Pin value (' + shortcutMod + '+P)"><i class="fa-solid fa-thumbtack"></i></span>' +
+                '</div>' +
                 '<button type="button" class="delete is-small custom-header-remove"></button>';
             container.insertBefore(row, addBtn);
             row.querySelector('.custom-header-name').focus();
@@ -540,8 +569,8 @@ document.addEventListener('DOMContentLoaded', function() {
         var removeBtn = e.target.closest('.custom-header-remove');
         if (removeBtn) {
             var row = removeBtn.closest('.custom-header-row');
-            var persistCheck = row.querySelector('.custom-header-persist-check');
-            if (persistCheck && persistCheck.checked) {
+            var persistBtn = row.querySelector('.persist-toggle');
+            if (persistBtn && persistBtn.getAttribute('aria-pressed') === 'true') {
                 var form = row.closest('form[data-path]');
                 var name = row.querySelector('.custom-header-name').value.trim();
                 if (form && name) localStorage.removeItem(customHeaderStorageKey(form, name));
@@ -818,6 +847,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function showCopied(btn) {
         var original = btn.textContent;
         btn.textContent = 'Copied!';
+        btn.focus();
         setTimeout(function() { btn.textContent = original; }, 1500);
     }
 
@@ -873,6 +903,25 @@ document.addEventListener('DOMContentLoaded', function() {
         if (next) next.focus();
     }, true);
 
+    // Pin shortcut (Ctrl+P / Alt+P) — works in both detail pane and global headers
+    document.addEventListener('keydown', function(e) {
+        var persistMod = /Mac/.test(navigator.platform) ? e.ctrlKey : e.altKey;
+        if (e.code === 'KeyP' && persistMod) {
+            var el = document.activeElement;
+            var fieldEl = el.closest('.field');
+            var persistBtn = fieldEl ? fieldEl.querySelector('.persist-toggle') : null;
+            if (!persistBtn) {
+                var row = el.closest('.custom-header-row');
+                persistBtn = row ? row.querySelector('.persist-toggle') : null;
+            }
+            if (persistBtn) {
+                persistBtn.click();
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }
+    });
+
     // Field navigation within method content
     document.addEventListener('keydown', function(e) {
         var mc = document.getElementById('method-content') || document.getElementById('detail');
@@ -880,22 +929,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var focusables = Array.from(mc.querySelectorAll('input, select, textarea, .schema-toggle, button[type=submit]'));
         var idx = focusables.indexOf(document.activeElement);
         if (idx < 0) return;
-
         var el = document.activeElement;
-        if (e.key === 'p' && (e.ctrlKey || e.metaKey)) {
-            var fieldEl = el.closest('.field');
-            var persistCheck = fieldEl ? fieldEl.querySelector('.param-persist-check') : null;
-            if (!persistCheck) {
-                var row = el.closest('.custom-header-row');
-                persistCheck = row ? row.querySelector('.custom-header-persist-check') : null;
-            }
-            if (persistCheck) {
-                persistCheck.click();
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            return;
-        }
         if (el.tagName === 'TEXTAREA' && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
             var val = el.value;
             var pos = el.selectionStart;

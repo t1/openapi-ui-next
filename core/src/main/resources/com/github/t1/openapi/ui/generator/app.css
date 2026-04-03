@@ -456,16 +456,29 @@ pre.response code.hljs {
 .custom-header-name {
     flex: 1;
 }
-.custom-header-value {
+.custom-header-row > .control {
     flex: 2;
 }
-.custom-header-persist {
-    white-space: nowrap;
-    font-size: 0.6875rem !important;
+/* nudge pin icon left so it doesn't collide with the select dropdown caret */
+.control .select ~ .icon.is-right {
+    right: 1.75em;
+}
+.persist-toggle {
+    pointer-events: auto !important;
+    cursor: pointer;
     color: var(--bulma-text-weak);
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
+    opacity: 0.3;
+    z-index: 4;
+    transform: rotate(45deg);
+    transition: opacity 0.15s, color 0.15s, transform 0.15s;
+}
+.persist-toggle:hover {
+    opacity: 0.6;
+}
+.persist-toggle[aria-pressed="true"] {
+    color: var(--bulma-link);
+    opacity: 1;
+    transform: rotate(0);
 }
 .custom-header-add {
     border: 1px dashed var(--bulma-border);
@@ -517,17 +530,4 @@ pre.response code.hljs {
 }
 .global-headers.is-collapsed .global-headers-body {
     display: none;
-}
-#detail .label:has(.param-persist) {
-    display: flex;
-    align-items: center;
-}
-.param-persist {
-    margin-left: auto;
-    font-size: 0.6875rem !important;
-    color: var(--bulma-text-weak);
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    white-space: nowrap;
 }

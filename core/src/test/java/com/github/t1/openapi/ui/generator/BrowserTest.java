@@ -117,11 +117,29 @@ class BrowserTest {
             then(app.isGlobalHeadersCollapsed()).isTrue();
         }
 
+        @Test void shouldShowGlobalHeaderPinAsIconRight() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+
+            then(app.isGlobalHeaderPinInsideControl(0)).isTrue();
+        }
+
+        @Test void shouldToggleGlobalHeaderPersistWithShortcut() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.fillGlobalHeader(0, "Authorization", "Bearer secret");
+            app.focusGlobalHeaderValue(0);
+
+            app.pressKey("Control+p");
+
+            then(app.isGlobalHeaderPersisted(0)).isTrue();
+        }
+
         @Test void shouldPersistGlobalHeader() {
             app.clickGlobalHeadersToggle();
             app.clickGlobalHeaderButton("+ Add global header");
             app.fillGlobalHeader(0, "Authorization", "Bearer secret");
-            app.checkGlobalHeaderPersist(0);
+            app.toggleGlobalHeaderPersist(0);
             app.navigateHome();
             app.clickGlobalHeadersToggle();
             then(app.globalHeaderName(0)).isEqualTo("Authorization");
@@ -132,7 +150,7 @@ class BrowserTest {
             app.clickGlobalHeadersToggle();
             app.clickGlobalHeaderButton("+ Add global header");
             app.fillGlobalHeader(0, "Authorization", "Bearer secret");
-            app.checkGlobalHeaderPersist(0);
+            app.toggleGlobalHeaderPersist(0);
             app.fillGlobalHeaderName(0, "X-Auth");
             app.navigateHome();
             app.clickGlobalHeadersToggle();
@@ -144,7 +162,7 @@ class BrowserTest {
             app.clickGlobalHeadersToggle();
             app.clickGlobalHeaderButton("+ Add global header");
             app.fillGlobalHeader(0, "Authorization", "Bearer secret");
-            app.checkGlobalHeaderPersist(0);
+            app.toggleGlobalHeaderPersist(0);
             app.navigateHome();
             app.clickGlobalHeadersToggle();
             app.fillGlobalHeaderName(0, "X-Auth");
@@ -158,7 +176,7 @@ class BrowserTest {
             app.clickGlobalHeadersToggle();
             app.clickGlobalHeaderButton("+ Add global header");
             app.fillGlobalHeader(0, "Authorization", "Bearer secret");
-            app.checkGlobalHeaderPersist(0);
+            app.toggleGlobalHeaderPersist(0);
             app.navigateHome();
             app.clickGlobalHeadersToggle();
             then(app.globalHeaderRowCount()).isEqualTo(1);
@@ -173,8 +191,8 @@ class BrowserTest {
             app.clickGlobalHeadersToggle();
             app.clickGlobalHeaderButton("+ Add global header");
             app.fillGlobalHeader(0, "X-Temp", "val");
-            app.checkGlobalHeaderPersist(0);
-            app.uncheckGlobalHeaderPersist(0);
+            app.toggleGlobalHeaderPersist(0);
+            app.toggleGlobalHeaderPersist(0);
             app.navigateHome();
             app.clickGlobalHeadersToggle();
             then(app.globalHeaderRowCount()).isEqualTo(0);
@@ -206,9 +224,9 @@ class BrowserTest {
         }
 
         @Test void modeButtonsHaveTooltips() {
-            then(app.modeButtonTooltip("try")).contains("1");
-            then(app.modeButtonTooltip("httpie")).contains("2");
-            then(app.modeButtonTooltip("curl")).contains("3");
+            then(app.modeButtonTooltip("try")).contains("Ctrl+1");
+            then(app.modeButtonTooltip("httpie")).contains("Ctrl+2");
+            then(app.modeButtonTooltip("curl")).contains("Ctrl+3");
         }
 
         @Test void arrowRightSwitchesToNextMode() {
@@ -264,23 +282,23 @@ class BrowserTest {
             then(app.currentMode()).isEqualTo("curl");
         }
 
-        @Test void numberKeySwitchesMode() {
+        @Test void shortcutKeySwitchesMode() {
             app.focusModeToggle();
 
-            app.pressKey("2");
+            app.pressKey("Control+2");
             then(app.currentMode()).isEqualTo("httpie");
 
-            app.pressKey("3");
+            app.pressKey("Control+3");
             then(app.currentMode()).isEqualTo("curl");
 
-            app.pressKey("1");
+            app.pressKey("Control+1");
             then(app.currentMode()).isEqualTo("try");
         }
 
-        @Test void numberKeySwitchesModeFromTree() {
+        @Test void shortcutKeySwitchesModeFromTree() {
             app.focusTree();
 
-            app.pressKey("2");
+            app.pressKey("Control+2");
 
             then(app.currentMode()).isEqualTo("httpie");
         }
@@ -890,7 +908,7 @@ class BrowserTest {
             app.clickTreeNode("pets/{id}/index.html");
             app.waitForInput("id");
             app.fillInput("id", "42");
-            app.checkParamPersist("id");
+            app.toggleParamPersist("id");
 
             app.clickMethodTab(2); // switch to DELETE tab
             app.waitForDetailContent("Delete a pet");
@@ -903,7 +921,7 @@ class BrowserTest {
             app.clickTreeNode("pets/{id}/index.html");
             app.waitForInput("id");
             app.fillInput("id", "42");
-            app.checkParamPersist("id");
+            app.toggleParamPersist("id");
 
             app.expandAllNodes();
             app.clickTreeNode("pets/{id}/visits/{visitId}/index.html");
@@ -978,20 +996,40 @@ class BrowserTest {
             then(app.currentMode()).isEqualTo("try");
         }
 
-        @Test void shouldTogglePersistWithCtrlP() {
+        @Test void shouldTogglePersistWithShortcut() {
             app.waitForInput("petId");
             app.focusInput("petId");
 
             app.pressKey("Control+p");
 
-            then(app.isParamPersistChecked("petId")).isTrue();
+            then(app.isParamPersisted("petId")).isTrue();
+        }
+
+        @Test void shouldShowPinUprightWhenPinned() {
+            app.waitForInput("petId");
+            app.focusInput("petId");
+            app.pressKey("Control+p");
+
+            then(app.pinIconRotationAfterTransition("petId")).isEqualTo(0);
+        }
+
+        @Test void shouldShowPinTiltedWhenUnpinned() {
+            app.waitForDetailContent("Get a pet");
+
+            then(app.pinIconRotationAfterTransition("petId")).isEqualTo(45);
         }
 
         @Test void shouldPersistSelectQueryParam() {
             app.selectOption("status", "adopted");
-            app.checkParamPersist("status");
+            app.toggleParamPersist("status");
             app.navigateHome();
             then(app.selectValue("status")).isEqualTo("adopted");
+        }
+
+        @Test void shouldNotOverlapSelectCaretWithPinIcon() {
+            app.waitForDetailContent("Get a pet");
+
+            then(app.pinIconRight("status")).isGreaterThanOrEqualTo(20);
         }
 
         @Test void shouldOpenSelectOnEnterInsteadOfSend() {
@@ -1088,6 +1126,18 @@ class BrowserTest {
             app.clickSend();
 
             then(app.sendButtonText()).isEqualTo("Copied!");
+        }
+
+        @Test void shouldFocusCopyButtonAfterCopyViaEnter() {
+            app.clickModeButton("curl");
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForInput("petId");
+            app.fillInput("petId", "42");
+            app.focusInput("petId");
+            app.pressKey("Enter");
+
+            then(app.isSendButtonFocused()).isTrue();
         }
 
         @Test void curlModeIncludesMethod() {
@@ -1604,21 +1654,21 @@ class BrowserTest {
 
         @Test void shouldPersistSpecDefinedHeaderValue() {
             app.fillInput("X-Request-ID", "persist-me");
-            app.checkParamPersist("X-Request-ID");
+            app.toggleParamPersist("X-Request-ID");
             app.navigateHome();
             then(app.inputValue("X-Request-ID")).isEqualTo("persist-me");
         }
 
         @Test void shouldPersistQueryParamValue() {
             app.fillInput("limit", "25");
-            app.checkParamPersist("limit");
+            app.toggleParamPersist("limit");
             app.navigateHome();
             then(app.inputValue("limit")).isEqualTo("25");
         }
 
         @Test void shouldPersistBooleanQueryParam() {
             app.checkCheckbox("verbose");
-            app.checkParamPersist("verbose");
+            app.toggleParamPersist("verbose");
             app.navigateHome();
             then(app.isCheckboxChecked("verbose")).isTrue();
         }
@@ -1626,7 +1676,7 @@ class BrowserTest {
         @Test void shouldCleanUpOldKeyWhenRenamingPersistedCustomHeader() {
             app.clickButton("+ Add custom header");
             app.fillCustomHeader(0, "X-Debug", "verbose");
-            app.checkCustomHeaderPersist(0);
+            app.toggleCustomHeaderPersist(0);
             app.fillCustomHeaderName(0, "X-Test");
             app.navigateHome();
             then(app.customHeaderRowCount()).isEqualTo(1);
@@ -1636,7 +1686,7 @@ class BrowserTest {
         @Test void shouldCleanUpOldKeyWhenRenamingRestoredPersistedCustomHeader() {
             app.clickButton("+ Add custom header");
             app.fillCustomHeader(0, "X-Debug", "verbose");
-            app.checkCustomHeaderPersist(0);
+            app.toggleCustomHeaderPersist(0);
             app.navigateHome();
             app.fillCustomHeaderName(0, "X-Test");
             app.navigateHome();
@@ -1647,7 +1697,7 @@ class BrowserTest {
         @Test void shouldPersistPerOperationCustomHeader() {
             app.clickButton("+ Add custom header");
             app.fillCustomHeader(0, "X-Debug", "verbose");
-            app.checkCustomHeaderPersist(0);
+            app.toggleCustomHeaderPersist(0);
             app.navigateHome();
             then(app.customHeaderRowCount()).isEqualTo(1);
             then(app.customHeaderName(0)).isEqualTo("X-Debug");
@@ -1657,7 +1707,7 @@ class BrowserTest {
         @Test void shouldRemovePersistedCustomHeaderFromStorageOnDelete() {
             app.clickButton("+ Add custom header");
             app.fillCustomHeader(0, "X-Debug", "verbose");
-            app.checkCustomHeaderPersist(0);
+            app.toggleCustomHeaderPersist(0);
             app.navigateHome();
             then(app.customHeaderRowCount()).isEqualTo(1);
 

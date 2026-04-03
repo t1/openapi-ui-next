@@ -216,6 +216,35 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     String selectValue(String name) {return page.locator("#detail select[name='" + name + "']").inputValue();}
 
+    int pinIconRotation(String name) {
+        return readPinRotation(name);
+    }
+
+    int pinIconRotationAfterTransition(String name) {
+        // wait for transition to complete (150ms CSS transition + margin)
+        page.waitForTimeout(200);
+        return readPinRotation(name);
+    }
+
+    private int readPinRotation(String name) {
+        return ((Number) page.evaluate(
+                "() => { var el = document.querySelector(\"#detail [name='" + name + "']\");"
+                        + " var toggle = el.closest('.field').querySelector('.persist-toggle');"
+                        + " var t = getComputedStyle(toggle).transform;"
+                        + " if (!t || t === 'none') return 0;"
+                        + " var m = t.match(/matrix\\(([^)]+)\\)/);"
+                        + " if (!m) return 0;"
+                        + " var v = m[1].split(',').map(Number);"
+                        + " return Math.round(Math.atan2(v[1], v[0]) * 180 / Math.PI); }")).intValue();
+    }
+
+    double pinIconRight(String name) {
+        return ((Number) page.evaluate(
+                "() => { var sel = document.querySelector(\"#detail select[name='" + name + "']\");"
+                        + " var icon = sel.closest('.control').querySelector('.icon.is-right');"
+                        + " return parseFloat(getComputedStyle(icon).right); }")).doubleValue();
+    }
+
     void fillRequestBody(String body) {page.locator("#detail textarea[data-request-body]").fill(body);}
 
     void focusRequestBody() {page.locator("#detail textarea[data-request-body]").focus();}
@@ -651,12 +680,22 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("#global-headers .custom-header-row").count();
     }
 
-    void checkGlobalHeaderPersist(int index) {
-        page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-persist-check").check();
+    void toggleGlobalHeaderPersist(int index) {
+        page.locator("#global-headers .custom-header-row").nth(index).locator(".persist-toggle").click();
     }
 
-    void uncheckGlobalHeaderPersist(int index) {
-        page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-persist-check").uncheck();
+    boolean isGlobalHeaderPersisted(int index) {
+        return "true".equals(page.locator("#global-headers .custom-header-row").nth(index)
+                .locator(".persist-toggle").getAttribute("aria-pressed"));
+    }
+
+    boolean isGlobalHeaderPinInsideControl(int index) {
+        return page.locator("#global-headers .custom-header-row").nth(index)
+                .locator(".control.has-icons-right .icon.is-right").count() > 0;
+    }
+
+    void focusGlobalHeaderValue(int index) {
+        page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-value").focus();
     }
 
     void removeGlobalHeader(int index) {
@@ -671,12 +710,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-value").inputValue();
     }
 
-    void checkParamPersist(String paramName) {
-        page.locator("#detail .field:has([name='" + paramName + "']) .param-persist-check").check();
+    void toggleParamPersist(String paramName) {
+        page.locator("#detail .field:has([name='" + paramName + "']) .persist-toggle").click();
     }
 
-    boolean isParamPersistChecked(String paramName) {
-        return page.locator("#detail .field:has([name='" + paramName + "']) .param-persist-check").isChecked();
+    boolean isParamPersisted(String paramName) {
+        return "true".equals(page.locator("#detail .field:has([name='" + paramName + "']) .persist-toggle").getAttribute("aria-pressed"));
     }
 
     String inputValue(String name) {
@@ -687,8 +726,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("#detail input[name='" + name + "']").getAttribute("placeholder");
     }
 
-    void checkCustomHeaderPersist(int index) {
-        page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-persist-check").check();
+    void toggleCustomHeaderPersist(int index) {
+        page.locator("#detail .custom-header-row").nth(index).locator(".persist-toggle").click();
     }
 
     String customHeaderName(int index) {
