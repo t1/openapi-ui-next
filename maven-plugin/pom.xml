@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>openapi-ui-maven-plugin</artifactId>
+    <name>OpenAPI UI Maven Plugin</name>
     <packaging>maven-plugin</packaging>
 
     <properties>

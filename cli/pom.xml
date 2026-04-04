@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>openapi-ui-cli</artifactId>
+    <name>OpenAPI UI CLI</name>
 
     <dependencies>
         <dependency>

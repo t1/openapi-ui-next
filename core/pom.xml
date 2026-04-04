@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>openapi-ui-core</artifactId>
+    <name>OpenAPI UI Core</name>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -21,7 +22,7 @@
         <dependency>
             <groupId>com.github.t1</groupId>
             <artifactId>bulma-java</artifactId>
-            <version>1.0a18</version>
+            <version>1.0a20</version>
         </dependency>
         <dependency>
             <groupId>io.swagger.parser.v3</groupId>
