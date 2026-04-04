@@ -1,6 +1,14 @@
 # OpenAPI UI Next
 
+[![Java CI](https://github.com/t1/openapi-ui-next/actions/workflows/maven.yml/badge.svg)](https://github.com/t1/openapi-ui-next/actions/workflows/maven.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 Generates static, keyboard-navigable HTML UIs from OpenAPI specifications; via CLI or Maven plugin.
+
+> This is also my playground for learning how to vibe-code at the Harness Engineering level.
+
+![OpenAPI UI Next — light](docs/screenshots/hero.png#gh-light-mode-only)
+![OpenAPI UI Next — dark](docs/screenshots/hero-dark.png#gh-dark-mode-only)
 
 ## Why?
 
@@ -31,6 +39,13 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
 - Responsive layout (desktop: side-by-side; mobile: stacked)
 - Automatic dark mode support (uses system setting)
 
+<details>
+<summary>Tag-based tree view</summary>
+
+![Tag view — light](docs/screenshots/tag-view.png#gh-light-mode-only)
+![Tag view — dark](docs/screenshots/tag-view-dark.png#gh-dark-mode-only)
+</details>
+
 **API Documentation**
 - Operation summary, description, deprecated badge, tags, external docs
 - Parameter inputs with type (path/query/header) and required badges, with optional localStorage persistence
@@ -39,8 +54,29 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
 - Collapsible nested object and array properties in schema views
 - Accept header select for multi-content-type endpoints
 - Boolean parameters rendered as checkboxes (two-state: omit or send `true`; explicitly
-  sending `false` is not supported — a three-state control would add UX complexity for a
+  sending `false` is not supported -- a three-state control would add UX complexity for a
   rare need, since most boolean query params are opt-in flags with a `false` default)
+
+<details>
+<summary>Parameter inputs</summary>
+
+![Parameters filled — light](docs/screenshots/params-filled.png#gh-light-mode-only)
+![Parameters filled — dark](docs/screenshots/params-filled-dark.png#gh-dark-mode-only)
+</details>
+
+<details>
+<summary>Response schema tabs</summary>
+
+![Response schema tabs — light](docs/screenshots/response-schema-tabs.png#gh-light-mode-only)
+![Response schema tabs — dark](docs/screenshots/response-schema-tabs-dark.png#gh-dark-mode-only)
+</details>
+
+<details>
+<summary>Nested schema expanded</summary>
+
+![Nested schema expanded — light](docs/screenshots/nested-schema-expanded.png#gh-light-mode-only)
+![Nested schema expanded — dark](docs/screenshots/nested-schema-expanded-dark.png#gh-dark-mode-only)
+</details>
 
 **Request Headers**
 - Global headers panel: set headers that apply to all requests, with optional localStorage persistence
@@ -54,34 +90,12 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
   deprecated indicators, and required-but-missing warnings; undocumented headers are hidden behind
   a "Show all" button when documented headers exist; auto-expands on first send when documented headers are present
 
-## Status
+<details>
+<summary>Try mode with JSON response</summary>
 
-I haven't released a version, yet, because I want a few more features that I consider essential for an MVP.
-But it's already quite usable.
-
-BTW: this is my playground for learning how to vibe-code at the Harness Engineering level.
-
-## Modules
-
-| Module         | Description                                                  |
-|----------------|--------------------------------------------------------------|
-| `core`         | Generator library: parses specs and produces HTML + CSS + JS |
-| `cli`          | Command-line tool: executable fat jar with shell header      |
-| `maven-plugin` | Maven plugin: integrates generation into build pipelines     |
-| `demo`         | Quarkus petstore app: exercises the plugin end-to-end        |
-
-## Build
-
-```bash
-mvn verify
-```
-
-Browser tests run in Chromium by default. To test with WebKit (Safari) or Firefox:
-
-```bash
-mvn test -pl core -Dplaywright.browser=webkit
-mvn test -pl core -Dplaywright.browser=firefox
-```
+![Try mode — light](docs/screenshots/try-mode-json-response.png#gh-light-mode-only)
+![Try mode — dark](docs/screenshots/try-mode-json-response-dark.png#gh-dark-mode-only)
+</details>
 
 ## Usage
 
@@ -123,6 +137,15 @@ java -jar demo/target/quarkus-app/quarkus-run.jar
 ```
 
 Then open http://localhost:8080/openapi-ui/index.html.
+
+## Modules
+
+| Module         | Description                                                  |
+|----------------|--------------------------------------------------------------|
+| `core`         | Generator library: parses specs and produces HTML + CSS + JS |
+| `cli`          | Command-line tool: executable fat jar with shell header      |
+| `maven-plugin` | Maven plugin: integrates generation into build pipelines     |
+| `demo`         | Quarkus petstore app: exercises the plugin end-to-end        |
 
 ## Tech Stack
 
@@ -178,3 +201,30 @@ output/
                 ├── index.html
                 └── GET.html # Fragment for GET /pets/{petId}/visits/{visitId}
 ```
+
+## Contributing
+
+Even just using the project and leaving a star helps a lot -- it shows there's interest
+and keeps the momentum going. Bug reports and feature ideas are equally welcome.
+
+### Prerequisites
+
+- Java 21+
+- Maven 3.9+
+
+### Build
+
+```bash
+mvn verify
+```
+
+Browser tests run in Chromium by default. To test with WebKit (Safari) or Firefox:
+
+```bash
+mvn test -pl core -Dplaywright.browser=webkit
+mvn test -pl core -Dplaywright.browser=firefox
+```
+
+## License
+
+[Apache License 2.0](LICENSE)

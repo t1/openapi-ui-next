@@ -9,6 +9,37 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>OpenAPI UI Next</name>
+    <description>Generates static, keyboard-navigable HTML UIs from OpenAPI specifications</description>
+    <url>https://github.com/t1/openapi-ui-next</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>t1</id>
+            <name>Rudiger zu Dohna</name>
+            <url>https://github.com/t1</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/t1/openapi-ui-next.git</connection>
+        <developerConnection>scm:git:git@github.com:t1/openapi-ui-next.git</developerConnection>
+        <url>https://github.com/t1/openapi-ui-next</url>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/t1/openapi-ui-next/issues</url>
+    </issueManagement>
+
     <modules>
         <module>core</module>
         <module>maven-plugin</module>

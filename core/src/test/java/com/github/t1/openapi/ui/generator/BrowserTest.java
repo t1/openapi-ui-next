@@ -735,6 +735,12 @@ class BrowserTest {
     @ResourceLock("multi-method") @Nested class GivenMultiMethodApp {
         @RegisterExtension static AppFixture app = launch("multi-method.yaml");
 
+        @Test void shouldCaptureHeroScreenshot() {
+            app.waitForDetailContent("List pets");
+            app.expandAllNodes();
+            app.screenshot("hero");
+        }
+
         @Test void shouldNavigateToTabWhenClickingMethodBadge() {
             app.waitForDetailContent("List pets");
             app.expandFirstNode();
