@@ -5,37 +5,40 @@
 
 Generates static, keyboard-navigable HTML UIs from OpenAPI specifications; via CLI or Maven plugin.
 
-> This is also my playground for learning how to vibe-code at the Harness Engineering level.
-
 ![OpenAPI UI Next — light](docs/screenshots/hero.png#gh-light-mode-only)
 ![OpenAPI UI Next — dark](docs/screenshots/hero-dark.png#gh-dark-mode-only)
 
 ## Why?
 
 When Swagger came out, I loved it! Esp. the "Try it out" was a real game changer. But APIs keep getting bigger and
-more complex, yet Swagger didn't grow alongside UX-wise. I absolutely want to be able to quickly navigate APIs with the
-keyboard and have not only a nice-looking, but a clear and usage oriented view on the API.
+more complex, yet Swagger didn't grow alongside UX-wise. I absolutely need to be able to quickly navigate APIs with the
+keyboard and have not only a nice-looking, but a clear and poweruser-oriented view on the API.
 
 In contrast, Swagger tends to show everything at once: `curl` commands you didn't ask for, response schemas that look
-just like actual responses, and deeply nested sections that bury the information you need. And schema objects cluttered
-at the end. _OpenAPI UI Next_ keeps the UI clean by showing details on demand: schema documentation, response types,
-and code snippets are there when you want them, hidden when you don't.
+just like actual responses, and deeply nested sections that bury the information you need, while schema objects are
+cluttered at the end. I often find myself copying ids from here to there and back. _OpenAPI UI Next_ keeps the UI clean
+by showing details on demand: schema documentation, response types, code snippets, etc. it's there when you want them,
+but hidden when you don't.
 
-The OpenAPI UI tools I know (Swagger UI, Redoc (even the generated variant), Rapidoc) are slow by design:
-they are JavaScript-heavy SPAs that parse the spec at runtime in the browser. This means slow initial loads on large
-specs. _OpenAPI UI Next_ takes a different approach: it generates plain HTML + CSS at build time. The result is a set of
-static files that can be served from any web server or embedded in any backend, so they load instantly. The dynamic UX
-is provided mainly by HTMX, e.g. loading method fragments on click.
+With big schemas, performance is also an issue: The OpenAPI UI tools I know (Swagger UI, Redoc (even the generated
+variant), Rapidoc) are slow by design: they are JavaScript-heavy SPAs that parse the spec at runtime in the browser.
+This means slow initial loads on large specs. _OpenAPI UI Next_ takes a different approach: it generates plain HTML +
+CSS at build time. The result is a set of static files that can be served from any web server or embedded in any
+backend, so they load instantly. The dynamic UX is provided mainly by HTMX, e.g. loading method fragments on click.
+
+> This is also my playground for learning how to vibe-code at the Harness Engineering level.
 
 ## Features
 
 **Navigation & Layout**
+
 - Path-based or tag-based tree views with method badges
 - Resizable split pane with persistent width
 - Method tabs for switching operations on the same path
 - Keyboard navigation: cursor keys for spacial navigation in addition to Tab/Shift+Tab
-- Pin values, so you don't have to repeat them everywhere, quickly with Ctrl+P (Alt on Linux and Windows)
-- URL hash navigation: bookmarkable deep links (`#pets/GET`, `#[billing]invoices/GET`), browser back/forward
+- Pin values, so you don't have to repeat them everywhere, quickly with Ctrl+P (Alt on Linux and Windows);
+  kept in local storage, so it survives reloads
+- URL hash navigation: bookmarkable deep links (`#pets/GET`, `#[billing]invoices/GET`)
 - Responsive layout (desktop: side-by-side; mobile: stacked)
 - Automatic dark mode support (uses system setting)
 
@@ -47,8 +50,9 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
 </details>
 
 **API Documentation**
+
 - Operation summary, description, deprecated badge, tags, external docs
-- Parameter inputs with type (path/query/header) and required badges, with optional localStorage persistence
+- Parameter inputs with type (path/query/header) and required badges
 - Request body editor with JSON skeleton and schema documentation
 - Response schema with status code tabs, property types, required markers, and examples
 - Collapsible nested object and array properties in schema views
@@ -79,11 +83,12 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
 </details>
 
 **Request Headers**
-- Global headers panel: set headers that apply to all requests, with optional localStorage persistence
-- Per-operation custom headers: add arbitrary headers per endpoint, with optional persistence
-- Header merge priority: per-operation custom > spec-defined > global
+
+- Global headers panel: set headers that apply to all requests; pin them when you want
+- Per-operation custom headers: add arbitrary, pinnable headers per endpoint
 
 **Try It Out**
+
 - Three modes: Try (fetch), httpie, curl; switch at any time with Ctrl+1/2/3 (Alt on Linux and Windows)
 - Response rendering with syntax highlighting (JSON, HTML, XML, YAML)
 - Collapsible response headers display with spec documentation: documented headers show descriptions,
@@ -110,20 +115,21 @@ mvn -pl cli package
 
 ```xml
 <plugin>
-    <groupId>com.github.t1</groupId>
-    <artifactId>openapi-ui-maven-plugin</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <configuration>
-        <specFile>src/main/resources/openapi.yaml</specFile>
-    </configuration>
-    <executions>
-        <execution>
-            <phase>generate-resources</phase>
-            <goals>
-                <goal>generate</goal>
-            </goals>
-        </execution>
-    </executions>
+  <groupId>com.github.t1</groupId>
+  <artifactId>openapi-ui-maven-plugin</artifactId>
+  <version>${project.version}</version>
+  <executions>
+    <execution>
+      <phase>process-classes</phase>
+      <goals>
+        <goal>generate</goal>
+      </goals>
+      <configuration>
+        <specFile>${project.build.directory}/generated/openapi.yaml</specFile>
+        <outputDirectory>${project.build.directory}/classes/META-INF/resources/openapi-ui</outputDirectory>
+      </configuration>
+    </execution>
+  </executions>
 </plugin>
 ```
 
@@ -150,12 +156,14 @@ Then open http://localhost:8080/openapi-ui/index.html.
 ## Tech Stack
 
 **Build-time** (generator + tests):
+
 - Java 21+, Maven
 - [swagger-parser](https://github.com/swagger-api/swagger-parser) for OpenAPI parsing
 - [bulma-java](https://github.com/t1/bulma-java) for HTML generation
 - [Playwright](https://playwright.dev/) for browser integration tests
 
 **Runtime** (generated output, served as static files):
+
 - [Bulma](https://bulma.io/) CSS framework
 - [HTMX](https://htmx.org/) for dynamic fragment loading
 - [highlight.js](https://highlightjs.org/) for response syntax highlighting
