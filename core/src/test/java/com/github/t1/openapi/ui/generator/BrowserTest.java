@@ -1,6 +1,5 @@
 package com.github.t1.openapi.ui.generator;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -8,6 +7,8 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.util.Map;
 
+import static com.github.t1.openapi.ui.generator.AppFixture.MOD;
+import static com.github.t1.openapi.ui.generator.AppFixture.MOD_LABEL;
 import static org.assertj.core.api.BDDAssertions.then;
 
 class BrowserTest {
@@ -130,7 +131,7 @@ class BrowserTest {
             app.fillGlobalHeader(0, "Authorization", "Bearer secret");
             app.focusGlobalHeaderValue(0);
 
-            app.pressKey("Control+p");
+            app.pressKey(MOD + "+p");
 
             then(app.isGlobalHeaderPersisted(0)).isTrue();
         }
@@ -224,9 +225,9 @@ class BrowserTest {
         }
 
         @Test void shouldShowTooltipsOnModeButtons() {
-            then(app.modeButtonTooltip("try")).contains("Ctrl+1");
-            then(app.modeButtonTooltip("httpie")).contains("Ctrl+2");
-            then(app.modeButtonTooltip("curl")).contains("Ctrl+3");
+            then(app.modeButtonTooltip("try")).contains(MOD_LABEL + "+1");
+            then(app.modeButtonTooltip("httpie")).contains(MOD_LABEL + "+2");
+            then(app.modeButtonTooltip("curl")).contains(MOD_LABEL + "+3");
         }
 
         @Test void shouldSwitchToNextModeOnArrowRight() {
@@ -285,20 +286,20 @@ class BrowserTest {
         @Test void shouldSwitchModeOnShortcutKey() {
             app.focusModeToggle();
 
-            app.pressKey("Control+2");
+            app.pressKey(MOD + "+2");
             then(app.currentMode()).isEqualTo("httpie");
 
-            app.pressKey("Control+3");
+            app.pressKey(MOD + "+3");
             then(app.currentMode()).isEqualTo("curl");
 
-            app.pressKey("Control+1");
+            app.pressKey(MOD + "+1");
             then(app.currentMode()).isEqualTo("try");
         }
 
         @Test void shouldSwitchModeOnShortcutKeyFromTree() {
             app.focusTree();
 
-            app.pressKey("Control+2");
+            app.pressKey(MOD + "+2");
 
             then(app.currentMode()).isEqualTo("httpie");
         }
@@ -1045,7 +1046,7 @@ class BrowserTest {
             app.waitForInput("petId");
             app.focusInput("petId");
 
-            app.pressKey("Control+p");
+            app.pressKey(MOD + "+p");
 
             then(app.isParamPersisted("petId")).isTrue();
         }
@@ -1053,7 +1054,7 @@ class BrowserTest {
         @Test void shouldShowPinUprightWhenPinned() {
             app.waitForInput("petId");
             app.focusInput("petId");
-            app.pressKey("Control+p");
+            app.pressKey(MOD + "+p");
 
             then(app.pinIconRotationAfterTransition("petId")).isEqualTo(0);
         }
