@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 import static com.github.t1.bulmajava.basic.Color.DANGER;
 import static com.github.t1.bulmajava.basic.Color.INFO;
 import static com.github.t1.bulmajava.basic.Color.LINK;
-import static com.github.t1.bulmajava.basic.Color.PRIMARY;
 import static com.github.t1.bulmajava.basic.Color.SUCCESS;
 import static com.github.t1.bulmajava.basic.Color.WARNING;
 import static com.github.t1.bulmajava.elements.Box.box;
@@ -140,11 +139,11 @@ public class OpenApiUiGenerator {
                 splitLayout
         ), errorBanner);
         return html(pageTitle)
-                .stylesheet("bulma.min.css")
-                .stylesheet("css/all.min.css")
+                .stylesheet("vendor/bulma.min.css")
+                .stylesheet("vendor/css/all.min.css")
                 .stylesheet("openapi-ui.css")
-                .script("htmx.min.js")
-                .script("highlight.min.js")
+                .script("vendor/htmx.min.js")
+                .script("vendor/highlight.min.js")
                 .javaScriptCode(Toggle.js())
                 .javaScriptCode(Tree.js())
                 .javaScriptCode(SplitPane.js())
@@ -159,14 +158,13 @@ public class OpenApiUiGenerator {
         generateFragments(root, ApiPath.ROOT);
         Files.writeString(outputDir.resolve("tag-tree.html"), tagTree.render());
         Files.writeString(outputDir.resolve("path-tree.html"), pathTree.render());
-        copyWebJarResource("bulma", "css/bulma.min.css", "bulma.min.css");
-        copyWebJarResource("htmx.org", "dist/htmx.min.js", "htmx.min.js");
-        copyWebJarResource("highlightjs", "highlight.min.js", "highlight.min.js");
-        Files.createDirectories(outputDir.resolve("css"));
-        Files.createDirectories(outputDir.resolve("webfonts"));
-        copyWebJarResource("fortawesome__fontawesome-free", "css/all.min.css", "css/all.min.css");
-        copyWebJarResource("fortawesome__fontawesome-free", "webfonts/fa-solid-900.woff2", "webfonts/fa-solid-900.woff2");
-        copyWebJarResource("fortawesome__fontawesome-free", "webfonts/fa-regular-400.woff2", "webfonts/fa-regular-400.woff2");
+        Files.createDirectories(outputDir.resolve("vendor/css"));
+        Files.createDirectories(outputDir.resolve("vendor/webfonts"));
+        copyWebJarResource("bulma", "css/bulma.min.css", "vendor/bulma.min.css");
+        copyWebJarResource("htmx.org", "dist/htmx.min.js", "vendor/htmx.min.js");
+        copyWebJarResource("highlightjs", "highlight.min.js", "vendor/highlight.min.js");
+        copyWebJarResource("fortawesome__fontawesome-free", "css/all.min.css", "vendor/css/all.min.css");
+        copyWebJarResource("fortawesome__fontawesome-free", "webfonts/fa-solid-900.woff2", "vendor/webfonts/fa-solid-900.woff2");
         log.info("Done. Output written to {}", outputDir);
     }
 

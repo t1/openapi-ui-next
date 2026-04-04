@@ -1,6 +1,6 @@
 # OpenAPI UI Next
 
-Generates static, keyboard-navigable HTML UIs from OpenAPI specifications; via cli or maven plugin.
+Generates static, keyboard-navigable HTML UIs from OpenAPI specifications; via CLI or Maven plugin.
 
 ## Why?
 
@@ -22,14 +22,14 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
 ## Features
 
 **Navigation & Layout**
-- Path-based and tag-based tree views with method badges
+- Path-based or tag-based tree views with method badges
 - Resizable split pane with persistent width
 - Method tabs for switching operations on the same path
-- Three-level keyboard navigation: tree → method tabs → content fields
+- Keyboard navigation: cursor keys for spacial navigation in addition to Tab/Shift+Tab
+- Pin values, so you don't have to repeat them everywhere, quickly with Ctrl+P (Alt on Linux and Windows)
 - URL hash navigation: bookmarkable deep links (`#pets/GET`, `#[billing]invoices/GET`), browser back/forward
-- In-memory DOM cache: field values, responses, and UI state are preserved when navigating between operations (session-only, no storage)
 - Responsive layout (desktop: side-by-side; mobile: stacked)
-- Dark mode support
+- Automatic dark mode support (uses system setting)
 
 **API Documentation**
 - Operation summary, description, deprecated badge, tags, external docs
@@ -48,7 +48,7 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
 - Header merge priority: per-operation custom > spec-defined > global
 
 **Try It Out**
-- Three modes: Try (fetch), httpie, curl
+- Three modes: Try (fetch), httpie, curl; switch at any time with Ctrl+1/2/3 (Alt on Linux and Windows)
 - Response rendering with syntax highlighting (JSON, HTML, XML, YAML)
 - Collapsible response headers display with spec documentation: documented headers show descriptions,
   deprecated indicators, and required-but-missing warnings; undocumented headers are hidden behind
@@ -57,7 +57,7 @@ is provided mainly by HTMX, e.g. loading method fragments on click.
 ## Status
 
 I haven't released a version, yet, because I want a few more features that I consider essential for an MVP.
-But it's already quite usable already.
+But it's already quite usable.
 
 BTW: this is my playground for learning how to vibe-code at the Harness Engineering level.
 
@@ -95,7 +95,6 @@ mvn -pl cli package
 ### Maven Plugin
 
 ```xml
-
 <plugin>
     <groupId>com.github.t1</groupId>
     <artifactId>openapi-ui-maven-plugin</artifactId>
@@ -127,15 +126,19 @@ Then open http://localhost:8080/openapi-ui/index.html.
 
 ## Tech Stack
 
+**Build-time** (generator + tests):
 - Java 21+, Maven
 - [swagger-parser](https://github.com/swagger-api/swagger-parser) for OpenAPI parsing
 - [bulma-java](https://github.com/t1/bulma-java) for HTML generation
-- [Bulma](https://bulma.io/) CSS framework (via webjars)
-- [HTMX](https://htmx.org/) for dynamic fragment loading (via webjars)
-- [highlight.js](https://highlightjs.org/) for response syntax highlighting (via webjars)
 - [Playwright](https://playwright.dev/) for browser integration tests
 
-## Generated Output
+**Runtime** (generated output, served as static files):
+- [Bulma](https://bulma.io/) CSS framework
+- [HTMX](https://htmx.org/) for dynamic fragment loading
+- [highlight.js](https://highlightjs.org/) for response syntax highlighting
+- [Font Awesome](https://fontawesome.com/) for icons
+
+## Example Output (Petstore)
 
 ```
 output/
@@ -143,9 +146,14 @@ output/
 ├── path-tree.html      # Path-based tree view
 ├── tag-tree.html       # Tag-based tree view
 ├── openapi-ui.css
-├── bulma.min.css
-├── htmx.min.js
-├── highlight.min.js
+├── vendor/             # Third-party libraries (from webjars)
+│   ├── bulma.min.css
+│   ├── htmx.min.js
+│   ├── highlight.min.js
+│   ├── css/
+│   │   └── all.min.css       # Font Awesome
+│   └── webfonts/
+│       └── fa-solid-900.woff2
 ├── owners/
 │   ├── index.html       # Path fragment: tab bar + first method
 │   ├── GET.html         # Fragment for GET /owners

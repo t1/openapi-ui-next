@@ -78,7 +78,7 @@ class OpenApiUiGeneratorTest {
         generate("/one-get.yaml");
 
         var indexHtml = Files.readString(outputDir.resolve("index.html"));
-        then(indexHtml).contains("htmx.min.js");
+        then(indexHtml).contains("vendor/htmx.min.js");
         then(indexHtml).contains("hx-get=\"pets/index.html\"");
         then(indexHtml).contains("hx-target=");
     }
