@@ -908,6 +908,28 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el.closest('[role="tree"]')) return;
         if (el.closest('.toggle')) return;
 
+        // Tab/Shift+Tab on a tab: jump into content or back to tree
+        if (e.key === 'Tab' && el.closest('.tabs')) {
+            e.preventDefault();
+            if (e.shiftKey) {
+                var tree = document.querySelector('[role="tree"]');
+                if (tree) tree.focus();
+            } else {
+                var target = findSpatialTarget(el, 'down');
+                if (target) target.focus();
+            }
+            return;
+        }
+
+        // Shift+Tab from content fields: go to the active tab, not the last one
+        if (e.key === 'Tab' && e.shiftKey && (el.closest('#method-content') || el.closest('#detail'))) {
+            e.preventDefault();
+            var activeTabLink = document.querySelector('.tabs .is-active a');
+            if (activeTabLink) activeTabLink.focus();
+            else { var tree = document.querySelector('[role="tree"]'); if (tree) tree.focus(); }
+            return;
+        }
+
         const isArrow = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.key) >= 0;
         if (!isArrow && e.key !== 'Enter' && e.key !== 'Escape') return;
 

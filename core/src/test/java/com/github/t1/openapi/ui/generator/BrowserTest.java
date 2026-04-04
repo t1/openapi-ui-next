@@ -830,6 +830,26 @@ class BrowserTest {
             then(app.isTabActive(2)).isTrue();
         }
 
+        @Test void shouldJumpIntoContentOnTabKeyFromMethodTab() {
+            app.waitForDetailContent("List pets");
+            app.focusTab(1);
+
+            app.pressKey("Tab");
+
+            then(app.isTabFocused()).isFalse();
+            then(app.isTabActive(1)).isTrue(); // tab should NOT switch
+            then(app.activeElementSelector()).contains("button"); // focus landed in content
+        }
+
+        @Test void shouldJumpToTreeOnShiftTabFromMethodTab() {
+            app.waitForDetailContent("List pets");
+            app.focusTab(1);
+
+            app.pressKey("Shift+Tab");
+
+            then(app.isTreeFocused()).isTrue();
+        }
+
         @Test void shouldNavigateFromTabsToFields() {
             app.focusTree();
             app.pressKey("ArrowRight"); // expand collapsed node
@@ -865,6 +885,18 @@ class BrowserTest {
             app.pressKey("ArrowUp"); // back to tabs
 
             then(app.isTabFocused()).isTrue();
+        }
+
+        @Test void shouldReturnToActiveTabOnShiftTabFromFirstField() {
+            app.waitForDetailContent("List pets"); // GET is first/active tab
+            app.focusTab(1);
+            app.pressKey("ArrowDown"); // enter fields
+
+            app.pressKey("Shift+Tab"); // back to tabs — should land on GET (active), not DELETE (last)
+
+            then(app.isTabFocused()).isTrue();
+            then(app.isTabActive(1)).isTrue(); // GET tab should still be active
+            then(app.detailText()).contains("List pets"); // content should not switch
         }
 
         @Test void shouldReturnToActiveTabOnArrowUpFromField() {
