@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>com.github.t1</groupId>
         <artifactId>openapi-ui</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0</version>
     </parent>
 
     <artifactId>openapi-ui-cli</artifactId>
@@ -64,7 +62,7 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.github.t1.openapi.ui.cli.Main</mainClass>
                                 </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                             </transformers>
                         </configuration>
                     </execution>
@@ -87,11 +85,11 @@
                                     exec java -jar "$0" "$@"
                                 </echo>
                                 <concat destfile="${project.build.directory}/openapi-ui" binary="true">
-                                    <fileset file="${project.build.directory}/openapi-ui.header"/>
-                                    <fileset file="${project.build.directory}/${project.build.finalName}.jar"/>
+                                    <fileset file="${project.build.directory}/openapi-ui.header" />
+                                    <fileset file="${project.build.directory}/${project.build.finalName}.jar" />
                                 </concat>
-                                <delete file="${project.build.directory}/openapi-ui.header"/>
-                                <chmod file="${project.build.directory}/openapi-ui" perm="755"/>
+                                <delete file="${project.build.directory}/openapi-ui.header" />
+                                <chmod file="${project.build.directory}/openapi-ui" perm="755" />
                             </target>
                         </configuration>
                     </execution>
