@@ -12,8 +12,6 @@
     <name>OpenAPI UI Demo</name>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
         <quarkus.platform.version>3.34.2</quarkus.platform.version>
         <maven.source.skip>true</maven.source.skip>
         <maven.javadoc.skip>true</maven.javadoc.skip>

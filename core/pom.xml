@@ -11,11 +11,6 @@
     <artifactId>openapi-ui-core</artifactId>
     <name>OpenAPI UI Core</name>
 
-    <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.github.t1</groupId>
