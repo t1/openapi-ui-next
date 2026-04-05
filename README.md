@@ -127,6 +127,14 @@ mvn -pl cli package
 
 Use `--verbose` for debug logging and full stack traces on errors.
 
+To preview the result locally:
+
+```bash
+python3 -m http.server 8000 -d <output-dir>
+```
+
+Then open http://localhost:8000.
+
 ### Maven Plugin
 
 ```xml
