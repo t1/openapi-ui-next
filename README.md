@@ -1,6 +1,7 @@
 # OpenAPI UI Next
 
 [![Java CI](https://github.com/t1/openapi-ui-next/actions/workflows/maven.yml/badge.svg)](https://github.com/t1/openapi-ui-next/actions/workflows/maven.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.t1/openapi-ui)](https://central.sonatype.com/artifact/com.github.t1/openapi-ui)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Generates static, keyboard-navigable HTML UIs from OpenAPI specifications; via CLI or Maven plugin.
