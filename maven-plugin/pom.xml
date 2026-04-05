@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.github.t1</groupId>
         <artifactId>openapi-ui</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>openapi-ui-maven-plugin</artifactId>
