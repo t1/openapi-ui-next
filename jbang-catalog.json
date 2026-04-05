@@ -1,0 +1,9 @@
+{
+  "aliases": {
+    "openapi-ui": {
+      "script-ref": "com.github.t1:openapi-ui-cli:RELEASE",
+      "description": "Generate static HTML UI from OpenAPI specifications",
+      "java-version": "21+"
+    }
+  }
+}

@@ -107,6 +107,19 @@ backend, so they load instantly. The dynamic UX is provided mainly by HTMX, e.g.
 ### CLI
 
 ```bash
+jbang openapi-ui@t1/openapi-ui-next <spec-file> <output-dir>
+```
+
+Or install it as a command:
+
+```bash
+jbang app install openapi-ui@t1/openapi-ui-next
+openapi-ui <spec-file> <output-dir>
+```
+
+Or build and run it locally:
+
+```bash
 mvn -pl cli package
 ./cli/target/openapi-ui <spec-file> <output-dir>
 ```
