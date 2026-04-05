@@ -271,11 +271,13 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void waitForResponse() {page.waitForSelector("#detail .response-status");}
 
-    /// Clicks Send and waits for the full request cycle to complete (button goes to "Sending..." and back to "Send").
+    /// Clicks Send and waits for the request cycle to complete.
+    /// Robust against missing the intermediate "Sending..." label.
     void resend() {
         clickSend();
-        page.waitForFunction("document.querySelector('#detail button[type=submit]').textContent === 'Sending...'");
-        page.waitForFunction("document.querySelector('#detail button[type=submit]').textContent === 'Send'");
+        waitForResponse();
+        // And ensure the button is back to its idle state
+        page.waitForFunction("() => document.querySelector('#detail button[type=submit]')?.textContent === 'Send'");
     }
 
     /// Clicks Send, waits for headers toggle to disappear and reappear (avoids "Sending..." race condition).
