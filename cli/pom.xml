@@ -81,9 +81,9 @@
                         </goals>
                         <configuration>
                             <target>
-                                <echo file="${project.build.directory}/openapi-ui.header">#!/bin/sh
-                                    exec java -jar "$0" "$@"
-                                </echo>
+                                <!-- trailing newline is critical: without it, binary JAR bytes
+                                     after the header become part of the last shell argument -->
+                                <echo file="${project.build.directory}/openapi-ui.header" message="#!/bin/sh${line.separator}exec java -jar &quot;$$0&quot; &quot;$$@&quot;${line.separator}" />
                                 <concat destfile="${project.build.directory}/openapi-ui" binary="true">
                                     <fileset file="${project.build.directory}/openapi-ui.header" />
                                     <fileset file="${project.build.directory}/${project.build.finalName}.jar" />
