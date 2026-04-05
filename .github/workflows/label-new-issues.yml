@@ -1,0 +1,14 @@
+name: Label new issues
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh issue edit ${{ github.event.issue.number }} --add-label "unsafe"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
