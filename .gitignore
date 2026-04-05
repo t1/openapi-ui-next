@@ -12,4 +12,8 @@ target/
 /docs/superpowers/
 /.playwright-mcp/
 
+# Synced from .tdder submodule by oc script
+/.opencode/skills/
+/.opencode/agents/
+
 TODO.md

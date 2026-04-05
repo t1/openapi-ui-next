@@ -1,0 +1,20 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "superpowers@git+https://github.com/obra/superpowers.git",
+    "tdder@git+https://github.com/t1/tdder.git"
+  ],
+  "permission": {
+    "skill": {
+      "test-driven-development": "deny",
+      "requesting-code-review": "deny",
+      "finishing-a-development-branch": "deny"
+    }
+  },
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "@playwright/mcp"]
+    }
+  }
+}
