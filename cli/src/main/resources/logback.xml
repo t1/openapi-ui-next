@@ -2,7 +2,7 @@
     <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
         <target>System.err</target>
         <encoder>
-            <pattern>%msg%n</pattern>
+            <pattern>%msg%n%nopex</pattern>
         </encoder>
     </appender>
     <root level="INFO">

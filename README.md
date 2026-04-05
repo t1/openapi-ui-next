@@ -124,6 +124,8 @@ mvn -pl cli package
 ./cli/target/openapi-ui <spec-file> <output-dir>
 ```
 
+Use `--verbose` for debug logging and full stack traces on errors.
+
 ### Maven Plugin
 
 ```xml

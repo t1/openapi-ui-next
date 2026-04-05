@@ -3,14 +3,21 @@ package com.github.t1.openapi.ui.cli;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.BDDAssertions.then;
-import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 
 class MainTest {
     @TempDir Path tempDir;
+
+    private final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+
+    private int run(String... args) {
+        return Main.run(args, new PrintStream(stderr));
+    }
 
     private Path writeMinimalSpec() throws Exception {
         var specFile = tempDir.resolve("spec.yaml");
@@ -34,8 +41,9 @@ class MainTest {
         var specFile = writeMinimalSpec();
         var outputDir = tempDir.resolve("output");
 
-        Main.main(new String[]{specFile.toString(), outputDir.toString()});
+        var exitCode = run(specFile.toString(), outputDir.toString());
 
+        then(exitCode).isZero();
         then(outputDir.resolve("index.html")).exists();
     }
 
@@ -43,14 +51,32 @@ class MainTest {
         var specFile = writeMinimalSpec();
         var outputDir = tempDir.resolve("output");
 
-        Main.main(new String[]{"--verbose", specFile.toString(), outputDir.toString()});
+        var exitCode = run("--verbose", specFile.toString(), outputDir.toString());
 
+        then(exitCode).isZero();
         then(outputDir.resolve("index.html")).exists();
     }
 
     @Test void shouldPrintUsageWithNoArgs() {
-        thenThrownBy(() -> Main.main(new String[]{}))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Usage");
+        var exitCode = run();
+
+        then(exitCode).isEqualTo(1);
+        then(stderr.toString()).isEqualTo("Usage: openapi-ui [--verbose] <spec-file> <output-dir>\n");
+    }
+
+    @Test void shouldPrintCleanErrorForMissingSpecFile() {
+        var exitCode = run("nonexistent.yaml", tempDir.resolve("output").toString());
+
+        then(exitCode).isEqualTo(2);
+        then(stderr.toString()).startsWith("NullPointerException: ");
+        then(stderr.toString()).doesNotContain("at com.github.t1");
+    }
+
+    @Test void shouldPrintStackTraceInVerboseMode() {
+        var exitCode = run("--verbose", "nonexistent.yaml", tempDir.resolve("output").toString());
+
+        then(exitCode).isEqualTo(2);
+        then(stderr.toString()).isNotEmpty();
+        then(stderr.toString()).contains("at com.github.t1");
     }
 }
