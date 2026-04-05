@@ -80,6 +80,8 @@ public class PetResource {
             content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
     @APIResponse(responseCode = "500", description = "Internal server error",
             content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
+    @APIResponse(responseCode = "default", description = "Unexpected error",
+            content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
     public PetResponse get(@PathParam("id") long id, @QueryParam("showVisits") boolean showVisits) {
         var pet = findById(id);
         var owner = OwnerResource.OWNERS.stream()

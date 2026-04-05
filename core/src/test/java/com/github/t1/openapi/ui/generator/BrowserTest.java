@@ -1449,6 +1449,19 @@ class BrowserTest {
         }
     }
 
+    @ResourceLock("default-status-code") @Nested class GivenAppWithDefaultStatusCode {
+        @RegisterExtension static AppFixture app = launch("default-status-code.yaml");
+
+        @Test void shouldShowDefaultStatusCodeTab() {
+            app.expandFirstNode();
+            app.clickTreeNode("items/{id}/index.html");
+            app.waitForDetailContent("Get an item");
+            app.toggleSchema("response");
+
+            then(app.statusCodeTabs()).containsExactly("200", "default");
+        }
+    }
+
     @ResourceLock("unsorted-status-codes") @Nested class GivenAppWithUnsortedStatusCodes {
         @RegisterExtension static AppFixture app = launch("unsorted-status-codes.yaml");
 

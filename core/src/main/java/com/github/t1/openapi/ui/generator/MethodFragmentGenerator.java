@@ -248,15 +248,13 @@ class MethodFragmentGenerator {
 
     private Element buildResponsePanel(String code, ApiResponse response) {
         var panel = div();
-        var statusNum = Integer.parseInt(code);
-        var statusClass = statusNum >= 200 && statusNum < 300 ? "is-success" : "is-error";
-        var statusText = httpStatusText(statusNum);
+        var status = StatusCode.of(code);
         panel.content(columns().classes("is-gapless").content(
                 column().classes("is-narrow").content(button("Send").is(PRIMARY).attr("type", "submit")),
                 column().classes("has-text-right").content(
                         div().classes("response-info").content(
                                 div().classes("response-info-top").content(
-                                        span(code + " " + statusText).classes("response-status", statusClass)),
+                                        span(status.label()).classes("response-status", status.cssClass())),
                                 response.getDescription() != null
                                         ? div().classes("response-status-description").content(response.getDescription())
                                         : span()))));
@@ -306,24 +304,34 @@ class MethodFragmentGenerator {
         return panel;
     }
 
-    private String httpStatusText(int code) {
-        return switch (code) {
-            case 200 -> "OK";
-            case 201 -> "Created";
-            case 204 -> "No Content";
-            case 301 -> "Moved Permanently";
-            case 304 -> "Not Modified";
-            case 400 -> "Bad Request";
-            case 401 -> "Unauthorized";
-            case 403 -> "Forbidden";
-            case 404 -> "Not Found";
-            case 405 -> "Method Not Allowed";
-            case 409 -> "Conflict";
-            case 500 -> "Internal Server Error";
-            case 502 -> "Bad Gateway";
-            case 503 -> "Service Unavailable";
-            default -> String.valueOf(code);
-        };
+    record StatusCode(String code, String text, String cssClass) {
+        String label() {return code + " " + text;}
+
+        static StatusCode of(String code) {
+            return switch (code) {
+                case "200" -> new StatusCode(code, "OK", "is-success");
+                case "201" -> new StatusCode(code, "Created", "is-success");
+                case "204" -> new StatusCode(code, "No Content", "is-success");
+                case "301" -> new StatusCode(code, "Moved Permanently", "is-info");
+                case "304" -> new StatusCode(code, "Not Modified", "is-info");
+                case "400" -> new StatusCode(code, "Bad Request", "is-error");
+                case "401" -> new StatusCode(code, "Unauthorized", "is-error");
+                case "403" -> new StatusCode(code, "Forbidden", "is-error");
+                case "404" -> new StatusCode(code, "Not Found", "is-error");
+                case "405" -> new StatusCode(code, "Method Not Allowed", "is-error");
+                case "409" -> new StatusCode(code, "Conflict", "is-error");
+                case "500" -> new StatusCode(code, "Internal Server Error", "is-error");
+                case "502" -> new StatusCode(code, "Bad Gateway", "is-error");
+                case "503" -> new StatusCode(code, "Service Unavailable", "is-error");
+                case "default" -> new StatusCode(code, "Default", "is-info");
+                default -> {
+                    var cssClass = code.startsWith("2") ? "is-success"
+                            : code.startsWith("4") || code.startsWith("5") ? "is-error"
+                            : "is-info";
+                    yield new StatusCode(code, code, cssClass);
+                }
+            };
+        }
     }
 
     private Renderable buildResponseBox(ApiResponses responses) {
