@@ -1,0 +1,170 @@
+#!/usr/bin/env zsh
+# process-issues — loop over approved GitHub issues and process them with OpenCode.
+#
+# Usage:
+#   ./process-issues [--dry-run] [--issue N]
+#
+# Options:
+#   --dry-run   List issues that would be processed without spawning agents.
+#   --issue N   Process only issue #N (skip the automatic selection).
+
+set -euo pipefail
+
+DRY_RUN=false
+SPECIFIC_ISSUE=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --issue)
+            SPECIFIC_ISSUE="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            echo "Usage: $0 [--dry-run] [--issue N]" >&2
+            exit 1
+            ;;
+    esac
+done
+
+# Update plugins before starting (same as ./oc wrapper).
+bun update tdder superpowers --cwd ~/.cache/opencode --silent 2>/dev/null || true
+
+pick_next_issue() {
+    if [[ -n "$SPECIFIC_ISSUE" ]]; then
+        # Verify the specific issue is approved and not blocked.
+        local issue_json
+        issue_json=$(gh issue view "$SPECIFIC_ISSUE" --json number,title,labels 2>/dev/null) || {
+            echo "Issue #$SPECIFIC_ISSUE not found." >&2
+            return 1
+        }
+        local labels
+        labels=$(echo "$issue_json" | jq -r '[.labels[].name] | join(",")')
+        if [[ "$labels" != *"approved"* ]]; then
+            echo "Issue #$SPECIFIC_ISSUE is not labeled 'approved'. Skipping." >&2
+            return 1
+        fi
+        if [[ "$labels" == *"blocked"* ]]; then
+            echo "Issue #$SPECIFIC_ISSUE is labeled 'blocked'. Answer the question first." >&2
+            return 1
+        fi
+        echo "$issue_json" | jq -r '"\(.number)\t\(.title)"'
+        return 0
+    fi
+
+    # Pick the oldest approved, non-blocked, open issue.
+    local issues
+    issues=$(gh issue list \
+        --label approved \
+        --state open \
+        --json number,title,labels \
+        --limit 50)
+
+    # Filter out issues with the 'blocked' label.
+    echo "$issues" | jq -r '
+        [.[] | select(.labels | map(.name) | index("blocked") | not)]
+        | sort_by(.number)
+        | first
+        | "\(.number)\t\(.title)"
+    ' 2>/dev/null || return 1
+}
+
+process_one_issue() {
+    local issue_number="$1"
+    local issue_title="$2"
+
+    echo "=== Processing issue #${issue_number}: ${issue_title} ==="
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "  [dry-run] Would spawn: opencode run for issue #${issue_number}"
+        return 0
+    fi
+
+    # Spawn a fresh OpenCode session.
+    opencode run \
+        "Load the process-issue skill. Work on issue #${issue_number} for the openapi-ui-next project." \
+        --title "Issue #${issue_number}: ${issue_title}" \
+        2>&1 | tee "/tmp/process-issue-${issue_number}.log"
+
+    local exit_code=${pipestatus[1]}
+
+    # Check outcome.
+    local labels
+    labels=$(gh issue view "$issue_number" --json labels --jq '[.labels[].name] | join(",")' 2>/dev/null || echo "")
+
+    if [[ "$labels" == *"blocked"* ]]; then
+        echo "  -> Issue #${issue_number} is BLOCKED. Check the issue for a question."
+        return 0
+    fi
+
+    local state
+    state=$(gh issue view "$issue_number" --json state --jq '.state' 2>/dev/null || echo "OPEN")
+
+    if [[ "$state" == "CLOSED" ]]; then
+        echo "  -> Issue #${issue_number} COMPLETED."
+        return 0
+    fi
+
+    if [[ $exit_code -ne 0 ]]; then
+        echo "  -> Issue #${issue_number}: session exited with code ${exit_code}." >&2
+        return 1
+    fi
+
+    echo "  -> Issue #${issue_number}: session ended without closing the issue."
+    return 0
+}
+
+list_all_eligible_issues() {
+    local issues
+    issues=$(gh issue list \
+        --label approved \
+        --state open \
+        --json number,title,labels \
+        --limit 50)
+
+    echo "$issues" | jq -r '
+        [.[] | select(.labels | map(.name) | index("blocked") | not)]
+        | sort_by(.number)
+        | .[]
+        | "\(.number)\t\(.title)"
+    ' 2>/dev/null
+}
+
+# Main loop.
+if [[ -n "$SPECIFIC_ISSUE" ]]; then
+    # Process just the one specified issue.
+    line=$(pick_next_issue) || exit 1
+    issue_number=$(echo "$line" | cut -f1)
+    issue_title=$(echo "$line" | cut -f2-)
+    process_one_issue "$issue_number" "$issue_title"
+elif [[ "$DRY_RUN" == "true" ]]; then
+    # In dry-run mode, list all eligible issues at once.
+    list_all_eligible_issues | while IFS=$'\t' read -r issue_number issue_title; do
+        [[ -z "$issue_number" || "$issue_number" == "null" ]] && continue
+        process_one_issue "$issue_number" "$issue_title"
+    done
+else
+    # In real mode, pick one at a time (state changes after processing).
+    while true; do
+        line=$(pick_next_issue) || {
+            echo "No more eligible issues."
+            break
+        }
+        if [[ "$line" == "null"* || -z "$line" ]]; then
+            echo "No more eligible issues."
+            break
+        fi
+        issue_number=$(echo "$line" | cut -f1)
+        issue_title=$(echo "$line" | cut -f2-)
+        process_one_issue "$issue_number" "$issue_title" || {
+            echo "Stopping due to error on issue #${issue_number}."
+            break
+        }
+    done
+fi
+
+echo "Done."

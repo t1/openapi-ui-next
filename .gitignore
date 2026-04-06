@@ -9,7 +9,6 @@
 target/
 
 /.superpowers/
-/docs/superpowers/
 /.playwright-mcp/
 
 # Synced from .tdder submodule by oc script
