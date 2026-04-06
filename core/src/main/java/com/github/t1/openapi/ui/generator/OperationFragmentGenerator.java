@@ -206,6 +206,7 @@ class OperationFragmentGenerator {
         var jsonContent = resolveJsonContent();
         if (jsonContent == null) return;
         var skeleton = skeleton(jsonContent);
+        if ("{}".equals(skeleton)) return;
 
         var bodyBox = box();
         bodyBox.classes("schema-box", "flat-box", "is-collapsed").attr("data-box", "body");

@@ -227,6 +227,14 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("data-request-body");
     }
 
+    @Test void shouldNotRenderBodyBoxWhenSchemaHasNoPropertiesAndNoExamples() throws Exception {
+        generate("/request-body-no-properties.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/{id}/PATCH.html"));
+        then(fragment).doesNotContain("data-box=\"body\"");
+        then(fragment).doesNotContain("data-request-body");
+    }
+
     @Test void shouldNotRenderResponseBoxWithoutSchema() throws Exception {
         generate("/response-no-schema.yaml");
 
