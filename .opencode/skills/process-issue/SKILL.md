@@ -33,6 +33,16 @@ The issue number is provided as part of the session prompt (e.g., "Work on issue
 | **Well-defined feature** | Clear goal, needs some design decisions | Phases 2b → 4 → 5 |
 | **Exploratory / brainstorm** | Vague, multiple valid approaches, title says "Brainstorm" | Phases 2c → 3 → 4 → 5 |
 
+### Context budget
+
+You run in a single agent session with a finite context window. Spend tokens on code, not deliberation.
+
+- **Assessment:** 2-3 tool calls max. Read the issue, glance at the relevant code, post your assessment. Do not re-read the issue multiple times or explore multiple interpretations.
+- **If the issue is clear:** Post assessment, start coding immediately.
+- **If the issue is NOT clear after 2-3 tool calls:** Do not keep investigating. Use the Question Protocol — post what you understand, what's unclear, and ask. Burning tokens on analysis you're unsure about is worse than asking.
+- **Implementation:** This is where your tokens should go. TDD cycles, running tests, fixing failures.
+- **Commit early if large:** If the change touches many files, make intermediate commits so work isn't lost if the session ends. Squash at the end.
+
 ### Phase 2a: Bug / Small Fix
 
 Post an assessment comment on the issue:
