@@ -40,6 +40,7 @@ You run in a single agent session with a finite context window. Spend tokens on 
 - **Assessment:** 2-3 tool calls max. Read the issue, glance at the relevant code, post your assessment. Do not re-read the issue multiple times or explore multiple interpretations.
 - **If the issue is clear:** Post assessment, start coding immediately.
 - **If the issue is NOT clear after 2-3 tool calls:** Do not keep investigating. Use the Question Protocol — post what you understand, what's unclear, and ask. Burning tokens on analysis you're unsure about is worse than asking.
+- **If the feature is too large for one session** (touches 4+ files across multiple layers like Java + JS + CSS + tests, or requires multiple TDD cycles across different subsystems): Do NOT start implementing. Instead, post a comment breaking the issue into sub-issues, create them with `gh issue create`, label them `approved`, and close the parent with a comment listing the sub-issues. Each sub-issue should be completable in a single session.
 - **Implementation:** This is where your tokens should go. TDD cycles, running tests, fixing failures.
 - **Commit early if large:** If the change touches many files, make intermediate commits so work isn't lost if the session ends. Squash at the end.
 
