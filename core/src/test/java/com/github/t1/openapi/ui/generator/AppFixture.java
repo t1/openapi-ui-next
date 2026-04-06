@@ -438,6 +438,30 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return header.locator(".tag").filter(new FilterOptions().setHasText(badgeText)).count() > 0;
     }
 
+    boolean hasResponseLinks(String statusCode) {
+        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-response-links").count() > 0;
+    }
+
+    List<String> responseLinkNames(String statusCode) {
+        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-name").allTextContents();
+    }
+
+    String responseLinkOperationId(String statusCode, int index) {
+        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-operation").nth(index).textContent();
+    }
+
+    String responseLinkDescription(String statusCode, int index) {
+        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-desc").nth(index).textContent();
+    }
+
+    List<String> responseLinkParams(String statusCode, int index) {
+        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-links > .schema-link-details:nth-of-type(" + (index * 2 + 2) + ") .schema-link-param").allTextContents();
+    }
+
+    String operationFormAttribute(String attribute) {
+        return page.locator("#detail form").getAttribute(attribute);
+    }
+
     String responseStatusDescription() {
         return page.locator("#detail .response-status-description").textContent();
     }

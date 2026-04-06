@@ -413,6 +413,52 @@ section > .container > .split-layout > .split-second {
 .schema-nested-toggle[aria-expanded="true"] {
     transform: rotate(90deg);
 }
+/* response links */
+.schema-response-links {
+    margin-top: 1rem;
+    border-top: 1px solid var(--bulma-border);
+    padding-top: 0.75rem;
+}
+.schema-links-label {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--bulma-text);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+.schema-links {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+}
+.schema-link-name {
+    color: var(--bulma-link);
+    font-weight: 500;
+    font-family: var(--bulma-family-code);
+}
+.schema-link-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
+    align-items: baseline;
+}
+.schema-link-operation {
+    background: var(--bulma-scheme-main-bis);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-family: var(--bulma-family-code);
+    font-size: 0.8125rem;
+}
+.schema-link-desc {
+    color: var(--bulma-text-weak);
+    font-style: italic;
+}
+.schema-link-param {
+    font-family: var(--bulma-family-code);
+    font-size: 0.8125rem;
+    color: var(--bulma-text-weak);
+}
 /* syntax highlighting with Bulma colors */
 pre.response code.hljs {
     background: var(--bulma-scheme-main);

@@ -2236,4 +2236,72 @@ class BrowserTest {
             then(app.readClipboard()).contains("Cookie:session=abc123");
         }
     }
+
+    @ResourceLock("response-links") @Nested class GivenAppWithResponseLinks {
+        @RegisterExtension static AppFixture app = launch("response-links.yaml");
+
+        private void navigateToPetDetail() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+        }
+
+        @Test void shouldShowLinksSection() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+
+            then(app.hasResponseLinks("200")).isTrue();
+        }
+
+        @Test void shouldShowLinkNames() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+
+            then(app.responseLinkNames("200")).containsExactly("GetOwner", "GetVisits");
+        }
+
+        @Test void shouldShowLinkOperationId() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+
+            then(app.responseLinkOperationId("200", 0)).isEqualTo("getOwner");
+            then(app.responseLinkOperationId("200", 1)).isEqualTo("getVisits");
+        }
+
+        @Test void shouldShowLinkDescription() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+
+            then(app.responseLinkDescription("200", 0)).isEqualTo("Get the owner of this pet");
+        }
+
+        @Test void shouldShowLinkParameters() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+
+            then(app.responseLinkParams("200", 0)).containsExactly("ownerId ← $response.body#/ownerId");
+            then(app.responseLinkParams("200", 1)).containsExactly("petId ← $response.body#/id");
+        }
+
+        @Test void shouldNotShowLinksSectionWhenNoLinks() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("List pets");
+            app.toggleSchema("response");
+
+            then(app.hasResponseLinks("200")).isFalse();
+        }
+
+        @Test void shouldAddOperationIdToForm() {
+            navigateToPetDetail();
+
+            then(app.operationFormAttribute("data-operation-id")).isEqualTo("getPet");
+        }
+
+        @Test void shouldTakeScreenshotOfResponseLinks() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            app.screenshot("response-links");
+        }
+    }
 }

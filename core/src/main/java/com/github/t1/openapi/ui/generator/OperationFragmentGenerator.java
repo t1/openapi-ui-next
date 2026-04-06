@@ -87,6 +87,7 @@ class OperationFragmentGenerator {
 
     private Form operationForm() {
         var operationForm = form().attr("data-path", displayPath.display()).attr("data-fragment-path", path.toString()).attr("data-method", method.name());
+        if (operation.getOperationId() != null) operationForm.attr("data-operation-id", operation.getOperationId());
         parameterFields(operationForm);
         operationForm.content(div().classes("custom-headers")
                 .content(element("button").attr("type", "button").classes("custom-header-add")
@@ -375,7 +376,8 @@ class OperationFragmentGenerator {
         var statusCodes = responses.entrySet().stream()
                 .filter(e -> e.getValue().getContent() != null
                         || e.getValue().getHeaders() != null
-                        || e.getValue().getDescription() != null)
+                        || e.getValue().getDescription() != null
+                        || (e.getValue().getLinks() != null && !e.getValue().getLinks().isEmpty()))
                 .map(Map.Entry::getKey)
                 .sorted()
                 .toList();
@@ -388,7 +390,9 @@ class OperationFragmentGenerator {
                                 || ("array".equals(mt.getSchema().getType()) && mt.getSchema().getItems() != null))));
         var hasHeaders = statusCodes.stream()
                 .anyMatch(code -> responses.get(code).getHeaders() != null && !responses.get(code).getHeaders().isEmpty());
-        var hasExpandableContent = hasSchemaProperties || hasHeaders;
+        var hasLinks = statusCodes.stream()
+                .anyMatch(code -> responses.get(code).getLinks() != null && !responses.get(code).getLinks().isEmpty());
+        var hasExpandableContent = hasSchemaProperties || hasHeaders || hasLinks;
 
         var allContentTypes = responses.values().stream()
                 .filter(r -> r.getContent() != null)
@@ -459,7 +463,37 @@ class OperationFragmentGenerator {
             var mediaType = response.getContent().values().iterator().next();
             new SchemaRenderer().render(panel, mediaType.getSchema());
         }
+        if (response.getLinks() != null && !response.getLinks().isEmpty()) {
+            panel.content(responseLinks(response));
+        }
         return panel;
+    }
+
+    private Element responseLinks(ApiResponse response) {
+        var linksSection = div().classes("schema-response-links");
+        linksSection.content(span("Links").classes("schema-links-label"));
+        var linksGrid = div().classes("schema-links");
+        for (var entry : response.getLinks().entrySet()) {
+            var linkName = entry.getKey();
+            var link = entry.getValue();
+            var nameEl = span(linkName).classes("schema-link-name");
+            linksGrid.content(nameEl);
+            var details = span().classes("schema-link-details");
+            if (link.getOperationId() != null) {
+                details.content(span(link.getOperationId()).classes("schema-link-operation"));
+            }
+            if (link.getDescription() != null) {
+                details.content(span(link.getDescription()).classes("schema-link-desc"));
+            }
+            if (link.getParameters() != null && !link.getParameters().isEmpty()) {
+                for (var param : link.getParameters().entrySet()) {
+                    details.content(span(param.getKey() + " ← " + param.getValue()).classes("schema-link-param"));
+                }
+            }
+            linksGrid.content(details);
+        }
+        linksSection.content(linksGrid);
+        return linksSection;
     }
 
     private Element schemaHeaders(ApiResponse response) {
