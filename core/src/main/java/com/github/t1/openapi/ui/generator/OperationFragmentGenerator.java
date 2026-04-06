@@ -260,8 +260,7 @@ class OperationFragmentGenerator {
     private Renderable requestBodyEditor(String skeleton, Schema<?> schema) {
         var textareaEl = textarea()
                 .attr("data-request-body", "true")
-                .classes("is-family-code")
-                .attr("rows", "6");
+                .classes("is-family-code");
         if (TRUE == operation.getRequestBody().getRequired()) textareaEl.attr("required", "");
         textareaEl.content(skeleton);
         var hasProperties = schema.getProperties() != null && !schema.getProperties().isEmpty();

@@ -141,7 +141,9 @@ section > .container > .split-layout > .split-second {
 #detail textarea[data-request-body] {
     font-family: var(--mono-font);
     font-size: 0.875rem;
-    resize: vertical;
+    resize: none;
+    overflow-y: hidden;
+    min-height: 10rem;
 }
 @keyframes bump-vertical {
     0%, 100% { transform: translateY(0); }

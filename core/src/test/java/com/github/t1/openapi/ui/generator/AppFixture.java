@@ -251,6 +251,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void fillRequestBody(String body) {page.locator("#detail textarea[data-request-body]").fill(body);}
 
+    double requestBodyHeight() {return page.locator("#detail textarea[data-request-body]").boundingBox().height;}
+
     void focusRequestBody() {page.locator("#detail textarea[data-request-body]").focus();}
 
     void setCursorAtStart() {
@@ -642,6 +644,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     void setViewportSize(int width, int height) {page.setViewportSize(width, height);}
+
+    void waitMs(double ms) {page.waitForTimeout(ms);}
 
     void screenshot(String name) {
         var dir = Path.of("target/screenshots");

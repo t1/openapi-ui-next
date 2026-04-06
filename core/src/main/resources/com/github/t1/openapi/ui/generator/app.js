@@ -9,6 +9,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const responseCache = new Map();
     const schemaToggleCache = new Map();
 
+    function autoGrow(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+
     function opKey(form) {
         return form.getAttribute('data-method') + ':' + form.getAttribute('data-path');
     }
@@ -389,7 +394,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('select[data-example-select]').forEach(function(sel) {
             sel.addEventListener('change', function() {
                 const textarea = sel.closest('.field').querySelector('textarea[data-request-body]');
-                if (textarea) textarea.value = sel.value;
+                if (textarea) {
+                    textarea.value = sel.value;
+                    autoGrow(textarea);
+                }
             });
         });
         // Restore session-cached field values and response
@@ -401,6 +409,12 @@ document.addEventListener('DOMContentLoaded', function() {
             restoreResponse(restoreForm);
             restoreSchemaToggles(restoreForm);
         }
+        // Auto-grow request body textareas
+        document.querySelectorAll('textarea[data-request-body]').forEach(function(ta) {
+            ta.addEventListener('input', function() { autoGrow(ta); });
+            new ResizeObserver(function() { autoGrow(ta); }).observe(ta);
+            autoGrow(ta);
+        });
     });
 
     function prettyPrintXml(xml) {
