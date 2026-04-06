@@ -24,8 +24,15 @@ The issue number is provided as part of the session prompt (e.g., "Work on issue
 ### Phase 1: Load & Assess
 
 1. Fetch issue details: `gh issue view <N> --json number,title,body,labels,comments`
-2. Read all issue comments for prior Q&A from previous blocked runs.
-3. Classify the issue into one of three tiers:
+2. Check for sub-issues:
+   ```
+   gh api graphql -f query='{ repository(owner:"t1", name:"openapi-ui-next") { issue(number:<N>) { subIssues(first:20) { nodes { number title state } } } } }' --jq '.data.repository.issue.subIssues.nodes'
+   ```
+   - If open sub-issues exist → work on the first open sub-issue (restart Phase 1 with that issue number).
+   - If all sub-issues are closed → close the parent issue and STOP.
+   - If no sub-issues → continue.
+3. Read all issue comments for prior Q&A from previous blocked runs.
+4. Classify the issue into one of three tiers:
 
 | Tier | Signal | Workflow |
 |------|--------|----------|
@@ -40,7 +47,16 @@ You run in a single agent session with a finite context window. Spend tokens on 
 - **Assessment:** 2-3 tool calls max. Read the issue, glance at the relevant code, post your assessment. Do not re-read the issue multiple times or explore multiple interpretations.
 - **If the issue is clear:** Post assessment, start coding immediately.
 - **If the issue is NOT clear after 2-3 tool calls:** Do not keep investigating. Use the Question Protocol — post what you understand, what's unclear, and ask. Burning tokens on analysis you're unsure about is worse than asking.
-- **If the feature is too large for one session** (touches 4+ files across multiple layers like Java + JS + CSS + tests, or requires multiple TDD cycles across different subsystems): Do NOT start implementing. Instead, post a comment breaking the issue into sub-issues, create them with `gh issue create`, label them `approved`, and close the parent with a comment listing the sub-issues. Each sub-issue should be completable in a single session.
+- **If the feature is too large for one session** (touches 4+ files across multiple layers like Java + JS + CSS + tests, or requires multiple TDD cycles across different subsystems): Do NOT start implementing. Instead:
+  1. Create sub-issues with `gh issue create --label approved --title "..."` — each completable in one session.
+  2. Attach them as GitHub sub-issues:
+     ```
+     gh api graphql -f query='mutation { addSubIssue(input: { issueId: "<PARENT_NODE_ID>", subIssueId: "<CHILD_NODE_ID>" }) { subIssue { number } } }'
+     ```
+     Get node IDs with: `gh api graphql -f query='{ repository(owner:"t1", name:"openapi-ui-next") { issue(number:<N>) { id } } }' --jq '.data.repository.issue.id'`
+  3. Post a comment on the parent listing the sub-issues.
+  4. Leave the parent open — the next run will find it, see the sub-issues, and work on the first open one.
+  5. STOP.
 - **Implementation:** This is where your tokens should go. TDD cycles, running tests, fixing failures.
 - **Commit early if large:** If the change touches many files, make intermediate commits so work isn't lost if the session ends. Squash at the end.
 
