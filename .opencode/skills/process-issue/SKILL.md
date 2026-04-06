@@ -115,16 +115,20 @@ In both cases:
 ### Phase 6: Commit & Close
 
 1. Squash all work into a single commit: `feat: <description> (#<N>)` or `fix: <description> (#<N>)`.
-2. Post a completion comment on the issue:
+2. If the prompt says to push and wait for CI:
+   a. Push to trunk: `git push`
+   b. Wait for the CI workflow to complete: `gh run watch --exit-status`
+   c. If CI fails, post the failure details as a comment, add `blocked` label, and STOP.
+3. Post a completion comment on the issue:
    ```
    ## Agent: done
 
    **Commit:** [short sha]
    **Summary:** [what was changed, 2-3 sentences]
    **Tests:** [what tests were added/modified]
+   **CI:** [passed / not pushed]
    ```
-3. Close the issue: `gh issue close <N>`
-4. Do NOT push. Leave for human review.
+4. Close the issue: `gh issue close <N>`
 
 ## Question Protocol
 

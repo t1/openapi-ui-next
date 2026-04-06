@@ -2,16 +2,18 @@
 # process-issues — loop over approved GitHub issues and process them with OpenCode.
 #
 # Usage:
-#   ./process-issues [--dry-run] [--issue N]
+#   ./process-issues [--dry-run] [--issue N] [--push]
 #
 # Options:
 #   --dry-run   List issues that would be processed without spawning agents.
 #   --issue N   Process only issue #N (skip the automatic selection).
+#   --push      Push to trunk and wait for CI after each issue.
 
 set -euo pipefail
 
 DRY_RUN=false
 SPECIFIC_ISSUE=""
+PUSH=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -23,9 +25,13 @@ while [[ $# -gt 0 ]]; do
             SPECIFIC_ISSUE="$2"
             shift 2
             ;;
+        --push)
+            PUSH=true
+            shift
+            ;;
         *)
             echo "Unknown option: $1" >&2
-            echo "Usage: $0 [--dry-run] [--issue N]" >&2
+            echo "Usage: $0 [--dry-run] [--issue N] [--push]" >&2
             exit 1
             ;;
     esac
@@ -84,9 +90,14 @@ process_one_issue() {
         return 0
     fi
 
+    # Build the prompt.
+    local prompt="Load the process-issue skill. Work on issue #${issue_number} for the openapi-ui-next project."
+    if [[ "$PUSH" == "true" ]]; then
+        prompt="${prompt} After committing, push to trunk and wait for CI to pass."
+    fi
+
     # Spawn a fresh OpenCode session.
-    opencode run \
-        "Load the process-issue skill. Work on issue #${issue_number} for the openapi-ui-next project." \
+    opencode run "$prompt" \
         --title "Issue #${issue_number}: ${issue_title}" \
         2>&1 | tee "/tmp/process-issue-${issue_number}.log"
 
