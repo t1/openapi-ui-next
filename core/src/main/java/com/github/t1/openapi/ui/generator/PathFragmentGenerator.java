@@ -7,9 +7,10 @@ import java.util.Map;
 
 import static com.github.t1.htmljava.HtmlBasics.div;
 import static com.github.t1.htmljava.HtmlBasics.element;
+import static com.github.t1.openapi.ui.generator.OperationFragmentGenerator.operationFragment;
 
 class PathFragmentGenerator {
-    static Element buildContent(ApiPath fullPath, Map<HttpMethod, io.swagger.v3.oas.models.Operation> operations) {
+    static Element pathFragment(ApiPath path, Map<HttpMethod, io.swagger.v3.oas.models.Operation> operations) {
         var tabList = element("ul");
         var first = true;
         Element firstMethodContent = null;
@@ -20,13 +21,13 @@ class PathFragmentGenerator {
             li.content(element("a").content(method.name())
                     .attr("tabindex", "0")
                     .attr("data-method", method.name())
-                    .attr("hx-get", fullPath + "/" + method.name() + ".html")
+                    .attr("hx-get", path + "/" + method.name() + ".html")
                     .attr("hx-target", "#method-content")
                     .attr("hx-swap", "innerHTML"));
             tabList.content(li);
             if (first) {
-                firstMethodContent = MethodFragmentGenerator.buildContent(
-                        new OperationContext(method, opEntry.getValue(), fullPath));
+                firstMethodContent = operationFragment(
+                        new Operation(method, opEntry.getValue(), path));
                 first = false;
             }
         }

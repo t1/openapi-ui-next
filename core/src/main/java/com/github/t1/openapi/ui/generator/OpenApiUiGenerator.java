@@ -18,9 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
 
@@ -42,6 +40,9 @@ import static com.github.t1.htmljava.HtmlBasics.span;
 import static com.github.t1.openapi.ui.components.SplitPane.splitPane;
 import static com.github.t1.openapi.ui.components.Toggle.toggle;
 import static com.github.t1.openapi.ui.components.Tree.tree;
+import static com.github.t1.openapi.ui.generator.OperationFragmentGenerator.operationFragment;
+import static com.github.t1.openapi.ui.generator.OperationFragmentGenerator.responseFragments;
+import static com.github.t1.openapi.ui.generator.PathFragmentGenerator.pathFragment;
 
 public class OpenApiUiGenerator {
     private static final Logger log = LoggerFactory.getLogger(OpenApiUiGenerator.class);
@@ -68,10 +69,10 @@ public class OpenApiUiGenerator {
                 .mapToInt(p -> p.readOperationsMap().size()).sum();
         log.info("Found {} paths with {} operations", pathCount, operationCount);
 
-        var pathTree = buildTree(root);
-        var tagTree = TagTreeGenerator.buildTagTree(openApi, root);
+        var pathTree = pathTree(root);
+        var tagTree = TagTreeGenerator.tagTree(openApi, root);
 
-        var page = buildPageLayout(openApi, pathTree, tagTree, shouldDefaultToTagView(openApi, pathCount));
+        var page = pageLayout(openApi, pathTree, tagTree, shouldDefaultToTagView(openApi, pathCount));
         writeOutput(page, root, tagTree, pathTree);
     }
 
@@ -94,31 +95,53 @@ public class OpenApiUiGenerator {
         return new OpenAPIV3Parser().read(specFile.toString(), null, parseOptions);
     }
 
-    private Renderable buildPageLayout(io.swagger.v3.oas.models.OpenAPI openApi, Renderable pathTree, Renderable tagTree, boolean defaultToTags) {
+    private Renderable pageLayout(io.swagger.v3.oas.models.OpenAPI openApi, Renderable pathTree, Renderable tagTree, boolean defaultToTags) {
+        var viewToggle = viewToggle(defaultToTags);
+        Renderable defaultTree = defaultToTags ? tagTree : pathTree;
+        var treeContainer = div().id("tree-container").content(defaultTree);
+
+        var baseUrl = resolveBaseUrl(openApi);
+        var modeToggle = modeToggle(baseUrl);
+
+        var pageTitle = openApi.getInfo().getTitle();
+        var detail = div().id("detail").attr("tabindex", "0");
+        var detailHeader = div().classes("detail-header").content(title(pageTitle), modeToggle);
+        var splitLayout = splitPane()
+                .first(box().content(viewToggle, treeContainer))
+                .second(detail)
+                .persistAs("openapi-ui-tree-width");
+        var body = section().content(container().content(
+                detailHeader,
+                globalHeaders(),
+                splitLayout
+        ), errorBanner());
+        return htmlDocument(pageTitle, body);
+    }
+
+    private Toggle viewToggle(boolean defaultToTags) {
         var viewToggle = toggle("view")
                 .option("paths", hxLoad("path-tree.html"))
                 .option("tags", hxLoad("tag-tree.html"))
                 .activate(defaultToTags ? "tags" : "paths");
         viewToggle.persistAs("openapi-ui-view");
-        Renderable defaultTree = defaultToTags ? tagTree : pathTree;
-        var treeContainer = div().id("tree-container").content(defaultTree);
+        return viewToggle;
+    }
 
+    private static String resolveBaseUrl(io.swagger.v3.oas.models.OpenAPI openApi) {
         var servers = openApi.getServers();
-        var baseUrl = (servers != null && !servers.isEmpty()) ? servers.getFirst().getUrl() : "/";
+        return (servers != null && !servers.isEmpty()) ? servers.getFirst().getUrl() : "/";
+    }
 
-        var modeToggle = toggle("mode")
+    private static Renderable modeToggle(String baseUrl) {
+        return toggle("mode")
                 .activeOption("try", o -> o.attr("title", "Send requests directly from the browser"))
                 .option("httpie", o -> o.attr("title", "Copy as HTTPie command"))
                 .option("curl", o -> o.attr("title", "Copy as curl command"))
                 .attr("data-mode", "try").attr("data-base-url", baseUrl);
+    }
 
-        var pageTitle = openApi.getInfo().getTitle();
-        var detail = div().id("detail").attr("tabindex", "0");
-        var detailHeader = div().classes("detail-header").content(
-                title(pageTitle),
-                modeToggle
-        );
-        var globalHeaders = div().id("global-headers").classes("global-headers", "is-collapsed")
+    private static Element globalHeaders() {
+        return div().id("global-headers").classes("global-headers", "is-collapsed")
                 .content(
                         element("button").attr("type", "button").classes("global-headers-toggle")
                                 .content(span("Global Headers"), span("0").classes("global-headers-count")),
@@ -126,18 +149,15 @@ public class OpenApiUiGenerator {
                                 .content(element("button").attr("type", "button").classes("custom-header-add")
                                         .content("+ Add global header"))
                 );
-        var splitLayout = splitPane()
-                .first(box().content(viewToggle, treeContainer))
-                .second(detail)
-                .persistAs("openapi-ui-tree-width");
-        var errorBanner = div().id("error-banner").classes("notification", "is-danger")
+    }
+
+    private static Element errorBanner() {
+        return div().id("error-banner").classes("notification", "is-danger")
                 .style("display:none; position:fixed; bottom:0; left:0; right:0; margin:0; z-index:100; border-radius:0")
                 .content("Backend not reachable — retrying...");
-        var body = section().content(container().content(
-                detailHeader,
-                globalHeaders,
-                splitLayout
-        ), errorBanner);
+    }
+
+    private static Renderable htmlDocument(String pageTitle, Renderable body) {
         return html(pageTitle)
                 .stylesheet("vendor/bulma.min.css")
                 .stylesheet("vendor/css/all.min.css")
@@ -153,11 +173,24 @@ public class OpenApiUiGenerator {
 
     private void writeOutput(Renderable page, PathNode root, Renderable tagTree, Renderable pathTree) throws IOException {
         Files.createDirectories(outputDir);
-        Files.writeString(outputDir.resolve("index.html"), page.render());
-        Files.writeString(outputDir.resolve("openapi-ui.css"), Toggle.css() + Tree.css() + SplitPane.css() + loadResource("app.css"));
+        writeHtmlFiles(page, tagTree, pathTree);
+        writeCss();
         generateFragments(root, ApiPath.ROOT);
+        copyVendorResources();
+        log.info("Done. Output written to {}", outputDir);
+    }
+
+    private void writeHtmlFiles(Renderable page, Renderable tagTree, Renderable pathTree) throws IOException {
+        Files.writeString(outputDir.resolve("index.html"), page.render());
         Files.writeString(outputDir.resolve("tag-tree.html"), tagTree.render());
         Files.writeString(outputDir.resolve("path-tree.html"), pathTree.render());
+    }
+
+    private void writeCss() throws IOException {
+        Files.writeString(outputDir.resolve("openapi-ui.css"), Toggle.css() + Tree.css() + SplitPane.css() + loadResource("app.css"));
+    }
+
+    private void copyVendorResources() throws IOException {
         Files.createDirectories(outputDir.resolve("vendor/css"));
         Files.createDirectories(outputDir.resolve("vendor/webfonts"));
         copyWebJarResource("bulma", "css/bulma.min.css", "vendor/bulma.min.css");
@@ -165,7 +198,6 @@ public class OpenApiUiGenerator {
         copyWebJarResource("highlightjs", "highlight.min.js", "vendor/highlight.min.js");
         copyWebJarResource("fortawesome__fontawesome-free", "css/all.min.css", "vendor/css/all.min.css");
         copyWebJarResource("fortawesome__fontawesome-free", "webfonts/fa-solid-900.woff2", "vendor/webfonts/fa-solid-900.woff2");
-        log.info("Done. Output written to {}", outputDir);
     }
 
     private String resolveWebJarGroupId(String artifactId) {
@@ -189,36 +221,36 @@ public class OpenApiUiGenerator {
         }
     }
 
-    private Tree buildTree(PathNode root) {
+    private Tree pathTree(PathNode root) {
         var t = tree();
-        addNodes(t, root, ApiPath.ROOT);
+        addTreeItems(t, root, ApiPath.ROOT);
         return t;
     }
 
-    private void addNodes(TreeContainer tree, PathNode node, ApiPath pathPrefix) {
-        for (var entry : node.children.entrySet()) {
+    private void addTreeItems(TreeContainer tree, PathNode node, ApiPath path) {
+        for (var entry : node.children().entrySet()) {
             var segment = entry.getKey();
             var child = entry.getValue();
-            var fullPath = pathPrefix.resolve(segment);
+            var childPath = path.resolve(segment);
             var label = span().content(span(segment).classes(segmentClass(segment)));
-            if (!child.operations.isEmpty()) {
+            if (!child.operations().isEmpty()) {
                 var group = tagsAddon();
-                for (var method : child.operations.keySet()) {
+                for (var method : child.operations().keySet()) {
                     group.content(tag(method.name()).is(methodColor(method)));
                 }
                 label.content(group);
             }
-            if (!child.children.isEmpty()) {
-                if (!child.operations.isEmpty()) {
-                    label.attr("hx-get", fullPath + "/index.html")
+            if (!child.children().isEmpty()) {
+                if (!child.operations().isEmpty()) {
+                    label.attr("hx-get", childPath + "/index.html")
                             .attr("hx-target", "#detail")
                             .attr("hx-swap", "innerHTML");
                 }
-                tree.node(label, sub -> addNodes(sub, child, fullPath));
+                tree.node(label, sub -> addTreeItems(sub, child, childPath));
             } else {
                 tree.item(label, item -> {
-                    if (!child.operations.isEmpty()) {
-                        item.attr("hx-get", fullPath + "/index.html")
+                    if (!child.operations().isEmpty()) {
+                        item.attr("hx-get", childPath + "/index.html")
                                 .attr("hx-target", "#detail")
                                 .attr("hx-swap", "innerHTML");
                     }
@@ -231,28 +263,28 @@ public class OpenApiUiGenerator {
         return PathNode.isPathParam(segment) ? "tree-param" : "tree-segment";
     }
 
-    private void generateFragments(PathNode node, ApiPath pathPrefix) throws IOException {
-        for (var entry : node.children.entrySet()) {
+    private void generateFragments(PathNode node, ApiPath path) throws IOException {
+        for (var entry : node.children().entrySet()) {
             var segment = entry.getKey();
             var child = entry.getValue();
-            var fullPath = pathPrefix.resolve(segment);
-            for (var opEntry : child.operations.entrySet()) {
-                var ctx = new OperationContext(opEntry.getKey(), opEntry.getValue(), fullPath);
-                var fragment = MethodFragmentGenerator.buildContent(ctx);
-                var fragmentDir = outputDir.resolve(fullPath.toString());
+            var childPath = path.resolve(segment);
+            for (var opEntry : child.operations().entrySet()) {
+                var operation = new Operation(opEntry.getKey(), opEntry.getValue(), childPath);
+                var fragment = operationFragment(operation);
+                var fragmentDir = outputDir.resolve(childPath.toString());
                 Files.createDirectories(fragmentDir);
                 Files.writeString(fragmentDir.resolve(opEntry.getKey().name() + ".html"), fragment.render());
-                for (var responseEntry : MethodFragmentGenerator.buildResponseFragments(ctx).entrySet()) {
+                for (var responseEntry : responseFragments(operation).entrySet()) {
                     Files.writeString(fragmentDir.resolve(responseEntry.getKey()), responseEntry.getValue());
                 }
             }
-            if (!child.operations.isEmpty()) {
-                var pathFragment = PathFragmentGenerator.buildContent(fullPath, child.operations);
-                var pathFragmentDir = outputDir.resolve(fullPath.toString());
+            if (!child.operations().isEmpty()) {
+                var pathFrag = pathFragment(childPath, child.operations());
+                var pathFragmentDir = outputDir.resolve(childPath.toString());
                 Files.createDirectories(pathFragmentDir);
-                Files.writeString(pathFragmentDir.resolve("index.html"), pathFragment.render());
+                Files.writeString(pathFragmentDir.resolve("index.html"), pathFrag.render());
             }
-            generateFragments(child, fullPath);
+            generateFragments(child, childPath);
         }
     }
 
@@ -285,31 +317,4 @@ public class OpenApiUiGenerator {
         }
     }
 
-
-    static class PathNode {
-        final Map<String, PathNode> children = new LinkedHashMap<>();
-        final Map<PathItem.HttpMethod, io.swagger.v3.oas.models.Operation> operations = new LinkedHashMap<>();
-
-        void add(List<String> segments, int index, PathItem pathItem) {
-            if (index >= segments.size()) {
-                operations.putAll(pathItem.readOperationsMap());
-                return;
-            }
-            var segment = segments.get(index);
-            var key = isPathParam(segment) ? existingParamKeyOrElse(segment) : segment;
-            children.computeIfAbsent(key, k -> new PathNode())
-                    .add(segments, index + 1, pathItem);
-        }
-
-        private String existingParamKeyOrElse(String segment) {
-            return children.keySet().stream()
-                    .filter(PathNode::isPathParam)
-                    .findFirst()
-                    .orElse(segment);
-        }
-
-        private static boolean isPathParam(String segment) {
-            return segment.startsWith("{") && segment.endsWith("}");
-        }
-    }
 }

@@ -403,13 +403,13 @@ class OpenApiUiGeneratorTest {
     @Test void shouldColorCodeStatusCodeTabs() throws Exception {
         generate("/unsorted-status-codes.yaml");
 
-        var methodFragment = Files.readString(outputDir.resolve("items/{id}/GET.html"));
-        then(methodFragment).contains("class=\"schema-status-tab is-active\" tabindex=\"0\" data-status=\"200\"");
-        then(methodFragment).contains("class=\"schema-status-tab\" tabindex=\"0\" data-status=\"404\"");
-        then(methodFragment).contains("class=\"schema-status-tab\" tabindex=\"0\" data-status=\"500\"");
+        var operationFragment = Files.readString(outputDir.resolve("items/{id}/GET.html"));
+        then(operationFragment).contains("class=\"schema-status-tab is-active\" tabindex=\"0\" data-status=\"200\"");
+        then(operationFragment).contains("class=\"schema-status-tab\" tabindex=\"0\" data-status=\"404\"");
+        then(operationFragment).contains("class=\"schema-status-tab\" tabindex=\"0\" data-status=\"500\"");
     }
 
-    @Test void shouldStillGenerateMethodFragments() throws Exception {
+    @Test void shouldStillGenerateOperationFragments() throws Exception {
         generate("/multi-method.yaml");
 
         then(outputDir.resolve("pets/GET.html")).exists();
@@ -548,7 +548,7 @@ class OpenApiUiGeneratorTest {
         then(tagTree).contains("also in");
     }
 
-    @Test void shouldLinkTagTreeOperationsToMethodFragments() throws Exception {
+    @Test void shouldLinkTagTreeOperationsToOperationFragments() throws Exception {
         generate("/tagged-flat.yaml");
 
         var tagTree = Files.readString(outputDir.resolve("tag-tree.html"));

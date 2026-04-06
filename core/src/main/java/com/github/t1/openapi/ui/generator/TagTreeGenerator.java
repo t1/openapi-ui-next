@@ -17,9 +17,9 @@ import static com.github.t1.openapi.ui.components.Tree.tree;
 import static com.github.t1.openapi.ui.generator.OpenApiUiGenerator.methodColor;
 
 class TagTreeGenerator {
-    record TaggedOperation(HttpMethod method, ApiPath path, io.swagger.v3.oas.models.Operation operation, List<String> allTags) {}
+    private record TaggedOperation(HttpMethod method, ApiPath path, io.swagger.v3.oas.models.Operation operation, List<String> allTags) {}
 
-    static Renderable buildTagTree(OpenAPI openApi, OpenApiUiGenerator.PathNode root) {
+    static Renderable tagTree(OpenAPI openApi, PathNode root) {
         var tagOps = new LinkedHashMap<String, List<TaggedOperation>>();
         collectTaggedOperations(root, ApiPath.ROOT, tagOps);
 
@@ -66,25 +66,25 @@ class TagTreeGenerator {
         return tagTree;
     }
 
-    private static void collectTaggedOperations(OpenApiUiGenerator.PathNode node, ApiPath pathPrefix, Map<String, List<TaggedOperation>> tagOps) {
-        for (var entry : node.children.entrySet()) {
+    private static void collectTaggedOperations(PathNode node, ApiPath path, Map<String, List<TaggedOperation>> tagOps) {
+        for (var entry : node.children().entrySet()) {
             var segment = entry.getKey();
             var child = entry.getValue();
-            var fullPath = pathPrefix.resolve(segment);
-            for (var opEntry : child.operations.entrySet()) {
+            var childPath = path.resolve(segment);
+            for (var opEntry : child.operations().entrySet()) {
                 var operation = opEntry.getValue();
                 var tags = operation.getTags();
                 if (tags != null && !tags.isEmpty()) {
-                    var taggedOp = new TaggedOperation(opEntry.getKey(), fullPath, operation, List.copyOf(tags));
+                    var taggedOp = new TaggedOperation(opEntry.getKey(), childPath, operation, List.copyOf(tags));
                     for (var t : tags) {
                         tagOps.computeIfAbsent(t, k -> new ArrayList<>()).add(taggedOp);
                     }
                 } else {
-                    var taggedOp = new TaggedOperation(opEntry.getKey(), fullPath, operation, List.of());
+                    var taggedOp = new TaggedOperation(opEntry.getKey(), childPath, operation, List.of());
                     tagOps.computeIfAbsent("Other", k -> new ArrayList<>()).add(taggedOp);
                 }
             }
-            collectTaggedOperations(child, fullPath, tagOps);
+            collectTaggedOperations(child, childPath, tagOps);
         }
     }
 }
