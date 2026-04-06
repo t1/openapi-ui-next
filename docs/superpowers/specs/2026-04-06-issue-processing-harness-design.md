@@ -31,27 +31,25 @@ A loop script that:
 2. Read `README.md` for project context.
 3. Fetch issue details via `gh issue view <N>`.
 4. Read all issue comments (for prior Q&A from previous blocked runs).
-5. Check for existing artifacts in `docs/superpowers/`:
-    - If a **plan** exists → skip to Phase 4 (Implement).
-    - If a **spec** exists but no plan → skip to Phase 3 (Plan).
-    - If neither → continue to Phase 2.
+5. Classify the issue into one of three tiers:
 
-### Phase 2: Refine (if needed)
+| Tier | Signal | Workflow |
+|------|--------|----------|
+| **Bug / small fix** | Clear problem, obvious approach | Assessment comment → Implement → Validate |
+| **Well-defined feature** | Clear goal, needs some design decisions | Spec comment → Implement → Validate |
+| **Exploratory / brainstorm** | Vague, multiple valid approaches, title says "Brainstorm" | Spec file → Plan file → Implement → Validate |
 
-Classify the issue:
+### Phase 2: Refine
 
-- **Implementation-ready** (clear bug or well-defined feature): Write a short spec directly — no full brainstorming
-  cycle. The spec captures: what to change, acceptance criteria, which files are likely involved.
-- **Needs brainstorming** (vague, exploratory, multiple approaches): Follow the `brainstorming` skill, but adapted for
-  autonomous mode:
-    - No visual companion (no human at the terminal).
-    - Instead of asking the user questions interactively, the agent makes reasonable decisions and documents them in the
-      spec. If a decision is genuinely ambiguous (multiple valid approaches with different tradeoffs), the agent posts a
-      question comment on the issue and blocks.
+**Bug / small fix:** Post an assessment comment on the issue (type, assessment, approach). Proceed directly to Phase 4.
 
-Output: Spec written to `docs/superpowers/specs/YYYY-MM-DD-issue-<N>-<slug>.md`.
+**Well-defined feature:** Post a spec comment on the issue (type, summary, design decisions, acceptance criteria, files). Proceed directly to Phase 4.
 
-### Phase 3: Plan
+**Exploratory / brainstorm:** Write a spec file to `docs/superpowers/specs/`. Proceed to Phase 3.
+
+All comments serve as progress indicators visible to the maintainer asynchronously.
+
+### Phase 3: Plan (exploratory issues only)
 
 Follow the `writing-plans` skill to produce a detailed implementation plan from the spec.
 
@@ -61,18 +59,14 @@ Commit spec and plan together: `docs: spec and plan for #<N>`.
 
 ### Phase 4: Implement
 
-Execute the plan using `subagent-driven-development`:
+For bugs and features (no plan file): implement directly using TDD.
+For exploratory issues (plan file exists): execute the plan task by task.
 
-- One subagent per plan task.
-- Each subagent loads: `tdd`, `java`, `maven`, `bulma-java` (as applicable per file type).
-- The `clean-code` skill is loaded during refactoring steps.
-- The `unfolding-architecture` skill is loaded if the plan involves structural/architectural changes.
-- Between tasks, the orchestrating agent reviews for spec compliance and code quality.
+In both cases:
+- Load appropriate skills for the file types being changed (`tdd`, `java`, `maven`, `bulma-java`, `clean-code`, `unfolding-architecture`).
+- Follow TDD strictly.
 
-If a subagent encounters genuine uncertainty (not a technical problem it can debug, but a requirements/design question):
-
-- It returns the question to the orchestrating agent.
-- The orchestrating agent posts a structured comment on the issue and blocks.
+If genuine uncertainty arises (requirements question, not a technical problem), use the Question Protocol.
 
 ### Phase 5: Validate
 
@@ -90,8 +84,9 @@ If a subagent encounters genuine uncertainty (not a technical problem it can deb
 
 1. Squash all work into a single commit with a descriptive message referencing the issue: `feat: <description> (#<N>)`
    or `fix: <description> (#<N>)`.
-2. Close the issue via `gh issue close <N>`.
-3. Do NOT push — leave that for the human to review and push.
+2. Post a completion comment on the issue (commit sha, summary, tests added).
+3. Close the issue via `gh issue close <N>`.
+4. Do NOT push — leave that for the human to review and push.
 
 ---
 
@@ -153,16 +148,14 @@ Lists which issues would be processed, in what order, without spawning agent ses
 
 ## Artifact Lifecycle
 
-| Phase     | Artifacts created                                                         |
-|-----------|---------------------------------------------------------------------------|
-| Spec      | `docs/superpowers/specs/YYYY-MM-DD-issue-<N>-<slug>.md`                   |
-| Plan      | `docs/superpowers/plans/YYYY-MM-DD-issue-<N>-<slug>.md`                   |
-| Implement | Source code changes, test changes, demo app changes                       |
-| Commit    | Single squashed commit: `feat/fix: <desc> (#<N>)`                         |
-| Cleanup   | Separate commit removing spec+plan: `docs: remove spec and plan for #<N>` |
+| Tier | Artifacts |
+|------|-----------|
+| Bug / small fix | Issue comments (assessment + completion). No files. |
+| Well-defined feature | Issue comments (spec + completion). No files. |
+| Exploratory / brainstorm | Spec + plan files in `docs/superpowers/`. Issue comments (completion). |
 
-Spec and plan files persist after the implementation commit so you can review them. They are cleaned up in a separate
-commit after review.
+For exploratory issues, spec and plan files persist after the implementation commit so you can review them. They are
+cleaned up in a separate commit after review.
 
 ---
 
@@ -174,7 +167,7 @@ commit after review.
 | `unsafe`   | Issue has not been reviewed (auto-applied on creation)    |
 | `blocked`  | Agent has a question; issue is paused until human answers |
 
-The `blocked` label needs to be created (does not exist yet).
+The `blocked` label has been created.
 
 ---
 

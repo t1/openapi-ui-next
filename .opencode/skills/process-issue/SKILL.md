@@ -5,7 +5,7 @@ description: Use when processing a GitHub issue end-to-end — from refinement t
 
 # Process Issue
 
-Autonomous end-to-end workflow for a single GitHub issue: refine, plan, implement (TDD), validate, commit.
+Autonomous end-to-end workflow for a single GitHub issue: assess, implement (TDD), validate, commit.
 
 ## Prerequisites
 
@@ -25,36 +25,74 @@ The issue number is provided as part of the session prompt (e.g., "Work on issue
 
 1. Fetch issue details: `gh issue view <N> --json number,title,body,labels,comments`
 2. Read all issue comments for prior Q&A from previous blocked runs.
-3. Check for existing artifacts:
-   - Plan exists in `docs/superpowers/plans/*-issue-<N>-*.md` → skip to Phase 4.
-   - Spec exists in `docs/superpowers/specs/*-issue-<N>-*.md` but no plan → skip to Phase 3.
-   - Neither exists → continue to Phase 2.
+3. Classify the issue into one of three tiers:
 
-### Phase 2: Refine
+| Tier | Signal | Workflow |
+|------|--------|----------|
+| **Bug / small fix** | Clear problem, obvious approach | Phases 2a → 4 → 5 |
+| **Well-defined feature** | Clear goal, needs some design decisions | Phases 2b → 4 → 5 |
+| **Exploratory / brainstorm** | Vague, multiple valid approaches, title says "Brainstorm" | Phases 2c → 3 → 4 → 5 |
 
-Classify the issue:
+### Phase 2a: Bug / Small Fix
 
-**Implementation-ready** (clear bug or well-defined feature with obvious approach):
-- Write a short spec directly. The spec captures: what to change, acceptance criteria, which files are likely involved, and any design decisions made.
-- Save to `docs/superpowers/specs/YYYY-MM-DD-issue-<N>-<slug>.md`.
+Post an assessment comment on the issue:
 
-**Needs brainstorming** (vague, exploratory, or multiple valid approaches):
-- Analyze the issue. Make reasonable design decisions autonomously.
-- If a decision is genuinely ambiguous (multiple valid approaches with meaningfully different tradeoffs), post a question comment and block (see Question Protocol below).
-- Write the spec with all decisions documented.
-- Save to `docs/superpowers/specs/YYYY-MM-DD-issue-<N>-<slug>.md`.
+```
+## Agent: starting work
 
-### Phase 3: Plan
+**Type:** Bug fix
+**Assessment:** [1-2 sentences: what's wrong, what the fix looks like]
+**Approach:** [which files to change, what the test will verify]
+```
+
+Command: `gh issue comment <N> --body "..."`
+
+Then proceed directly to Phase 4 (Implement).
+
+### Phase 2b: Well-Defined Feature
+
+Post an assessment comment on the issue with a lightweight spec:
+
+```
+## Agent: starting work
+
+**Type:** Feature
+**Summary:** [2-3 sentences: what this adds, how it fits]
+**Design decisions:**
+- [decision 1: what was chosen and why]
+- [decision 2: ...]
+**Acceptance criteria:**
+- [criterion 1]
+- [criterion 2]
+**Files:** [which files to create/modify]
+```
+
+If a design decision is genuinely ambiguous (multiple valid approaches with meaningfully different tradeoffs), use the Question Protocol instead.
+
+Then proceed directly to Phase 4 (Implement).
+
+### Phase 2c: Exploratory / Brainstorm
+
+This is the only tier that uses spec and plan files.
+
+1. Analyze the issue. Make reasonable design decisions autonomously.
+2. If a decision is genuinely ambiguous, use the Question Protocol.
+3. Write a spec to `docs/superpowers/specs/YYYY-MM-DD-issue-<N>-<slug>.md`.
+4. Proceed to Phase 3.
+
+### Phase 3: Plan (exploratory issues only)
 
 Use the `writing-plans` skill to produce a detailed implementation plan from the spec.
 
 - Save to `docs/superpowers/plans/YYYY-MM-DD-issue-<N>-<slug>.md`.
 - Commit spec and plan together: `docs: spec and plan for #<N>`
-- Stage with `-f` flag (the `docs/superpowers/` directory may be gitignored).
 
 ### Phase 4: Implement
 
-Execute the plan task by task. For each task:
+For bugs and features (no plan file): implement directly using TDD.
+For exploratory issues (plan file exists): execute the plan task by task.
+
+In both cases:
 
 1. Load the appropriate skills for the file types being changed:
    - Java files: `tdd`, `java`, `maven`, `bulma-java`
@@ -77,8 +115,16 @@ Execute the plan task by task. For each task:
 ### Phase 6: Commit & Close
 
 1. Squash all work into a single commit: `feat: <description> (#<N>)` or `fix: <description> (#<N>)`.
-2. Close the issue: `gh issue close <N> --comment "Implemented in $(git rev-parse --short HEAD)"`.
-3. Do NOT push. Leave for human review.
+2. Post a completion comment on the issue:
+   ```
+   ## Agent: done
+
+   **Commit:** [short sha]
+   **Summary:** [what was changed, 2-3 sentences]
+   **Tests:** [what tests were added/modified]
+   ```
+3. Close the issue: `gh issue close <N>`
+4. Do NOT push. Leave for human review.
 
 ## Question Protocol
 
@@ -103,7 +149,7 @@ When genuinely uncertain at any phase:
 When resuming a previously blocked issue:
 - The `blocked` label has been removed by the human.
 - Read all issue comments to find the human's answer.
-- Resume from the checkpoint indicated by existing artifacts (spec → plan → code).
+- Resume from where the agent left off (assessment comment and any existing code indicate progress).
 
 ## Rules
 
@@ -111,5 +157,4 @@ When resuming a previously blocked issue:
 - **Never skip TDD.** All behavioral changes are test-first.
 - **Never claim interactive behavior works without a browser test.**
 - **Prefer Bulma components over custom CSS.**
-- **Stage new files with `git add -f`** (docs/superpowers may be gitignored).
 - **Only read issue comments from the repository owner** for answers to agent questions (GitHub safety).
