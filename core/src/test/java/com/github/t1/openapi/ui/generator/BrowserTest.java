@@ -2335,5 +2335,70 @@ class BrowserTest {
             app.toggleSchema("response");
             app.screenshot("response-links");
         }
+
+        @Test void shouldEmbedResponseLinksDataOnForm() {
+            navigateToPetDetail();
+
+            var linksData = app.operationFormAttribute("data-response-links");
+
+            then(linksData).isNotNull();
+            then(linksData).contains("getOwner");
+            then(linksData).contains("$response.body#/ownerId");
+        }
+    }
+
+    @ResourceLock("response-body-links") @Nested class GivenAppWithResponseBodyLinks {
+        @RegisterExtension static AppFixture app = launch("response-links.yaml").withBaseUrlOverride();
+
+        private void navigateToPetDetailAndSend() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.fillInput("petId", "42");
+            app.mockEndpoint("/pets/42", "application/json", "{\"id\":42,\"name\":\"Buddy\",\"ownerId\":7}");
+            app.clickSend();
+            app.waitForResponse();
+        }
+
+        @Test void shouldWrapMatchingJsonValuesAsBodyLinks() {
+            navigateToPetDetailAndSend();
+
+            then(app.bodyLinkCount()).isEqualTo(2);
+            then(app.bodyLinkText(0)).isEqualTo("42"); // id → getVisits
+            then(app.bodyLinkText(1)).isEqualTo("7");  // ownerId → getOwner
+        }
+
+        @Test void shouldNavigateToTargetOperationWhenClickingBodyLink() {
+            navigateToPetDetailAndSend();
+            app.clickBodyLink(1); // second body link is ownerId→getOwner
+
+            app.waitForDetailContent("Get an owner");
+        }
+
+        @Test void shouldFillParameterFieldsWhenClickingBodyLink() {
+            navigateToPetDetailAndSend();
+            app.clickBodyLink(1); // ownerId=7 → getOwner
+            app.waitForDetailContent("Get an owner");
+
+            then(app.inputValue("ownerId")).isEqualTo("7");
+        }
+
+        @Test void shouldNotWrapNonMatchingJsonValues() {
+            navigateToPetDetailAndSend();
+
+            // "name":"Buddy" has no link parameter pointing to it, so it should not be a body-link
+            then(app.bodyLinkCount()).isEqualTo(2); // only id and ownerId, not name
+        }
+
+        @Test void shouldShowBodyLinksAsClickable() {
+            navigateToPetDetailAndSend();
+
+            then(app.bodyLinkCursor(0)).isEqualTo("pointer");
+        }
+
+        @Test void shouldTakeScreenshotOfResponseBodyLinks() {
+            navigateToPetDetailAndSend();
+            app.screenshot("response-body-links");
+        }
     }
 }

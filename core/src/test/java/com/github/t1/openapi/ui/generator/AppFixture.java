@@ -478,6 +478,22 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-operation").nth(index).evaluate("el => getComputedStyle(el).cursor").toString();
     }
 
+    int bodyLinkCount() {
+        return page.locator("#detail pre.response .body-link").count();
+    }
+
+    String bodyLinkText(int index) {
+        return page.locator("#detail pre.response .body-link").nth(index).textContent();
+    }
+
+    String bodyLinkCursor(int index) {
+        return page.locator("#detail pre.response .body-link").nth(index).evaluate("el => getComputedStyle(el).cursor").toString();
+    }
+
+    void clickBodyLink(int index) {
+        page.locator("#detail pre.response .body-link").nth(index).click();
+    }
+
     String operationFormAttribute(String attribute) {
         return page.locator("#detail form").getAttribute(attribute);
     }

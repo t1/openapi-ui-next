@@ -28,7 +28,7 @@ public class OwnerResource {
                 .orElseThrow(() -> new OwnerNotFoundException(id));
     }
 
-    @GET @Path("/{id}") @Operation(summary = "Get an owner by ID")
+    @GET @Path("/{id}") @Operation(operationId = "getOwner", summary = "Get an owner by ID")
     public OwnerResponse get(@PathParam("id") long id) {
         var owner = findById(id);
         var pets = PetResource.PETS.stream()

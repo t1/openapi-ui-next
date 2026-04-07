@@ -88,6 +88,7 @@ class OperationFragmentGenerator {
     private Form operationForm() {
         var operationForm = form().attr("data-path", displayPath.display()).attr("data-fragment-path", path.toString()).attr("data-method", method.name());
         if (operation.getOperationId() != null) operationForm.attr("data-operation-id", operation.getOperationId());
+        responseLinksData(operationForm);
         parameterFields(operationForm);
         operationForm.content(div().classes("custom-headers")
                 .content(element("button").attr("type", "button").classes("custom-header-add")
@@ -104,6 +105,43 @@ class OperationFragmentGenerator {
                 column().classes("has-text-right")));
         operationForm.content(responseArea);
         return operationForm;
+    }
+
+    /// Embeds link metadata as a JSON `data-response-links` attribute on the form,
+    /// so the JS can detect and wrap matching response body values as clickable links.
+    private void responseLinksData(Form form) {
+        if (operation.getResponses() == null) return;
+        var linksJson = new StringBuilder("{");
+        var firstStatus = true;
+        for (var entry : operation.getResponses().entrySet()) {
+            var response = entry.getValue();
+            if (response.getLinks() == null || response.getLinks().isEmpty()) continue;
+            if (!firstStatus) linksJson.append(",");
+            firstStatus = false;
+            linksJson.append("\"").append(entry.getKey()).append("\":{");
+            var firstLink = true;
+            for (var linkEntry : response.getLinks().entrySet()) {
+                if (!firstLink) linksJson.append(",");
+                firstLink = false;
+                var link = linkEntry.getValue();
+                linksJson.append("\"").append(linkEntry.getKey()).append("\":{");
+                linksJson.append("\"operationId\":\"").append(link.getOperationId()).append("\"");
+                if (link.getParameters() != null && !link.getParameters().isEmpty()) {
+                    linksJson.append(",\"parameters\":{");
+                    var firstParam = true;
+                    for (var param : link.getParameters().entrySet()) {
+                        if (!firstParam) linksJson.append(",");
+                        firstParam = false;
+                        linksJson.append("\"").append(param.getKey()).append("\":\"").append(param.getValue()).append("\"");
+                    }
+                    linksJson.append("}");
+                }
+                linksJson.append("}");
+            }
+            linksJson.append("}");
+        }
+        linksJson.append("}");
+        if (!firstStatus) form.attr("data-response-links", linksJson.toString());
     }
 
     private Element headerRow() {

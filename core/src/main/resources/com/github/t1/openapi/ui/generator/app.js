@@ -415,6 +415,19 @@ document.addEventListener('DOMContentLoaded', function() {
             new ResizeObserver(function() { autoGrow(ta); }).observe(ta);
             autoGrow(ta);
         });
+        // Fill parameter from body link navigation
+        if (window._pendingParamFill) {
+            var fill = window._pendingParamFill;
+            window._pendingParamFill = null;
+            var targetForm = document.querySelector('#detail form[data-path]');
+            if (targetForm) {
+                var input = targetForm.querySelector('input[name="' + fill.name + '"]');
+                if (input) {
+                    input.value = fill.value;
+                    input.dispatchEvent(new Event('input', {bubbles: true}));
+                }
+            }
+        }
     });
 
     function prettyPrintXml(xml) {
@@ -743,6 +756,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const emptyBody = area.querySelector('p.response-empty.box');
                 if (emptyBody) emptyBody.style.display = '';
             }
+            // apply body links — wrap matching JSON values as clickable links
+            if (body && body.trim() && contentType && contentType.includes('json') && pre) {
+                applyBodyLinks(pre, form, body, String(status));
+            }
         }
 
         function fetchFragment(url) {
@@ -763,6 +780,76 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (html) populate(html);
             });
         });
+    }
+
+    function applyBodyLinks(pre, form, body, statusCode) {
+        var linksAttr = form.getAttribute('data-response-links');
+        if (!linksAttr) return;
+        var allLinks;
+        try { allLinks = JSON.parse(linksAttr); } catch(e) { return; }
+        var statusLinks = allLinks[statusCode];
+        if (!statusLinks) return;
+
+        // Parse the response body to extract values at JSON pointer paths
+        var parsed;
+        try { parsed = JSON.parse(body); } catch(e) { return; }
+
+        // Collect {value, operationId, paramName, pointer} tuples for wrapping
+        var valuesToWrap = [];
+        for (var linkName in statusLinks) {
+            var link = statusLinks[linkName];
+            if (!link.parameters) continue;
+            for (var paramName in link.parameters) {
+                var expr = link.parameters[paramName];
+                var match = expr.match(/^\$response\.body#\/(.+)$/);
+                if (!match) continue;
+                var pointer = match[1];
+                // Resolve JSON pointer — supports nested paths like "owner/id"
+                var parts = pointer.split('/');
+                var val = parsed;
+                for (var i = 0; i < parts.length; i++) {
+                    if (val === undefined || val === null) break;
+                    val = val[parts[i]];
+                }
+                if (val === undefined || val === null) continue;
+                valuesToWrap.push({
+                    value: String(val),
+                    operationId: link.operationId,
+                    paramName: paramName,
+                    pointer: pointer
+                });
+            }
+        }
+        if (valuesToWrap.length === 0) return;
+
+        // Work with innerHTML to handle hljs-highlighted JSON.
+        // After hljs, the code looks like:
+        //   <span class="hljs-attr">"ownerId"</span><span class="hljs-punctuation">:</span> <span class="hljs-number">7</span>
+        // We need to find the value span after the key span and wrap it.
+        var codeEl = pre.querySelector('code') || pre;
+        var html = codeEl.innerHTML;
+        valuesToWrap.forEach(function(entry) {
+            // Use the last segment of the pointer as the JSON key to match
+            var keyParts = entry.pointer.split('/');
+            var key = keyParts[keyParts.length - 1];
+            var keyEsc = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            var valEsc = entry.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // Pattern: "key" ... : ... value (with potential hljs markup in between)
+            var pattern = new RegExp(
+                '(&quot;' + keyEsc + '&quot;|"' + keyEsc + '")'
+                + '((?:<[^>]*>|[^<])*?)'  // colon + whitespace (possibly with spans)
+                + '(<span[^>]*>)(' + valEsc + ')(</span>|(?=<|$))'
+            );
+            html = html.replace(pattern, function(m, key, between, openTag, value, closeTag) {
+                return key + between + openTag
+                    + '<a class="body-link" href="#"'
+                    + ' data-operation-id="' + entry.operationId + '"'
+                    + ' data-param-name="' + entry.paramName + '"'
+                    + ' data-param-value="' + entry.value + '">'
+                    + value + '</a>' + closeTag;
+            });
+        });
+        codeEl.innerHTML = html;
     }
 
     function appendHeaderRow(grid, name, value) {
@@ -1037,6 +1124,27 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update hash and navigate
         var hash = '#' + target.path + '/' + target.method;
         history.pushState(null, '', hash);
+        navigateFromHash();
+    });
+
+    // Click handler for response body links — navigate and fill params
+    document.addEventListener('click', function(e) {
+        var linkEl = e.target.closest('.body-link[data-operation-id]');
+        if (!linkEl) return;
+        e.preventDefault();
+        var operationId = linkEl.getAttribute('data-operation-id');
+        if (!operationId || !window._operationIdMap) return;
+        var target = window._operationIdMap[operationId];
+        if (!target) return;
+        var paramName = linkEl.getAttribute('data-param-name');
+        var paramValue = linkEl.getAttribute('data-param-value');
+        pendingMethod = target.method;
+        var hash = '#' + target.path + '/' + target.method;
+        history.pushState(null, '', hash);
+        // Store pending param fill for after navigation completes
+        if (paramName && paramValue) {
+            window._pendingParamFill = {name: paramName, value: paramValue};
+        }
         navigateFromHash();
     });
 

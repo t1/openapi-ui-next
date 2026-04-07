@@ -20,6 +20,8 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.headers.Header;
+import org.eclipse.microprofile.openapi.annotations.links.Link;
+import org.eclipse.microprofile.openapi.annotations.links.LinkParameter;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -70,12 +72,20 @@ public class PetResource {
     }
 
     @GET @Path("/{id}") @Produces({APPLICATION_JSON, APPLICATION_XML})
-    @Operation(summary = "Get a pet by ID", description = "Returns a single pet by its unique identifier.")
+    @Operation(operationId = "getPet", summary = "Get a pet by ID", description = "Returns a single pet by its unique identifier.")
     @APIResponse(responseCode = "200", description = "A pet",
             headers = @Header(name = "X-Request-ID", description = "Echoed request identifier",
                     schema = @Schema(type = SchemaType.STRING)),
             content = {@Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = PetResponse.class)),
-                    @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = PetResponse.class))})
+                    @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = PetResponse.class))},
+            links = {
+                    @Link(name = "GetOwner", operationId = "getOwner",
+                            description = "Get the owner of this pet",
+                            parameters = @LinkParameter(name = "id", expression = "$response.body#/owner/id")),
+                    @Link(name = "GetVisits", operationId = "listPetVisits",
+                            description = "List all visits for this pet",
+                            parameters = @LinkParameter(name = "petId", expression = "$response.body#/id"))
+            })
     @APIResponse(responseCode = "400", description = "Business error",
             content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
     @APIResponse(responseCode = "500", description = "Internal server error",

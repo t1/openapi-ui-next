@@ -24,7 +24,7 @@ public class VisitResource {
 
     private static long nextId = 4;
 
-    @GET @Tag(name = "visits") @Tag(name = "pets") @Operation(summary = "List visits for a pet")
+    @GET @Tag(name = "visits") @Tag(name = "pets") @Operation(operationId = "listPetVisits", summary = "List visits for a pet")
     public List<Visit> list(@PathParam("petId") long petId) {
         return VISITS.stream()
                 .filter(v -> v.petId() == petId).toList();

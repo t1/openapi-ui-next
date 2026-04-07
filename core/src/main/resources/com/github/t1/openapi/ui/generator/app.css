@@ -468,6 +468,16 @@ section > .container > .split-layout > .split-second {
     font-size: 0.8125rem;
     color: var(--bulma-text-weak);
 }
+/* response body links — clickable values that navigate to target operations */
+.body-link {
+    color: var(--bulma-link);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    cursor: pointer;
+}
+.body-link:hover {
+    text-decoration-style: solid;
+}
 /* syntax highlighting with Bulma colors */
 pre.response code.hljs {
     background: var(--bulma-scheme-main);
