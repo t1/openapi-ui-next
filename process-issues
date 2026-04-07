@@ -1,6 +1,10 @@
 #!/usr/bin/env zsh
 # process-issues — loop over approved GitHub issues and process them with OpenCode.
 #
+# Issues are processed in project board order (top = highest priority).
+# If the highest-priority issue is blocked, processing stops entirely —
+# lower-priority issues are not processed because they may depend on it.
+#
 # Usage:
 #   ./process-issues [--dry-run] [--issue N] [--push] [--model MODEL]
 #
@@ -9,8 +13,14 @@
 #   --issue N     Process only issue #N (skip the automatic selection).
 #   --push        Push to trunk and wait for CI after each issue.
 #   --model MODEL Model to use (default: portkey/@vertex-ai/anthropic.claude-sonnet-4-6).
+#
+# Requires: A GitHub Project board owned by the repo owner (t1) linked to this repo.
+# Set the project number below.
 
 set -euo pipefail
+
+PROJECT_OWNER="t1"
+PROJECT_NUMBER=1  # ← update after creating the project board
 
 DRY_RUN=false
 SPECIFIC_ISSUE=""
@@ -46,6 +56,43 @@ done
 # Update plugins before starting (same as ./oc wrapper).
 bun update tdder superpowers --cwd ~/.cache/opencode --silent 2>/dev/null || true
 
+# Fetch issues from the project board in position order.
+# Returns JSON array of {number, title, labels, state} sorted by board position.
+fetch_board_issues() {
+    gh api graphql -f query='
+        query($owner: String!, $number: Int!) {
+            user(login: $owner) {
+                projectV2(number: $number) {
+                    items(first: 50) {
+                        nodes {
+                            content {
+                                ... on Issue {
+                                    number
+                                    title
+                                    state
+                                    labels(first: 10) {
+                                        nodes { name }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ' -f owner="$PROJECT_OWNER" -F number="$PROJECT_NUMBER" \
+    --jq '[
+        .data.user.projectV2.items.nodes[]
+        | select(.content.number != null)
+        | {
+            number: .content.number,
+            title: .content.title,
+            state: .content.state,
+            labels: [.content.labels.nodes[].name]
+        }
+    ]' 2>/dev/null || echo "[]"
+}
+
 pick_next_issue() {
     if [[ -n "$SPECIFIC_ISSUE" ]]; then
         # Verify the specific issue is approved and not blocked.
@@ -68,21 +115,37 @@ pick_next_issue() {
         return 0
     fi
 
-    # Pick the oldest approved, non-blocked, open issue.
-    local issues
-    issues=$(gh issue list \
-        --label approved \
-        --state open \
-        --json number,title,labels \
-        --limit 50)
+    local board_issues
+    board_issues=$(fetch_board_issues)
 
-    # Filter out issues with the 'blocked' label.
-    echo "$issues" | jq -r '
-        [.[] | select(.labels | map(.name) | index("blocked") | not)]
-        | sort_by(.number)
-        | first
-        | "\(.number)\t\(.title)"
-    ' 2>/dev/null || return 1
+    if [[ "$board_issues" == "[]" || -z "$board_issues" ]]; then
+        echo "No issues on the project board." >&2
+        return 1
+    fi
+
+    # Filter to open, approved issues (in board order).
+    local eligible
+    eligible=$(echo "$board_issues" | jq -r '
+        [.[] | select(.state == "OPEN" and (.labels | index("approved")))]
+    ')
+
+    if [[ "$(echo "$eligible" | jq 'length')" -eq 0 ]]; then
+        echo "No eligible issues on the board." >&2
+        return 1
+    fi
+
+    # Check the FIRST eligible issue. If it's blocked, stop entirely.
+    local first_labels first_number first_title
+    first_number=$(echo "$eligible" | jq -r '.[0].number')
+    first_title=$(echo "$eligible" | jq -r '.[0].title')
+    first_labels=$(echo "$eligible" | jq -r '.[0].labels | join(",")')
+
+    if [[ "$first_labels" == *"blocked"* ]]; then
+        echo "Highest-priority issue #${first_number} (${first_title}) is blocked. Stopping." >&2
+        return 1
+    fi
+
+    echo "${first_number}\t${first_title}"
 }
 
 process_one_issue() {
@@ -137,18 +200,13 @@ process_one_issue() {
 }
 
 list_all_eligible_issues() {
-    local issues
-    issues=$(gh issue list \
-        --label approved \
-        --state open \
-        --json number,title,labels \
-        --limit 50)
+    local board_issues
+    board_issues=$(fetch_board_issues)
 
-    echo "$issues" | jq -r '
-        [.[] | select(.labels | map(.name) | index("blocked") | not)]
-        | sort_by(.number)
+    echo "$board_issues" | jq -r '
+        [.[] | select(.state == "OPEN" and (.labels | index("approved")))]
         | .[]
-        | "\(.number)\t\(.title)"
+        | "\(.number)\t\(.title)\t\(if (.labels | index("blocked")) then "BLOCKED" else "ready" end)"
     ' 2>/dev/null
 }
 
@@ -160,16 +218,17 @@ if [[ -n "$SPECIFIC_ISSUE" ]]; then
     issue_title=$(echo "$line" | cut -f2-)
     process_one_issue "$issue_number" "$issue_title"
 elif [[ "$DRY_RUN" == "true" ]]; then
-    # In dry-run mode, list all eligible issues at once.
-    list_all_eligible_issues | while IFS=$'\t' read -r issue_number issue_title; do
+    # In dry-run mode, list all board issues with their status.
+    echo "Issues on project board (in priority order):"
+    list_all_eligible_issues | while IFS=$'\t' read -r issue_number issue_title issue_status; do
         [[ -z "$issue_number" || "$issue_number" == "null" ]] && continue
-        process_one_issue "$issue_number" "$issue_title"
+        echo "  #${issue_number}: ${issue_title} [${issue_status}]"
     done
 else
     # In real mode, pick one at a time (state changes after processing).
     while true; do
         line=$(pick_next_issue) || {
-            echo "No more eligible issues."
+            echo "No more eligible issues (or top issue is blocked)."
             break
         }
         if [[ "$line" == "null"* || -z "$line" ]]; then
