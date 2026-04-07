@@ -35,6 +35,12 @@ All behavioral changes — no matter how small — **must** be test-first. Write
 see it fail, then implement. No exceptions for "obvious" or "trivial" changes. If you catch
 yourself thinking "this is too simple for a test," that's exactly when you need one.
 
+**Demo app integration is a discovery phase.** When wiring up the demo app, you will often
+discover requirements you didn't anticipate — nested data, duplicate keys, edge cases, new
+interactions. Each discovery is a new requirement. Stop, write a failing test that captures
+it, see it fail, then implement. The demo app is not just a validation step — it's where you
+find out what you missed. Expect this. Budget for it.
+
 Invoke `tdd` before any feature or bugfix work.
 
 ## Workflow

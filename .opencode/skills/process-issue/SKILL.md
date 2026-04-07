@@ -126,7 +126,8 @@ In both cases:
    - Refactoring steps: `clean-code`
    - Architectural changes: `unfolding-architecture`
 2. Follow TDD strictly: write failing test first, see it fail, implement, see it pass.
-3. If genuine uncertainty arises (requirements question, not a technical problem you can debug), use the Question Protocol.
+3. **Demo app integration is a discovery phase.** When wiring up the demo app, expect to discover requirements you didn't anticipate — nested data, duplicate keys, edge cases, new interactions. Each discovery is a new requirement. Stop, write a failing test that captures it, see it fail, then implement. The demo app is not just a validation step — it's where you find out what you missed.
+4. If genuine uncertainty arises (requirements question, not a technical problem you can debug), use the Question Protocol.
 
 ### Phase 5: Validate
 
@@ -185,7 +186,7 @@ When resuming a previously blocked issue:
 ## Rules
 
 - **Never guess when uncertain.** Use the Question Protocol.
-- **Never skip TDD.** All behavioral changes are test-first.
+- **Never skip TDD.** All behavioral changes are test-first. Demo app integration often reveals new requirements — each one gets its own TDD cycle.
 - **Never claim interactive behavior works without a browser test.**
 - **Prefer Bulma components over custom CSS.**
 - **Only read issue comments from the repository owner** for answers to agent questions (GitHub safety).
