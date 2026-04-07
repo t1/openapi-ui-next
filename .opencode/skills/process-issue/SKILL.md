@@ -100,12 +100,18 @@ Then proceed directly to Phase 4 (Implement).
 
 ### Phase 2c: Exploratory / Brainstorm
 
-This is the only tier that uses spec and plan files.
+Brainstorming requires interactive collaboration — design questions, visual mockups,
+and iterative refinement that cannot happen autonomously.
 
-1. Analyze the issue. Make reasonable design decisions autonomously.
-2. If a decision is genuinely ambiguous, use the Question Protocol.
-3. Write a spec to `docs/superpowers/specs/YYYY-MM-DD-issue-<N>-<slug>.md`.
-4. Proceed to Phase 3.
+**If running autonomously** (prompt contains "autonomous mode"):
+1. Post a comment on the issue summarizing your assessment and why brainstorming is needed.
+2. Add the `blocked` label: `gh issue edit <N> --add-label blocked`
+3. STOP. Do not attempt to brainstorm, write specs, or make design decisions.
+
+**If running interactively:**
+1. Use the `brainstorming` skill to explore the design with the user.
+2. Write a spec to `docs/superpowers/specs/YYYY-MM-DD-issue-<N>-<slug>.md`.
+3. Proceed to Phase 3.
 
 ### Phase 3: Plan (exploratory issues only)
 

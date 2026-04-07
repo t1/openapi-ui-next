@@ -97,7 +97,7 @@ process_one_issue() {
     fi
 
     # Build the prompt.
-    local prompt="Load the process-issue skill. Work on issue #${issue_number} for the openapi-ui-next project."
+    local prompt="Load the process-issue skill. Work on issue #${issue_number} for the openapi-ui-next project. This is autonomous mode."
     if [[ "$PUSH" == "true" ]]; then
         prompt="${prompt} After committing, push to trunk and wait for CI to pass."
     fi
