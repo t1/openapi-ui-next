@@ -523,10 +523,7 @@ class OperationFragmentGenerator {
             linksGrid.content(nameEl);
             var details = span().classes("schema-link-details");
             if (link.getOperationId() != null) {
-                var opEl = href != null
-                        ? element("a").attr("href", href).classes("schema-link-operation").content(link.getOperationId())
-                        : span(link.getOperationId()).classes("schema-link-operation");
-                details.content(opEl);
+                details.content(span(link.getOperationId()).classes("schema-link-operation"));
             }
             if (link.getDescription() != null) {
                 details.content(span(link.getDescription()).classes("schema-link-desc"));

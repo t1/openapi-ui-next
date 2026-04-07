@@ -2257,7 +2257,7 @@ class BrowserTest {
             navigateToPetDetail();
             app.toggleSchema("response");
 
-            then(app.responseLinkNames("200")).containsExactly("GetOwner", "GetVisits");
+            then(app.responseLinkNames("200")).containsExactly("GetOwner");
         }
 
         @Test void shouldShowLinkOperationId() {
@@ -2265,7 +2265,6 @@ class BrowserTest {
             app.toggleSchema("response");
 
             then(app.responseLinkOperationId("200", 0)).isEqualTo("getOwner");
-            then(app.responseLinkOperationId("200", 1)).isEqualTo("getVisits");
         }
 
         @Test void shouldShowLinkDescription() {
@@ -2280,7 +2279,6 @@ class BrowserTest {
             app.toggleSchema("response");
 
             then(app.responseLinkParams("200", 0)).containsExactly("ownerId ← $response.body#/ownerId");
-            then(app.responseLinkParams("200", 1)).containsExactly("petId ← $response.body#/id");
         }
 
         @Test void shouldNotShowLinksSectionWhenNoLinks() {
@@ -2314,14 +2312,6 @@ class BrowserTest {
             app.waitForDetailContent("Get an owner");
         }
 
-        @Test void shouldNavigateToTargetOperationWhenClickingSchemaLinkOperation() {
-            navigateToPetDetail();
-            app.toggleSchema("response");
-            app.clickSchemaLinkOperation("200", 1);
-
-            app.waitForDetailContent("List visits");
-        }
-
         @Test void shouldRenderSchemaLinkNameAsRealLink() {
             navigateToPetDetail();
             app.toggleSchema("response");
@@ -2334,7 +2324,6 @@ class BrowserTest {
             app.toggleSchema("response");
 
             then(app.schemaLinkNameCursor("200", 0)).isEqualTo("pointer");
-            then(app.schemaLinkOperationCursor("200", 0)).isEqualTo("pointer");
         }
 
         @Test void shouldTakeScreenshotOfResponseLinks() {
@@ -2384,23 +2373,21 @@ class BrowserTest {
         @Test void shouldWrapMatchingJsonValuesAsBodyLinks() {
             navigateToPetDetailAndSend();
 
-            then(app.bodyLinkCount()).isEqualTo(2);
-            then(app.bodyLinkText(0)).isEqualTo("42"); // id → getVisits
-            then(app.bodyLinkText(1)).isEqualTo("7");  // ownerId → getOwner
-            then(app.bodyLinkHref(0)).contains("petId=42");
-            then(app.bodyLinkHref(1)).contains("ownerId=7");
+            then(app.bodyLinkCount()).isEqualTo(1);
+            then(app.bodyLinkText(0)).isEqualTo("7");  // ownerId → getOwner
+            then(app.bodyLinkHref(0)).contains("ownerId=7");
         }
 
         @Test void shouldNavigateToTargetOperationWhenClickingBodyLink() {
             navigateToPetDetailAndSend();
-            app.clickBodyLink(1); // second body link is ownerId→getOwner
+            app.clickBodyLink(0); // ownerId→getOwner
 
             app.waitForDetailContent("Get an owner");
         }
 
         @Test void shouldFillParameterFieldsWhenClickingBodyLink() {
             navigateToPetDetailAndSend();
-            app.clickBodyLink(1); // ownerId=7 → getOwner
+            app.clickBodyLink(0); // ownerId=7 → getOwner
             app.waitForDetailContent("Get an owner");
 
             then(app.inputValue("ownerId")).isEqualTo("7");
@@ -2416,17 +2403,16 @@ class BrowserTest {
             app.clickSend();
             app.waitForResponse();
 
-            // The pet's "id" (42) should link to getVisits (petId=42)
-            then(app.bodyLinkHref(0)).contains("petId=42");
-            // The "ownerId" (7) should link to getOwner (ownerId=7)
-            then(app.bodyLinkHref(1)).contains("ownerId=7");
+            // Only "ownerId" (7) should link to getOwner (ownerId=7); "id" has no link
+            then(app.bodyLinkCount()).isEqualTo(1);
+            then(app.bodyLinkHref(0)).contains("ownerId=7");
         }
 
         @Test void shouldNotWrapNonMatchingJsonValues() {
             navigateToPetDetailAndSend();
 
-            // "name":"Buddy" has no link parameter pointing to it, so it should not be a body-link
-            then(app.bodyLinkCount()).isEqualTo(2); // only id and ownerId, not name
+            // "name":"Buddy" and "id":42 have no link parameter pointing to them
+            then(app.bodyLinkCount()).isEqualTo(1); // only ownerId
         }
 
         @Test void shouldShowBodyLinksAsClickable() {
@@ -2445,9 +2431,8 @@ class BrowserTest {
             app.clickSend();
             app.waitForResponse();
 
-            then(app.bodyLinkHref(0)).contains("petId=1");
-            then(app.bodyLinkHref(1)).contains("ownerId=3");
-            then(app.bodyLinkCount()).isEqualTo(2);
+            then(app.bodyLinkCount()).isEqualTo(1);
+            then(app.bodyLinkHref(0)).contains("ownerId=3");
         }
 
         @Test void shouldTakeScreenshotOfResponseBodyLinks() {

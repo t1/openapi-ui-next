@@ -78,14 +78,9 @@ public class PetResource {
                     schema = @Schema(type = SchemaType.STRING)),
             content = {@Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = PetResponse.class)),
                     @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = PetResponse.class))},
-            links = {
-                    @Link(name = "GetOwner", operationId = "getOwner",
-                            description = "Get the owner of this pet",
-                            parameters = @LinkParameter(name = "id", expression = "$response.body#/owner/id")),
-                    @Link(name = "GetVisits", operationId = "listPetVisits",
-                            description = "List all visits for this pet",
-                            parameters = @LinkParameter(name = "petId", expression = "$response.body#/id"))
-            })
+            links = @Link(name = "GetOwner", operationId = "getOwner",
+                    description = "Get the owner of this pet",
+                    parameters = @LinkParameter(name = "id", expression = "$response.body#/owner/id")))
     @APIResponse(responseCode = "400", description = "Business error",
             content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
     @APIResponse(responseCode = "500", description = "Internal server error",

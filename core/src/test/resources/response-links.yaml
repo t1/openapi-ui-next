@@ -53,10 +53,6 @@ paths:
               parameters:
                 ownerId: $response.body#/ownerId
               description: Get the owner of this pet
-            GetVisits:
-              operationId: getVisits
-              parameters:
-                petId: $response.body#/id
   /owners/{ownerId}:
     get:
       summary: Get an owner
