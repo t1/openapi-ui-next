@@ -22,7 +22,7 @@ This is the foundation — body links and schema links will generate hrefs that 
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/generator/BrowserTest.java`
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/generator/AppFixture.java`
 
-- [ ] **Step 1: Write failing test — navigate to hash with query params fills field**
+- [x] **Step 1: Write failing test — navigate to hash with query params fills field**
 
 In `BrowserTest.java`, in the `GivenAppWithResponseLinks` nested class (around line 2240), add a test:
 
@@ -45,12 +45,12 @@ void navigateToHash(String hash) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest="BrowserTest\$GivenAppWithResponseLinks#shouldFillFieldFromHashQueryParameter" -DdangerouslyDisableSandbox=true`
 Expected: FAIL — query params are currently ignored, field stays empty.
 
-- [ ] **Step 3: Implement query parameter parsing in navigateFromHash()**
+- [x] **Step 3: Implement query parameter parsing in navigateFromHash()**
 
 In `app.js`, modify `navigateFromHash()` (line 1154). At the start, split the route on `?`:
 
@@ -106,35 +106,35 @@ if (window._pendingParams) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn test -pl core -Dtest="BrowserTest\$GivenAppWithResponseLinks#shouldFillFieldFromHashQueryParameter" -DdangerouslyDisableSandbox=true`
 Expected: PASS
 
-- [ ] **Step 5: Write failing test — navigate with multiple query params**
+- [x] **Step 5: Write test — unknown query params are silently ignored**
 
 ```java
-@Test void shouldFillMultipleFieldsFromHashQueryParameters() {
-    app.navigateToHash("pets/{petId}/GET?petId=42&status=available");
+@Test void shouldIgnoreUnknownHashQueryParameters() {
+    app.navigateToHash("pets/{petId}/GET?petId=42&unknownParam=ignored");
     app.waitForDetailContent("Get a pet");
 
     then(app.inputValue("petId")).isEqualTo("42");
 }
 ```
 
-Note: this test uses the existing `response-links.yaml` fixture which only has one param (`petId`) on the getPet operation. If `status` doesn't exist as a field, it's silently ignored — the test validates that multi-param parsing works and known params are filled.
+Note: this test uses the existing `response-links.yaml` fixture which only has one param (`petId`) on the getPet operation. Unknown params are silently ignored — the test validates that multi-param parsing works and known params are filled.
 
-- [ ] **Step 6: Run test to verify it passes (should already pass)**
+- [x] **Step 6: Run test to verify it passes (should already pass)**
 
-Run: `mvn test -pl core -Dtest="BrowserTest\$GivenAppWithResponseLinks#shouldFillMultipleFieldsFromHashQueryParameters" -DdangerouslyDisableSandbox=true`
+Run: `mvn test -pl core -Dtest="BrowserTest\$GivenAppWithResponseLinks#shouldIgnoreUnknownHashQueryParameters" -DdangerouslyDisableSandbox=true`
 Expected: PASS (the parsing already supports multiple params from Step 3).
 
-- [ ] **Step 7: Run full test suite**
+- [x] **Step 7: Run full test suite**
 
 Run: `mvn test -pl core -DdangerouslyDisableSandbox=true`
 Expected: All tests pass.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A && git commit -m "feat: parse query parameters from hash and fill form fields"
@@ -153,7 +153,7 @@ Replace `<span data-operation-id>` schema links with `<a href="#path/METHOD">`.
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/generator/BrowserTest.java`
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/generator/AppFixture.java`
 
-- [ ] **Step 1: Write failing test — schema link is a real `<a>` with href**
+- [x] **Step 1: Write failing test — schema link is a real `<a>` with href**
 
 In `BrowserTest.java`, in `GivenAppWithResponseLinks`, add:
 
@@ -174,12 +174,12 @@ String schemaLinkHref(String statusCode, int index) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest="BrowserTest\$GivenAppWithResponseLinks#shouldRenderSchemaLinkNameAsRealLink" -DdangerouslyDisableSandbox=true`
 Expected: FAIL — `getAttribute("href")` returns null because schema links are currently `<span>` elements.
 
-- [ ] **Step 3: Pass operationIdMap to OperationFragmentGenerator**
+- [x] **Step 3: Pass operationIdMap to OperationFragmentGenerator**
 
 In `OperationFragmentGenerator.java`, add a field and modify the constructor:
 
@@ -218,7 +218,7 @@ for (var responseEntry : responseFragments(operation, operationIdMap).entrySet()
 
 The `operationIdMap` variable is already in scope (line 74) — it just needs to be passed to `writeFragments` and then to each call. Trace the call chain: `generate()` → `writeOutput()` → `writeFragments()`. Add the parameter at each level.
 
-- [ ] **Step 4: Generate schema links as `<a href>` instead of `<span>`**
+- [x] **Step 4: Generate schema links as `<a href>` instead of `<span>`**
 
 In `OperationFragmentGenerator.java`, in `responseLinks()` (line 510), replace the schema link name and operation spans with `<a>` elements. Use the `operationIdMap` to resolve the href:
 
@@ -264,23 +264,23 @@ private String operationIdHref(String operationId) {
 }
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `mvn test -pl core -Dtest="BrowserTest\$GivenAppWithResponseLinks#shouldRenderSchemaLinkNameAsRealLink" -DdangerouslyDisableSandbox=true`
 Expected: PASS
 
-- [ ] **Step 6: Delete the schema-link click handler in app.js**
+- [x] **Step 6: Delete the schema-link click handler in app.js**
 
 Delete lines 1113-1128 (the `document.addEventListener('click', ...)` handler for `.schema-link-name` and `.schema-link-operation`).
 
-- [ ] **Step 7: Write failing test — clicking schema link navigates (via real href)**
+- [x] **Step 7: Write failing test — clicking schema link navigates (via real href)**
 
 The existing tests `shouldNavigateToTargetOperationWhenClickingSchemaLinkName` and `shouldNavigateToTargetOperationWhenClickingSchemaLinkOperation` should still pass since they click the element and check the result. Run them:
 
 Run: `mvn test -pl core -Dtest="BrowserTest\$GivenAppWithResponseLinks#shouldNavigateToTargetOperationWhenClickingSchemaLinkName+shouldNavigateToTargetOperationWhenClickingSchemaLinkOperation" -DdangerouslyDisableSandbox=true`
 Expected: PASS — real `<a href>` links navigate natively.
 
-- [ ] **Step 8: Update test for data-operation-id removal**
+- [x] **Step 8: Update test for data-operation-id removal**
 
 The test `shouldHaveOperationIdOnSchemaLinkNames` checks for `data-operation-id` attribute. Schema links no longer have this attribute — they have `href` instead. Update the test:
 
@@ -295,16 +295,16 @@ The test `shouldHaveOperationIdOnSchemaLinkNames` checks for `data-operation-id`
 
 Update `AppFixture.responseLinkNameAttribute` if needed, or remove it if only used by the old test.
 
-- [ ] **Step 9: Delete shouldEmbedResponseLinksDataOnForm test**
+- [x] **Step 9: Keep shouldEmbedResponseLinksDataOnForm test**
 
-Delete the test at lines 2339-2347 and the `responseLinksData()` method call. The `data-response-links` attribute is no longer set. (The deletion of `responseLinksData()` Java method happens in Task 3.)
+The `data-response-links` attribute is still used by body link JS code (Task 3). Test kept.
 
-- [ ] **Step 10: Run full test suite**
+- [x] **Step 10: Run full test suite**
 
 Run: `mvn test -pl core -DdangerouslyDisableSandbox=true`
 Expected: All tests pass.
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add -A && git commit -m "feat: render schema links as real <a href> elements"
@@ -323,7 +323,7 @@ Replace the regex-based `applyBodyLinks()` with structured JSON traversal that p
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/generator/AppFixture.java`
 - Modify: `core/src/test/resources/response-links.yaml` (if adding nested data for testing)
 
-- [ ] **Step 1: Write failing test — body link with nested JSON has correct href**
+- [x] **Step 1: Write failing test — body link with nested JSON has correct href**
 
 This is the test the agent should have written — verifying correct link targets with duplicate keys. Add a new test in `GivenAppWithResponseBodyLinks`:
 
@@ -353,12 +353,12 @@ String bodyLinkHref(int index) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn test -pl core -Dtest="BrowserTest\$GivenAppWithResponseBodyLinks#shouldLinkCorrectFieldWhenKeysAreDuplicated" -DdangerouslyDisableSandbox=true`
 Expected: FAIL — current body links use `href="#"` (no real href), and with duplicate keys the links are misassigned.
 
-- [ ] **Step 3: Replace applyBodyLinks() with structured JSON traversal**
+- [x] **Step 3: Replace applyBodyLinks() with structured JSON traversal**
 
 Delete the entire `applyBodyLinks()` function (lines 785-853). Replace it with a new function that:
 
@@ -492,12 +492,12 @@ function indent(html, level) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn test -pl core -Dtest="BrowserTest\$GivenAppWithResponseBodyLinks#shouldLinkCorrectFieldWhenKeysAreDuplicated" -DdangerouslyDisableSandbox=true`
 Expected: PASS
 
-- [ ] **Step 5: Update existing body-link tests for real hrefs**
+- [x] **Step 5: Update existing body-link tests for real hrefs**
 
 Update `shouldWrapMatchingJsonValuesAsBodyLinks` — body links now have real `href` attributes:
 
@@ -536,26 +536,26 @@ Update `shouldFillParameterFieldsWhenClickingBodyLink` — should still work sin
 }
 ```
 
-- [ ] **Step 6: Run updated body-link tests**
+- [x] **Step 6: Run updated body-link tests**
 
 Run: `mvn test -pl core -Dtest="BrowserTest\$GivenAppWithResponseBodyLinks" -DdangerouslyDisableSandbox=true`
 Expected: All pass.
 
-- [ ] **Step 7: Delete body-link click handler from app.js**
+- [x] **Step 7: Delete body-link click handler from app.js**
 
 Delete lines 1131-1149 (the `document.addEventListener('click', ...)` for `.body-link[data-operation-id]`).
 
-- [ ] **Step 8: Run body-link tests again after click handler removal**
+- [x] **Step 8: Run body-link tests again after click handler removal**
 
 Run: `mvn test -pl core -Dtest="BrowserTest\$GivenAppWithResponseBodyLinks" -DdangerouslyDisableSandbox=true`
 Expected: All pass — navigation now works via real `<a href>` natively.
 
-- [ ] **Step 9: Run full test suite**
+- [x] **Step 9: Run full test suite**
 
 Run: `mvn test -pl core -DdangerouslyDisableSandbox=true`
 Expected: All tests pass.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add -A && git commit -m "feat: replace body links with real <a href> using structured JSON traversal"
@@ -572,12 +572,12 @@ and `responseLinksData()` stay — the body link JS still reads link metadata fr
 - Modify: `core/src/main/resources/com/github/t1/openapi/ui/generator/app.js` (remove any remaining `_pendingParamFill` references)
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/generator/AppFixture.java` (remove unused methods)
 
-- [ ] **Step 1: Search for remaining `_pendingParamFill` references**
+- [x] **Step 1: Search for remaining `_pendingParamFill` references**
 
 Grep app.js for `_pendingParamFill`. All references should already be gone (replaced by
 `_pendingParams` in Task 1, click handler deleted in Task 3). Verify and delete any stragglers.
 
-- [ ] **Step 2: Clean up unused AppFixture methods**
+- [x] **Step 2: Clean up unused AppFixture methods**
 
 Check which AppFixture methods are no longer referenced by any test:
 - `responseLinkNameAttribute()` — if only used by the deleted `shouldHaveOperationIdOnSchemaLinkNames` test
@@ -585,12 +585,12 @@ Check which AppFixture methods are no longer referenced by any test:
 
 Delete any that are unused.
 
-- [ ] **Step 3: Run full test suite**
+- [x] **Step 3: Run full test suite**
 
 Run: `mvn test -pl core -DdangerouslyDisableSandbox=true`
 Expected: All tests pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A && git commit -m "refactor: remove legacy link code and unused fixtures"
@@ -605,7 +605,7 @@ Verify the demo app exercises the new link mechanism with its nested response da
 **Files:**
 - Modify: `core/src/test/java/com/github/t1/openapi/ui/generator/BrowserTest.java` (add demo-realistic test if not already covered)
 
-- [ ] **Step 1: Write failing test — nested demo-like data with correct link targets**
+- [x] **Step 1: Write failing test — nested demo-like data with correct link targets**
 
 If not already covered by Task 3 Step 1, add a test using a response shape matching the demo app (pet with nested owner and visits array):
 
@@ -631,7 +631,7 @@ If not already covered by Task 3 Step 1, add a test using a response shape match
 }
 ```
 
-- [ ] **Step 2: Run test**
+- [x] **Step 2: Run test**
 
 Run: `mvn test -pl core -Dtest="BrowserTest\$GivenAppWithResponseBodyLinks#shouldHandleNestedJsonWithMultipleIdFields" -DdangerouslyDisableSandbox=true`
 Expected: PASS (if Task 3 implementation is correct).
@@ -641,12 +641,12 @@ Expected: PASS (if Task 3 implementation is correct).
 Run: `mvn quarkus:dev -pl demo`
 Navigate to a pet, send a request, verify body links point to the correct operations.
 
-- [ ] **Step 4: Run full test suite and take screenshots**
+- [x] **Step 4: Run full test suite and take screenshots**
 
 Run: `mvn test -pl core -DdangerouslyDisableSandbox=true`
 Review screenshots in `core/target/screenshots/` — verify body links and schema links look correct.
 
-- [ ] **Step 5: Commit (if any fixes were needed)**
+- [x] **Step 5: Commit (if any fixes were needed)**
 
 ```bash
 git add -A && git commit -m "test: add nested JSON body link tests matching demo app data"

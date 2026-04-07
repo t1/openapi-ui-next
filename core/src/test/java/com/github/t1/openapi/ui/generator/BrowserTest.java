@@ -2298,12 +2298,12 @@ class BrowserTest {
             then(app.operationFormAttribute("data-operation-id")).isEqualTo("getPet");
         }
 
-        @Test void shouldHaveOperationIdOnSchemaLinkNames() {
+        @Test void shouldHaveHrefOnSchemaLinkNames() {
             navigateToPetDetail();
             app.toggleSchema("response");
 
-            then(app.responseLinkNameAttribute("200", 0, "data-operation-id")).isEqualTo("getOwner");
-            then(app.responseLinkNameAttribute("200", 1, "data-operation-id")).isEqualTo("getVisits");
+            then(app.schemaLinkHref("200", 0)).isNotNull();
+            then(app.schemaLinkHref("200", 0)).startsWith("#");
         }
 
         @Test void shouldNavigateToTargetOperationWhenClickingSchemaLinkName() {
@@ -2320,6 +2320,13 @@ class BrowserTest {
             app.clickSchemaLinkOperation("200", 1);
 
             app.waitForDetailContent("List visits");
+        }
+
+        @Test void shouldRenderSchemaLinkNameAsRealLink() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+
+            then(app.schemaLinkHref("200", 0)).contains("#owners/{ownerId}/GET");
         }
 
         @Test void shouldShowSchemaLinksAsClickable() {
@@ -2345,6 +2352,20 @@ class BrowserTest {
             then(linksData).contains("getOwner");
             then(linksData).contains("$response.body#/ownerId");
         }
+
+        @Test void shouldFillFieldFromHashQueryParameter() {
+            app.navigateToHash("pets/{petId}/GET?petId=42");
+            app.waitForDetailContent("Get a pet");
+
+            then(app.inputValue("petId")).isEqualTo("42");
+        }
+
+        @Test void shouldIgnoreUnknownHashQueryParameters() {
+            app.navigateToHash("pets/{petId}/GET?petId=42&unknownParam=ignored");
+            app.waitForDetailContent("Get a pet");
+
+            then(app.inputValue("petId")).isEqualTo("42");
+        }
     }
 
     @ResourceLock("response-body-links") @Nested class GivenAppWithResponseBodyLinks {
@@ -2366,6 +2387,8 @@ class BrowserTest {
             then(app.bodyLinkCount()).isEqualTo(2);
             then(app.bodyLinkText(0)).isEqualTo("42"); // id → getVisits
             then(app.bodyLinkText(1)).isEqualTo("7");  // ownerId → getOwner
+            then(app.bodyLinkHref(0)).contains("petId=42");
+            then(app.bodyLinkHref(1)).contains("ownerId=7");
         }
 
         @Test void shouldNavigateToTargetOperationWhenClickingBodyLink() {
@@ -2383,6 +2406,22 @@ class BrowserTest {
             then(app.inputValue("ownerId")).isEqualTo("7");
         }
 
+        @Test void shouldLinkCorrectFieldWhenKeysAreDuplicated() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.fillInput("petId", "42");
+            app.mockEndpoint("/pets/42", "application/json",
+                    "{\"id\":42,\"name\":\"Buddy\",\"ownerId\":7,\"owner\":{\"id\":7,\"name\":\"Alice\"}}");
+            app.clickSend();
+            app.waitForResponse();
+
+            // The pet's "id" (42) should link to getVisits (petId=42)
+            then(app.bodyLinkHref(0)).contains("petId=42");
+            // The "ownerId" (7) should link to getOwner (ownerId=7)
+            then(app.bodyLinkHref(1)).contains("ownerId=7");
+        }
+
         @Test void shouldNotWrapNonMatchingJsonValues() {
             navigateToPetDetailAndSend();
 
@@ -2394,6 +2433,21 @@ class BrowserTest {
             navigateToPetDetailAndSend();
 
             then(app.bodyLinkCursor(0)).isEqualTo("pointer");
+        }
+
+        @Test void shouldHandleNestedJsonWithMultipleIdFields() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.fillInput("petId", "1");
+            app.mockEndpoint("/pets/1", "application/json",
+                    "{\"id\":1,\"name\":\"Max\",\"ownerId\":3,\"owner\":{\"id\":3,\"name\":\"Alice\"}}");
+            app.clickSend();
+            app.waitForResponse();
+
+            then(app.bodyLinkHref(0)).contains("petId=1");
+            then(app.bodyLinkHref(1)).contains("ownerId=3");
+            then(app.bodyLinkCount()).isEqualTo(2);
         }
 
         @Test void shouldTakeScreenshotOfResponseBodyLinks() {

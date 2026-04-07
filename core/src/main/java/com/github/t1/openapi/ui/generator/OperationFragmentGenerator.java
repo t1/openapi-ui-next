@@ -55,20 +55,22 @@ class OperationFragmentGenerator {
     private final io.swagger.v3.oas.models.Operation operation;
     private final ApiPath path;
     private final ApiPath displayPath;
+    private final Map<String, String[]> operationIdMap;
 
-    private OperationFragmentGenerator(Operation operation) {
+    private OperationFragmentGenerator(Operation operation, Map<String, String[]> operationIdMap) {
         this.method = operation.method();
         this.operation = operation.spec();
         this.path = operation.path();
         this.displayPath = path.withResolvedParams(this.operation);
+        this.operationIdMap = operationIdMap;
     }
 
-    static Element operationFragment(Operation operation) {
-        return new OperationFragmentGenerator(operation).fragment();
+    static Element operationFragment(Operation operation, Map<String, String[]> operationIdMap) {
+        return new OperationFragmentGenerator(operation, operationIdMap).fragment();
     }
 
-    static Map<String, String> responseFragments(Operation operation) {
-        return new OperationFragmentGenerator(operation).responseFragmentFiles();
+    static Map<String, String> responseFragments(Operation operation, Map<String, String[]> operationIdMap) {
+        return new OperationFragmentGenerator(operation, operationIdMap).responseFragmentFiles();
     }
 
     private Element fragment() {
@@ -514,13 +516,17 @@ class OperationFragmentGenerator {
         for (var entry : response.getLinks().entrySet()) {
             var linkName = entry.getKey();
             var link = entry.getValue();
-            var nameEl = span(linkName).classes("schema-link-name");
-            if (link.getOperationId() != null) nameEl.attr("data-operation-id", link.getOperationId());
+            var href = operationIdHref(link.getOperationId());
+            var nameEl = href != null
+                    ? element("a").attr("href", href).classes("schema-link-name").content(linkName)
+                    : span(linkName).classes("schema-link-name");
             linksGrid.content(nameEl);
             var details = span().classes("schema-link-details");
             if (link.getOperationId() != null) {
-                details.content(span(link.getOperationId()).classes("schema-link-operation")
-                        .attr("data-operation-id", link.getOperationId()));
+                var opEl = href != null
+                        ? element("a").attr("href", href).classes("schema-link-operation").content(link.getOperationId())
+                        : span(link.getOperationId()).classes("schema-link-operation");
+                details.content(opEl);
             }
             if (link.getDescription() != null) {
                 details.content(span(link.getDescription()).classes("schema-link-desc"));
@@ -534,6 +540,13 @@ class OperationFragmentGenerator {
         }
         linksSection.content(linksGrid);
         return linksSection;
+    }
+
+    private String operationIdHref(String operationId) {
+        if (operationId == null || operationIdMap == null) return null;
+        var target = operationIdMap.get(operationId);
+        if (target == null) return null;
+        return "#" + target[0] + "/" + target[1];
     }
 
     private Element schemaHeaders(ApiResponse response) {

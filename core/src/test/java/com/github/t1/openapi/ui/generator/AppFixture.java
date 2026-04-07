@@ -455,11 +455,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     List<String> responseLinkParams(String statusCode, int index) {
-        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-links > .schema-link-details:nth-of-type(" + (index * 2 + 2) + ") .schema-link-param").allTextContents();
-    }
-
-    String responseLinkNameAttribute(String statusCode, int index, String attribute) {
-        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-name").nth(index).getAttribute(attribute);
+        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-links > .schema-link-details:nth-child(" + (index * 2 + 2) + ") .schema-link-param").allTextContents();
     }
 
     void clickSchemaLinkName(String statusCode, int index) {
@@ -468,6 +464,11 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void clickSchemaLinkOperation(String statusCode, int index) {
         page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-operation").nth(index).click();
+    }
+
+    String schemaLinkHref(String statusCode, int index) {
+        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-name").nth(index)
+                .getAttribute("href");
     }
 
     String schemaLinkNameCursor(String statusCode, int index) {
@@ -484,6 +485,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     String bodyLinkText(int index) {
         return page.locator("#detail pre.response .body-link").nth(index).textContent();
+    }
+
+    String bodyLinkHref(int index) {
+        return page.locator("#detail pre.response .body-link").nth(index).getAttribute("href");
     }
 
     String bodyLinkCursor(int index) {
@@ -791,6 +796,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean isParamPersisted(String paramName) {
         return "true".equals(page.locator("#detail .field:has([name='" + paramName + "']) .persist-toggle").getAttribute("aria-pressed"));
+    }
+
+    void navigateToHash(String hash) {
+        page.evaluate("location.hash = '#" + hash + "'");
+        // trigger popstate since programmatic hash change doesn't fire it
+        page.evaluate("window.dispatchEvent(new PopStateEvent('popstate'))");
     }
 
     String inputValue(String name) {

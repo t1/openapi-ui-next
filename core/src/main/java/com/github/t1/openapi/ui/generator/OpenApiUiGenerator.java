@@ -78,7 +78,7 @@ public class OpenApiUiGenerator {
         var tagTree = TagTreeGenerator.tagTree(openApi, root);
 
         var page = pageLayout(openApi, pathTree, tagTree, shouldDefaultToTagView(openApi, pathCount), operationIdMap);
-        writeOutput(page, root, tagTree, pathTree);
+        writeOutput(page, root, tagTree, pathTree, operationIdMap);
     }
 
     private boolean shouldDefaultToTagView(io.swagger.v3.oas.models.OpenAPI openApi, int pathCount) {
@@ -190,11 +190,11 @@ public class OpenApiUiGenerator {
         return sb.toString();
     }
 
-    private void writeOutput(Renderable page, PathNode root, Renderable tagTree, Renderable pathTree) throws IOException {
+    private void writeOutput(Renderable page, PathNode root, Renderable tagTree, Renderable pathTree, Map<String, String[]> operationIdMap) throws IOException {
         Files.createDirectories(outputDir);
         writeHtmlFiles(page, tagTree, pathTree);
         writeCss();
-        generateFragments(root, ApiPath.ROOT);
+        generateFragments(root, ApiPath.ROOT, operationIdMap);
         copyVendorResources();
         log.info("Done. Output written to {}", outputDir);
     }
@@ -296,28 +296,28 @@ public class OpenApiUiGenerator {
         return PathNode.isPathParam(segment) ? "tree-param" : "tree-segment";
     }
 
-    private void generateFragments(PathNode node, ApiPath path) throws IOException {
+    private void generateFragments(PathNode node, ApiPath path, Map<String, String[]> operationIdMap) throws IOException {
         for (var entry : node.children().entrySet()) {
             var segment = entry.getKey();
             var child = entry.getValue();
             var childPath = path.resolve(segment);
             for (var opEntry : child.operations().entrySet()) {
                 var operation = new Operation(opEntry.getKey(), opEntry.getValue(), childPath);
-                var fragment = operationFragment(operation);
+                var fragment = operationFragment(operation, operationIdMap);
                 var fragmentDir = outputDir.resolve(childPath.toString());
                 Files.createDirectories(fragmentDir);
                 Files.writeString(fragmentDir.resolve(opEntry.getKey().name() + ".html"), fragment.render());
-                for (var responseEntry : responseFragments(operation).entrySet()) {
+                for (var responseEntry : responseFragments(operation, operationIdMap).entrySet()) {
                     Files.writeString(fragmentDir.resolve(responseEntry.getKey()), responseEntry.getValue());
                 }
             }
             if (!child.operations().isEmpty()) {
-                var pathFrag = pathFragment(childPath, child.operations());
+                var pathFrag = pathFragment(childPath, child.operations(), operationIdMap);
                 var pathFragmentDir = outputDir.resolve(childPath.toString());
                 Files.createDirectories(pathFragmentDir);
                 Files.writeString(pathFragmentDir.resolve("index.html"), pathFrag.render());
             }
-            generateFragments(child, childPath);
+            generateFragments(child, childPath, operationIdMap);
         }
     }
 
