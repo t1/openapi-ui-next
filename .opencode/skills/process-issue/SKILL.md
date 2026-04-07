@@ -54,9 +54,9 @@ You run in a single agent session with a finite context window. Spend tokens on 
      gh api graphql -f query='mutation { addSubIssue(input: { issueId: "<PARENT_NODE_ID>", subIssueId: "<CHILD_NODE_ID>" }) { subIssue { number } } }'
      ```
      Get node IDs with: `gh api graphql -f query='{ repository(owner:"t1", name:"openapi-ui-next") { issue(number:<N>) { id } } }' --jq '.data.repository.issue.id'`
-  3. Post a comment on the parent listing the sub-issues.
-  4. Leave the parent open — the next run will find it, see the sub-issues, and work on the first open one.
-  5. STOP.
+   3. Reopen the parent issue if it was closed: `gh issue reopen <N>`
+   4. Leave the parent open — the next run will find it, see the sub-issues, and work on the first open one.
+   5. STOP.
 - **Implementation:** This is where your tokens should go. TDD cycles, running tests, fixing failures.
 - **Commit early if large:** If the change touches many files, make intermediate commits so work isn't lost if the session ends. Squash at the end.
 
