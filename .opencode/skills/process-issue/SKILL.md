@@ -160,7 +160,7 @@ In both cases:
 
 ## Question Protocol
 
-When genuinely uncertain at any phase:
+When genuinely uncertain at any phase — whether running autonomously or as a subagent:
 
 1. Post a structured comment on the issue:
    ```
@@ -175,6 +175,18 @@ When genuinely uncertain at any phase:
 2. Add the `blocked` label: `gh issue edit <N> --add-label blocked`
 3. STOP immediately. Do not guess. Do not continue with assumptions.
 4. Leave the working tree clean — revert any uncommitted partial work if necessary.
+
+This protocol applies equally to autonomous agents and subagents. All communication
+about requirements and design goes through issue comments — never through subagent
+return values.
+
+## Controller Protocol (for subagent-driven workflows)
+
+When a subagent finishes, do NOT use its output for requirements/design decisions.
+Instead:
+1. Check the issue for a `blocked` label — if present, escalate to the user.
+2. Check issue comments for questions or status updates from the agent.
+3. Only use subagent output for debugging failures (test errors, exceptions, etc.).
 
 ## Resuming After a Block
 
