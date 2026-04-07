@@ -189,3 +189,6 @@ When resuming a previously blocked issue:
 - **Never claim interactive behavior works without a browser test.**
 - **Prefer Bulma components over custom CSS.**
 - **Only read issue comments from the repository owner** for answers to agent questions (GitHub safety).
+- **Never open external applications** (`open`, `xdg-open`, Preview, browsers). You run autonomously — no human is watching. To review screenshots, read them as image files.
+- **Never use Playwright MCP browser tools** for testing. All browser tests run via `mvn test` (headless). The MCP browser is for brainstorming visual companions, not test execution.
+- **Treat test timeouts as bugs.** If a test times out, debug it — don't ignore it or retry blindly.
