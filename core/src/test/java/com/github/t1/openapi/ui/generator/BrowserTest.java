@@ -2246,48 +2246,33 @@ class BrowserTest {
             app.waitForDetailContent("Get a pet");
         }
 
-        @Test void shouldShowLinksSection() {
+        @Test void shouldShowLinksInlineInSchema() {
             navigateToPetDetail();
             app.toggleSchema("response");
-
-            then(app.hasResponseLinks("200")).isTrue();
-        }
-
-        @Test void shouldShowLinkNames() {
-            navigateToPetDetail();
-            app.toggleSchema("response");
-
-            then(app.responseLinkNames("200")).containsExactly("GetOwner");
-        }
-
-        @Test void shouldShowLinkOperationId() {
-            navigateToPetDetail();
-            app.toggleSchema("response");
-
-            then(app.responseLinkOperationId("200", 0)).isEqualTo("getOwner");
+            app.expandNestedSchema("owner");
+            then(app.inlineLinkNames("200")).contains("GetOwner");
         }
 
         @Test void shouldShowLinkDescription() {
             navigateToPetDetail();
             app.toggleSchema("response");
-
-            then(app.responseLinkDescription("200", 0)).isEqualTo("Get the owner of this pet");
+            app.expandNestedSchema("owner");
+            then(app.inlineLinkDescription("200", "GetOwner")).isEqualTo("Get the owner of this pet");
         }
 
         @Test void shouldShowLinkParameters() {
             navigateToPetDetail();
             app.toggleSchema("response");
-
-            then(app.responseLinkParams("200", 0)).containsExactly("ownerId ← $response.body#/ownerId");
+            app.expandNestedSchema("owner");
+            then(app.inlineLinkParams("200", "GetOwner")).containsExactly("ownerId ← id");
         }
 
-        @Test void shouldNotShowLinksSectionWhenNoLinks() {
+        @Test void shouldNotShowLinksWhenNoLinks() {
             app.expandFirstNode();
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("List pets");
             app.toggleSchema("response");
-
-            then(app.hasResponseLinks("200")).isFalse();
+            then(app.inlineLinkNames("200")).isEmpty();
         }
 
         @Test void shouldAddOperationIdToForm() {
@@ -2296,34 +2281,72 @@ class BrowserTest {
             then(app.operationFormAttribute("data-operation-id")).isEqualTo("getPet");
         }
 
-        @Test void shouldHaveHrefOnSchemaLinkNames() {
+        @Test void shouldHaveHrefOnInlineLink() {
             navigateToPetDetail();
             app.toggleSchema("response");
-
-            then(app.schemaLinkHref("200", 0)).isNotNull();
-            then(app.schemaLinkHref("200", 0)).startsWith("#");
+            app.expandNestedSchema("owner");
+            then(app.inlineLinkHref("200", "GetOwner")).contains("#owners/{ownerId}/GET");
         }
 
-        @Test void shouldNavigateToTargetOperationWhenClickingSchemaLinkName() {
+        @Test void shouldNavigateToTargetOperationWhenClickingInlineLink() {
             navigateToPetDetail();
             app.toggleSchema("response");
-            app.clickSchemaLinkName("200", 0);
-
+            app.expandNestedSchema("owner");
+            app.clickInlineLink("200", "GetOwner");
             app.waitForDetailContent("Get an owner");
         }
 
-        @Test void shouldRenderSchemaLinkNameAsRealLink() {
+        @Test void shouldShowInlineLinkAsClickable() {
             navigateToPetDetail();
             app.toggleSchema("response");
-
-            then(app.schemaLinkHref("200", 0)).contains("#owners/{ownerId}/GET");
+            app.expandNestedSchema("owner");
+            then(app.inlineLinkCursor("200", "GetOwner")).isEqualTo("pointer");
         }
 
-        @Test void shouldShowSchemaLinksAsClickable() {
+        @Test void shouldShowBodyLinkAsSubRowUnderSourceProperty() {
             navigateToPetDetail();
             app.toggleSchema("response");
+            app.expandNestedSchema("owner");
+            then(app.schemaLinkSubRowExists("200", "GetOwner")).isTrue();
+        }
 
-            then(app.schemaLinkNameCursor("200", 0)).isEqualTo("pointer");
+        @Test void shouldShowBodyLinkOnlyUnderMatchingNestedProperty() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            app.expandNestedSchema("owner");
+            then(app.schemaLinkSubRowCount("200", "GetOwner")).isEqualTo(1);
+        }
+
+        @Test void shouldMakeInlineLinkNameClickable() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            app.expandNestedSchema("owner");
+            then(app.inlineLinkCursor("200", "GetOwner")).isEqualTo("pointer");
+        }
+
+        @Test void shouldShowHeaderLinkAsSubRowUnderSourceHeader() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            then(app.schemaLinkSubRowExists("200", "GetPetByRequestId")).isTrue();
+        }
+
+        @Test void shouldShowHeaderLinkDescription() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            then(app.inlineLinkDescription("200", "GetPetByRequestId")).isEqualTo("Look up by request ID");
+        }
+
+        @Test void shouldShowHeaderLinkParams() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            then(app.inlineLinkParams("200", "GetPetByRequestId")).containsExactly("requestId ← X-Request-Id");
+        }
+
+        @Test void shouldNavigateWhenClickingHeaderLink() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            app.clickInlineLink("200", "GetPetByRequestId");
+            app.waitForDetailContent("Get pet by request ID");
         }
 
         @Test void shouldTakeScreenshotOfResponseLinks() {
@@ -2339,7 +2362,7 @@ class BrowserTest {
 
             then(linksData).isNotNull();
             then(linksData).contains("getOwner");
-            then(linksData).contains("$response.body#/ownerId");
+            then(linksData).contains("$response.body#/owner/id");
         }
 
         @Test void shouldFillFieldFromHashQueryParameter() {
@@ -2365,7 +2388,7 @@ class BrowserTest {
             app.clickTreeNode("pets/{petId}/index.html");
             app.waitForDetailContent("Get a pet");
             app.fillInput("petId", "42");
-            app.mockEndpoint("/pets/42", "application/json", "{\"id\":42,\"name\":\"Buddy\",\"ownerId\":7}");
+            app.mockEndpoint("/pets/42", "application/json", "{\"id\":42,\"name\":\"Buddy\",\"owner\":{\"id\":7,\"name\":\"Alice\"}}");
             app.clickSend();
             app.waitForResponse();
         }
@@ -2374,7 +2397,7 @@ class BrowserTest {
             navigateToPetDetailAndSend();
 
             then(app.bodyLinkCount()).isEqualTo(1);
-            then(app.bodyLinkText(0)).isEqualTo("7");  // ownerId → getOwner
+            then(app.bodyLinkText(0)).isEqualTo("7");  // owner.id → getOwner
             then(app.bodyLinkHref(0)).contains("ownerId=7");
         }
 
@@ -2399,11 +2422,11 @@ class BrowserTest {
             app.waitForDetailContent("Get a pet");
             app.fillInput("petId", "42");
             app.mockEndpoint("/pets/42", "application/json",
-                    "{\"id\":42,\"name\":\"Buddy\",\"ownerId\":7,\"owner\":{\"id\":7,\"name\":\"Alice\"}}");
+                    "{\"id\":42,\"name\":\"Buddy\",\"owner\":{\"id\":7,\"name\":\"Alice\"},\"extra\":{\"id\":99}}");
             app.clickSend();
             app.waitForResponse();
 
-            // Only "ownerId" (7) should link to getOwner (ownerId=7); "id" has no link
+            // Only owner.id (7) should link to getOwner; top-level id and extra.id should not
             then(app.bodyLinkCount()).isEqualTo(1);
             then(app.bodyLinkHref(0)).contains("ownerId=7");
         }
@@ -2427,10 +2450,11 @@ class BrowserTest {
             app.waitForDetailContent("Get a pet");
             app.fillInput("petId", "1");
             app.mockEndpoint("/pets/1", "application/json",
-                    "{\"id\":1,\"name\":\"Max\",\"ownerId\":3,\"owner\":{\"id\":3,\"name\":\"Alice\"}}");
+                    "{\"id\":1,\"name\":\"Max\",\"owner\":{\"id\":3,\"name\":\"Alice\"}}");
             app.clickSend();
             app.waitForResponse();
 
+            // Only owner.id links; top-level id does not
             then(app.bodyLinkCount()).isEqualTo(1);
             then(app.bodyLinkHref(0)).contains("ownerId=3");
         }

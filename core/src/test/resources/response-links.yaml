@@ -36,6 +36,11 @@ paths:
       responses:
         '200':
           description: A pet
+          headers:
+            X-Request-Id:
+              description: Echoed request identifier
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -45,14 +50,24 @@ paths:
                     type: integer
                   name:
                     type: string
-                  ownerId:
-                    type: integer
+                  owner:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
           links:
             GetOwner:
               operationId: getOwner
               parameters:
-                ownerId: $response.body#/ownerId
+                ownerId: $response.body#/owner/id
               description: Get the owner of this pet
+            GetPetByRequestId:
+              operationId: getPetByRequestId
+              parameters:
+                requestId: $response.header.X-Request-Id
+              description: Look up by request ID
   /owners/{ownerId}:
     get:
       summary: Get an owner
@@ -66,6 +81,28 @@ paths:
       responses:
         '200':
           description: An owner
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+  /pets/by-request-id/{requestId}:
+    get:
+      summary: Get pet by request ID
+      operationId: getPetByRequestId
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A pet
           content:
             application/json:
               schema:

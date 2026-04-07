@@ -308,7 +308,7 @@ class OperationFragmentGenerator {
         var hasProperties = schema.getProperties() != null && !schema.getProperties().isEmpty();
         if (hasProperties) {
             var treeContent = div();
-            new SchemaRenderer().render(treeContent, schema);
+            new SchemaRenderer(null).render(treeContent, schema);
             var tree = div().classes("schema-box-tree", "schema-box-content").content(treeContent);
             return splitPane().ratio(1, 1).first(textareaEl).second(tree);
         }
@@ -496,47 +496,76 @@ class OperationFragmentGenerator {
                 && response.getContent().values().iterator().next().getSchema() != null;
         if (responseHasHeaders) {
             if (responseHasBody) panel.content(span("Headers"));
-            panel.content(schemaHeaders(response));
+            panel.content(schemaHeaders(response, response.getLinks()));
         }
         if (responseHasBody) {
             if (responseHasHeaders) panel.content(span("Body"));
             var mediaType = response.getContent().values().iterator().next();
-            new SchemaRenderer().render(panel, mediaType.getSchema());
-        }
-        if (response.getLinks() != null && !response.getLinks().isEmpty()) {
-            panel.content(responseLinks(response));
+            new SchemaRenderer(response.getLinks()).render(panel, mediaType.getSchema());
         }
         return panel;
     }
 
-    private Element responseLinks(ApiResponse response) {
-        var linksSection = div().classes("schema-response-links");
-        linksSection.content(span("Links").classes("schema-links-label"));
-        var linksGrid = div().classes("schema-links");
-        for (var entry : response.getLinks().entrySet()) {
-            var linkName = entry.getKey();
+    /** Parses `$response.body#/owner/id` → `["body", "owner/id"]` or `$response.header.X-Foo` → `["header", "X-Foo"]`. */
+    private static String[] parseResponseSource(String expression) {
+        if (expression == null) return null;
+        if (expression.startsWith("$response.body#/")) {
+            return new String[]{"body", expression.substring("$response.body#/".length())};
+        }
+        if (expression.startsWith("$response.header.")) {
+            return new String[]{"header", expression.substring("$response.header.".length())};
+        }
+        return null;
+    }
+
+    /** Returns links whose parameters reference the given property path in the given source type.
+     * For body properties, `propertyPath` is the full JSON Pointer path (e.g. `owner/id`).
+     * For headers, it's the header name (e.g. `X-Request-Id`). */
+    private static Map<String, io.swagger.v3.oas.models.links.Link> linksForProperty(
+            Map<String, io.swagger.v3.oas.models.links.Link> allLinks, String sourceType, String propertyPath) {
+        if (allLinks == null) return Map.of();
+        var result = new LinkedHashMap<String, io.swagger.v3.oas.models.links.Link>();
+        for (var entry : allLinks.entrySet()) {
             var link = entry.getValue();
-            var href = operationIdHref(link.getOperationId());
-            var nameEl = href != null
-                    ? element("a").attr("href", href).classes("schema-link-name").content(linkName)
-                    : span(linkName).classes("schema-link-name");
-            linksGrid.content(nameEl);
-            var details = span().classes("schema-link-details");
-            if (link.getOperationId() != null) {
-                details.content(span(link.getOperationId()).classes("schema-link-operation"));
-            }
-            if (link.getDescription() != null) {
-                details.content(span(link.getDescription()).classes("schema-link-desc"));
-            }
-            if (link.getParameters() != null && !link.getParameters().isEmpty()) {
-                for (var param : link.getParameters().entrySet()) {
-                    details.content(span(param.getKey() + " ← " + param.getValue()).classes("schema-link-param"));
+            if (link.getParameters() == null) continue;
+            for (var param : link.getParameters().values()) {
+                var source = parseResponseSource(param);
+                if (source != null && source[0].equals(sourceType) && source[1].equals(propertyPath)) {
+                    result.put(entry.getKey(), link);
+                    break;
                 }
             }
-            linksGrid.content(details);
         }
-        linksSection.content(linksGrid);
-        return linksSection;
+        return result;
+    }
+
+    private Element linkSubRow(String linkName, io.swagger.v3.oas.models.links.Link link, String contextSourceType) {
+        var row = span().classes("schema-link-row");
+        var href = operationIdHref(link.getOperationId());
+        var nameEl = href != null
+                ? element("a").attr("href", href).content("→ " + linkName)
+                : span("→ " + linkName);
+        row.content(nameEl);
+        if (link.getDescription() != null) {
+            row.content(span(link.getDescription()).classes("schema-prop-desc"));
+        }
+        if (link.getParameters() != null) {
+            for (var param : link.getParameters().entrySet()) {
+                var display = formatParamShort(param.getValue(), contextSourceType);
+                row.content(span(param.getKey() + " ← " + display).classes("schema-link-param"));
+            }
+        }
+        return row;
+    }
+
+    private static String formatParamShort(String expression, String contextSourceType) {
+        var source = parseResponseSource(expression);
+        if (source == null) return expression;
+        var path = source[1];
+        var lastSlash = path.lastIndexOf('/');
+        var leaf = lastSlash >= 0 ? path.substring(lastSlash + 1) : path;
+        if (source[0].equals(contextSourceType)) return leaf;
+        return source[0] + "." + leaf;
     }
 
     private String operationIdHref(String operationId) {
@@ -546,7 +575,7 @@ class OperationFragmentGenerator {
         return "#" + target[0] + "/" + target[1];
     }
 
-    private Element schemaHeaders(ApiResponse response) {
+    private Element schemaHeaders(ApiResponse response, Map<String, io.swagger.v3.oas.models.links.Link> links) {
         var headersSection = div().classes("schema-response-headers");
         var headerProps = div().classes("schema-props");
         for (var entry : response.getHeaders().entrySet()) {
@@ -566,17 +595,32 @@ class OperationFragmentGenerator {
                 details.content(span(headerObj.getDescription()).classes("schema-prop-desc"));
             }
             headerProps.content(nameEl, details);
+            var headerLinks = linksForProperty(links, "header", entry.getKey());
+            for (var linkEntry : headerLinks.entrySet()) {
+                headerProps.content(span().classes("schema-prop-name"));
+                headerProps.content(linkSubRow(linkEntry.getKey(), linkEntry.getValue(), "header"));
+            }
         }
         headersSection.content(headerProps);
         return headersSection;
     }
 
 
-    private static class SchemaRenderer {
+    private class SchemaRenderer {
         private final Set<Schema<?>> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        private final Map<String, io.swagger.v3.oas.models.links.Link> links;
+
+        SchemaRenderer(Map<String, io.swagger.v3.oas.models.links.Link> links) {
+            this.links = links != null ? links : Map.of();
+        }
 
         @SuppressWarnings("rawtypes")
         void render(Element container, Schema<?> schema) {
+            render(container, schema, "");
+        }
+
+        @SuppressWarnings("rawtypes")
+        private void render(Element container, Schema<?> schema, String pathPrefix) {
             if (!visited.add(schema)) return; // cycle detection
             if (schema.getTitle() != null) {
                 var titleBar = div().classes("schema-title");
@@ -594,13 +638,13 @@ class OperationFragmentGenerator {
             if (properties != null) {
                 var table = div().classes("schema-props");
                 for (var prop : properties.entrySet()) {
-                    addPropertyRow(table, prop.getKey(), prop.getValue(), required);
+                    addPropertyRow(table, prop.getKey(), prop.getValue(), required, pathPrefix);
                 }
                 container.content(table);
             }
         }
 
-        private void addPropertyRow(Element table, String name, Schema<?> propSchema, List<String> required) {
+        private void addPropertyRow(Element table, String name, Schema<?> propSchema, List<String> required, String pathPrefix) {
             var type = propSchema.getType() != null ? propSchema.getType() : "object";
             if (propSchema.getEnum() != null && !propSchema.getEnum().isEmpty()) type = "enum";
 
@@ -636,9 +680,16 @@ class OperationFragmentGenerator {
             }
             table.content(details);
 
+            var fullPath = pathPrefix.isEmpty() ? name : pathPrefix + "/" + name;
+            var propertyLinks = linksForProperty(links, "body", fullPath);
+            for (var linkEntry : propertyLinks.entrySet()) {
+                table.content(span().classes("schema-prop-name"));
+                table.content(linkSubRow(linkEntry.getKey(), linkEntry.getValue(), "body"));
+            }
+
             if (hasNested) {
                 var nestedContent = div().classes("schema-nested");
-                render(nestedContent, nestedSchema);
+                render(nestedContent, nestedSchema, fullPath);
                 table.content(nestedContent);
             }
         }

@@ -413,6 +413,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator(".schema-box[data-box='" + boxType + "'] .schema-nested-toggle[aria-expanded='true']").count() > 0;
     }
 
+    void expandNestedSchema(String propertyName) {
+        page.locator(".schema-prop-name[data-prop='" + propertyName + "'] .schema-nested-toggle").click();
+    }
+
     List<String> nestedPropertyNames(String boxType) {
         return page.locator(".schema-box[data-box='" + boxType + "'] .schema-nested.is-expanded .schema-prop-name").allTextContents();
     }
@@ -438,45 +442,63 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return header.locator(".tag").filter(new FilterOptions().setHasText(badgeText)).count() > 0;
     }
 
-    boolean hasResponseLinks(String statusCode) {
-        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-response-links").count() > 0;
+    List<String> inlineLinkNames(String statusCode) {
+        var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
+        return page.locator(panel + " .schema-link-row a").allTextContents().stream()
+                .map(t -> t.replaceFirst("^→ ", ""))
+                .toList();
     }
 
-    List<String> responseLinkNames(String statusCode) {
-        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-name").allTextContents();
+    String inlineLinkDescription(String statusCode, String linkName) {
+        var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
+        var row = page.locator(panel + " .schema-link-row")
+                .filter(new FilterOptions().setHasText(linkName));
+        return row.locator(".schema-prop-desc").textContent();
     }
 
-    String responseLinkOperationId(String statusCode, int index) {
-        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-operation").nth(index).textContent();
+    List<String> inlineLinkParams(String statusCode, String linkName) {
+        var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
+        var row = page.locator(panel + " .schema-link-row")
+                .filter(new FilterOptions().setHasText(linkName));
+        return row.locator(".schema-link-param").allTextContents();
     }
 
-    String responseLinkDescription(String statusCode, int index) {
-        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-desc").nth(index).textContent();
-    }
-
-    List<String> responseLinkParams(String statusCode, int index) {
-        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-links > .schema-link-details:nth-child(" + (index * 2 + 2) + ") .schema-link-param").allTextContents();
-    }
-
-    void clickSchemaLinkName(String statusCode, int index) {
-        page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-name").nth(index).click();
-    }
-
-    void clickSchemaLinkOperation(String statusCode, int index) {
-        page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-operation").nth(index).click();
-    }
-
-    String schemaLinkHref(String statusCode, int index) {
-        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-name").nth(index)
+    String inlineLinkHref(String statusCode, String linkName) {
+        var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
+        return page.locator(panel + " .schema-link-row a")
+                .filter(new FilterOptions().setHasText(linkName))
+                .first()
                 .getAttribute("href");
     }
 
-    String schemaLinkNameCursor(String statusCode, int index) {
-        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-name").nth(index).evaluate("el => getComputedStyle(el).cursor").toString();
+    void clickInlineLink(String statusCode, String linkName) {
+        var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
+        page.locator(panel + " .schema-link-row a")
+                .filter(new FilterOptions().setHasText(linkName))
+                .first()
+                .click();
     }
 
-    String schemaLinkOperationCursor(String statusCode, int index) {
-        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-operation").nth(index).evaluate("el => getComputedStyle(el).cursor").toString();
+    String inlineLinkCursor(String statusCode, String linkName) {
+        var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
+        return page.locator(panel + " .schema-link-row a")
+                .filter(new FilterOptions().setHasText(linkName))
+                .first()
+                .evaluate("el => getComputedStyle(el).cursor").toString();
+    }
+
+    boolean schemaLinkSubRowExists(String statusCode, String linkName) {
+        var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
+        return page.locator(panel + " .schema-props .schema-link-row")
+                .filter(new FilterOptions().setHasText(linkName))
+                .count() > 0;
+    }
+
+    int schemaLinkSubRowCount(String statusCode, String linkName) {
+        var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
+        return page.locator(panel + " .schema-props .schema-link-row")
+                .filter(new FilterOptions().setHasText(linkName))
+                .count();
     }
 
     int bodyLinkCount() {
