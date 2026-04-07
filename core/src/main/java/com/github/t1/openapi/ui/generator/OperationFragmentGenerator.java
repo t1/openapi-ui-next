@@ -477,10 +477,12 @@ class OperationFragmentGenerator {
             var linkName = entry.getKey();
             var link = entry.getValue();
             var nameEl = span(linkName).classes("schema-link-name");
+            if (link.getOperationId() != null) nameEl.attr("data-operation-id", link.getOperationId());
             linksGrid.content(nameEl);
             var details = span().classes("schema-link-details");
             if (link.getOperationId() != null) {
-                details.content(span(link.getOperationId()).classes("schema-link-operation"));
+                details.content(span(link.getOperationId()).classes("schema-link-operation")
+                        .attr("data-operation-id", link.getOperationId()));
             }
             if (link.getDescription() != null) {
                 details.content(span(link.getDescription()).classes("schema-link-desc"));

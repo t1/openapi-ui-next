@@ -2298,6 +2298,38 @@ class BrowserTest {
             then(app.operationFormAttribute("data-operation-id")).isEqualTo("getPet");
         }
 
+        @Test void shouldHaveOperationIdOnSchemaLinkNames() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+
+            then(app.responseLinkNameAttribute("200", 0, "data-operation-id")).isEqualTo("getOwner");
+            then(app.responseLinkNameAttribute("200", 1, "data-operation-id")).isEqualTo("getVisits");
+        }
+
+        @Test void shouldNavigateToTargetOperationWhenClickingSchemaLinkName() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            app.clickSchemaLinkName("200", 0);
+
+            app.waitForDetailContent("Get an owner");
+        }
+
+        @Test void shouldNavigateToTargetOperationWhenClickingSchemaLinkOperation() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            app.clickSchemaLinkOperation("200", 1);
+
+            app.waitForDetailContent("List visits");
+        }
+
+        @Test void shouldShowSchemaLinksAsClickable() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+
+            then(app.schemaLinkNameCursor("200", 0)).isEqualTo("pointer");
+            then(app.schemaLinkOperationCursor("200", 0)).isEqualTo("pointer");
+        }
+
         @Test void shouldTakeScreenshotOfResponseLinks() {
             navigateToPetDetail();
             app.toggleSchema("response");

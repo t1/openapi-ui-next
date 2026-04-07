@@ -1023,6 +1023,23 @@ document.addEventListener('DOMContentLoaded', function() {
         pendingMethod = badge.textContent.trim();
     }, true);
 
+    // Click handler for response schema links — navigate to target operation
+    document.addEventListener('click', function(e) {
+        var linkEl = e.target.closest('[data-operation-id].schema-link-name, [data-operation-id].schema-link-operation');
+        if (!linkEl) return;
+        var operationId = linkEl.getAttribute('data-operation-id');
+        if (!operationId || !window._operationIdMap) return;
+        var target = window._operationIdMap[operationId];
+        if (!target) return;
+        e.preventDefault();
+        // Set pending method so the correct tab is activated after navigation
+        pendingMethod = target.method;
+        // Update hash and navigate
+        var hash = '#' + target.path + '/' + target.method;
+        history.pushState(null, '', hash);
+        navigateFromHash();
+    });
+
     // Navigate from URL hash or auto-load first operation
     const HTTP_METHODS = ['GET','POST','PUT','DELETE','PATCH','HEAD','OPTIONS','TRACE'];
     window._hashNavPending = false;

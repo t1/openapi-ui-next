@@ -458,6 +458,26 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-links > .schema-link-details:nth-of-type(" + (index * 2 + 2) + ") .schema-link-param").allTextContents();
     }
 
+    String responseLinkNameAttribute(String statusCode, int index, String attribute) {
+        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-name").nth(index).getAttribute(attribute);
+    }
+
+    void clickSchemaLinkName(String statusCode, int index) {
+        page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-name").nth(index).click();
+    }
+
+    void clickSchemaLinkOperation(String statusCode, int index) {
+        page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-operation").nth(index).click();
+    }
+
+    String schemaLinkNameCursor(String statusCode, int index) {
+        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-name").nth(index).evaluate("el => getComputedStyle(el).cursor").toString();
+    }
+
+    String schemaLinkOperationCursor(String statusCode, int index) {
+        return page.locator("#detail .schema-status-panel[data-status='" + statusCode + "'] .schema-link-operation").nth(index).evaluate("el => getComputedStyle(el).cursor").toString();
+    }
+
     String operationFormAttribute(String attribute) {
         return page.locator("#detail form").getAttribute(attribute);
     }

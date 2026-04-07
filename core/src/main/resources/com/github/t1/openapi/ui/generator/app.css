@@ -436,6 +436,10 @@ section > .container > .split-layout > .split-second {
     color: var(--bulma-link);
     font-weight: 500;
     font-family: var(--bulma-family-code);
+    cursor: pointer;
+}
+.schema-link-name:hover {
+    text-decoration: underline;
 }
 .schema-link-details {
     display: flex;
@@ -449,6 +453,11 @@ section > .container > .split-layout > .split-second {
     border-radius: 4px;
     font-family: var(--bulma-family-code);
     font-size: 0.8125rem;
+    cursor: pointer;
+}
+.schema-link-operation:hover {
+    background: var(--bulma-link-light);
+    color: var(--bulma-link);
 }
 .schema-link-desc {
     color: var(--bulma-text-weak);

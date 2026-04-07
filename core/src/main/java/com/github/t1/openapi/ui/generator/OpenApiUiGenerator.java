@@ -18,7 +18,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
 
@@ -69,10 +71,13 @@ public class OpenApiUiGenerator {
                 .mapToInt(p -> p.readOperationsMap().size()).sum();
         log.info("Found {} paths with {} operations", pathCount, operationCount);
 
+        var operationIdMap = new LinkedHashMap<String, String[]>();
+        collectOperationIds(root, ApiPath.ROOT, operationIdMap);
+
         var pathTree = pathTree(root);
         var tagTree = TagTreeGenerator.tagTree(openApi, root);
 
-        var page = pageLayout(openApi, pathTree, tagTree, shouldDefaultToTagView(openApi, pathCount));
+        var page = pageLayout(openApi, pathTree, tagTree, shouldDefaultToTagView(openApi, pathCount), operationIdMap);
         writeOutput(page, root, tagTree, pathTree);
     }
 
@@ -95,7 +100,7 @@ public class OpenApiUiGenerator {
         return new OpenAPIV3Parser().read(specFile.toString(), null, parseOptions);
     }
 
-    private Renderable pageLayout(io.swagger.v3.oas.models.OpenAPI openApi, Renderable pathTree, Renderable tagTree, boolean defaultToTags) {
+    private Renderable pageLayout(io.swagger.v3.oas.models.OpenAPI openApi, Renderable pathTree, Renderable tagTree, boolean defaultToTags, Map<String, String[]> operationIdMap) {
         var viewToggle = viewToggle(defaultToTags);
         Renderable defaultTree = defaultToTags ? tagTree : pathTree;
         var treeContainer = div().id("tree-container").content(defaultTree);
@@ -115,7 +120,7 @@ public class OpenApiUiGenerator {
                 globalHeaders(),
                 splitLayout
         ), errorBanner());
-        return htmlDocument(pageTitle, body);
+        return htmlDocument(pageTitle, body, operationIdMap);
     }
 
     private Toggle viewToggle(boolean defaultToTags) {
@@ -157,18 +162,32 @@ public class OpenApiUiGenerator {
                 .content("Backend not reachable — retrying...");
     }
 
-    private static Renderable htmlDocument(String pageTitle, Renderable body) {
+    private static Renderable htmlDocument(String pageTitle, Renderable body, Map<String, String[]> operationIdMap) {
         return html(pageTitle)
                 .stylesheet("vendor/bulma.min.css")
                 .stylesheet("vendor/css/all.min.css")
                 .stylesheet("openapi-ui.css")
                 .script("vendor/htmx.min.js")
                 .script("vendor/highlight.min.js")
+                .javaScriptCode(operationIdMapScript(operationIdMap))
                 .javaScriptCode(Toggle.js())
                 .javaScriptCode(Tree.js())
                 .javaScriptCode(SplitPane.js())
                 .javaScriptCode(loadResource("app.js"))
                 .body(body);
+    }
+
+    private static String operationIdMapScript(Map<String, String[]> operationIdMap) {
+        var sb = new StringBuilder("window._operationIdMap={");
+        var first = true;
+        for (var entry : operationIdMap.entrySet()) {
+            if (!first) sb.append(",");
+            first = false;
+            sb.append("\"").append(entry.getKey()).append("\":")
+                    .append("{path:\"").append(entry.getValue()[0]).append("\",method:\"").append(entry.getValue()[1]).append("\"}");
+        }
+        sb.append("};");
+        return sb.toString();
     }
 
     private void writeOutput(Renderable page, PathNode root, Renderable tagTree, Renderable pathTree) throws IOException {
@@ -218,6 +237,20 @@ public class OpenApiUiGenerator {
         try (var resource = getClass().getResourceAsStream(path)) {
             assert resource != null : "webjar resource not found: " + path;
             Files.copy(resource, outputDir.resolve(outputName), StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private static void collectOperationIds(PathNode node, ApiPath path, Map<String, String[]> map) {
+        for (var entry : node.children().entrySet()) {
+            var child = entry.getValue();
+            var childPath = path.resolve(entry.getKey());
+            for (var opEntry : child.operations().entrySet()) {
+                var operationId = opEntry.getValue().getOperationId();
+                if (operationId != null) {
+                    map.put(operationId, new String[]{childPath.toString(), opEntry.getKey().name()});
+                }
+            }
+            collectOperationIds(child, childPath, map);
         }
     }
 
