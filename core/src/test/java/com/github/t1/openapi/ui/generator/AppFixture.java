@@ -5,6 +5,8 @@ import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator.FilterOptions;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.ScreenshotOptions;
+
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.ColorScheme;
 import com.sun.net.httpserver.HttpExchange;
@@ -825,6 +827,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     void navigateToHash(String hash) {
+        // wait for the tree to be fully rendered before navigating
+        page.waitForSelector("[hx-get]");
         page.evaluate("location.hash = '#" + hash + "'");
         // trigger popstate since programmatic hash change doesn't fire it
         page.evaluate("window.dispatchEvent(new PopStateEvent('popstate'))");
@@ -832,6 +836,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     String inputValue(String name) {
         return page.locator("#detail input[name='" + name + "']").inputValue();
+    }
+
+    void waitForInputValue(String name, String expectedValue) {
+        var locator = page.locator("#detail input[name='" + name + "']");
+        locator.waitFor();
+        assertThat(locator).hasValue(expectedValue);
     }
 
     String inputPlaceholder(String name) {

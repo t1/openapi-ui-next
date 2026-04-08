@@ -2454,6 +2454,7 @@ class BrowserTest {
         @Test void shouldFillFieldFromHashQueryParameter() {
             app.navigateToHash("pets/{petId}/GET?petId=42");
             app.waitForDetailContent("Get a pet");
+            app.waitForInputValue("petId", "42");
 
             then(app.inputValue("petId")).isEqualTo("42");
         }
@@ -2461,6 +2462,7 @@ class BrowserTest {
         @Test void shouldIgnoreUnknownHashQueryParameters() {
             app.navigateToHash("pets/{petId}/GET?petId=42&unknownParam=ignored");
             app.waitForDetailContent("Get a pet");
+            app.waitForInputValue("petId", "42");
 
             then(app.inputValue("petId")).isEqualTo("42");
         }
@@ -2513,6 +2515,7 @@ class BrowserTest {
             navigateToPetDetailAndSend();
             app.clickBodyLink(2); // ownerId=7 → getOwner
             app.waitForDetailContent("Get an owner");
+            app.waitForInputValue("ownerId", "7");
 
             then(app.inputValue("ownerId")).isEqualTo("7");
         }
