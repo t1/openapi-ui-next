@@ -237,7 +237,8 @@ list_all_eligible_issues() {
 # Main loop.
 if [[ -n "$SPECIFIC_ISSUE" ]]; then
     # Process just the one specified issue.
-    line=$(pick_next_issue) || exit 1
+    line=$(pick_next_issue) && rc=0 || rc=$?
+    [[ $rc -ne 0 ]] && exit 1
     issue_number=$(echo "$line" | cut -f1)
     issue_title=$(echo "$line" | cut -f2-)
     process_one_issue "$issue_number" "$issue_title"
@@ -251,8 +252,7 @@ elif [[ "$DRY_RUN" == "true" ]]; then
 else
     # In real mode, pick one at a time (state changes after processing).
     while true; do
-        line=$(pick_next_issue)
-        rc=$?
+        line=$(pick_next_issue) && rc=0 || rc=$?
         if [[ $rc -eq 2 ]]; then
             # Top issue is blocked — wait for it to be unblocked.
             echo "Waiting ${POLL_MINUTES} minutes before re-checking..."
