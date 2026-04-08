@@ -33,8 +33,10 @@ command) are responsible for picking the next issue from the project board.
    Use the `labels` field to identify blocked sub-issues (those with the `blocked` label).
    - If open, non-blocked sub-issues exist → work on the first one (restart Phase 1 with that issue number).
    - If open sub-issues exist but **all** are blocked → add `blocked` to the parent, leave it open, and STOP (the harness will skip blocked issues).
-   - If all sub-issues are closed → close the parent issue and STOP (the harness will pick the next issue).
+   - If **no** open sub-issues remain (all are closed) → close the parent issue and STOP (the harness will pick the next issue).
    - If no sub-issues → continue.
+
+   **Important:** Never close a parent issue while it still has open sub-issues — even if some sub-issues are closed and the "core" feature feels complete. Blocked sub-issues are still open. The parent stays open until every sub-issue is closed.
 3. Read all issue comments for prior Q&A from previous blocked runs.
 4. Classify the issue into one of three tiers:
 
