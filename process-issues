@@ -7,10 +7,12 @@
 # processed because they may depend on it.
 #
 # Usage:
-#   ./process-issues [--dry-run] [--issue N] [--model MODEL] [--poll MINUTES]
+#   ./process-issues [--dry-run] [--pick] [--verbose] [--issue N] [--model MODEL] [--poll MINUTES]
 #
 # Options:
 #   --dry-run       List issues that would be processed without spawning agents.
+#   --pick          Print the next eligible issue (number\ttitle\tblocked?) and exit.
+#   --verbose       Print diagnostic output to stderr (off by default).
 #   --issue N       Process only issue #N (skip the automatic selection).
 #   --model MODEL   Model to use (default: portkey/@vertex-ai/anthropic.claude-sonnet-4-6).
 #   --poll MINUTES  Poll interval when blocked (default: 10).
@@ -24,6 +26,8 @@ PROJECT_OWNER="t1"
 PROJECT_NUMBER=1  # ← update after creating the project board
 
 DRY_RUN=false
+PICK_ONLY=false
+VERBOSE=false
 SPECIFIC_ISSUE=""
 MODEL="portkey/@vertex-ai/anthropic.claude-sonnet-4-6"
 POLL_MINUTES=10
@@ -32,6 +36,14 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --dry-run)
             DRY_RUN=true
+            shift
+            ;;
+        --pick)
+            PICK_ONLY=true
+            shift
+            ;;
+        --verbose)
+            VERBOSE=true
             shift
             ;;
         --issue)
@@ -48,11 +60,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown option: $1" >&2
-            echo "Usage: $0 [--dry-run] [--issue N] [--model MODEL] [--poll MINUTES]" >&2
+            echo "Usage: $0 [--dry-run] [--pick] [--verbose] [--issue N] [--model MODEL] [--poll MINUTES]" >&2
             exit 1
             ;;
     esac
 done
+
+# Diagnostic output helper — only prints when --verbose is set.
+verbose() { [[ "$VERBOSE" == "true" ]] && echo "$@" >&2 || true; }
 
 # Update plugins before starting (same as ./oc wrapper).
 bun update tdder superpowers --cwd ~/.cache/opencode --silent 2>/dev/null || true
@@ -97,7 +112,7 @@ fetch_board_issues() {
 pick_next_issue() {
     if [[ -n "$SPECIFIC_ISSUE" ]]; then
         # Verify the specific issue is approved and not blocked.
-        echo "--- Picking issue #${SPECIFIC_ISSUE} (explicitly requested) ---" >&2
+        verbose "--- Picking issue #${SPECIFIC_ISSUE} (explicitly requested) ---"
         local issue_json
         issue_json=$(gh issue view "$SPECIFIC_ISSUE" --json number,title,labels 2>/dev/null) || {
             echo "  Issue #$SPECIFIC_ISSUE not found." >&2
@@ -106,21 +121,22 @@ pick_next_issue() {
         local labels title
         labels=$(echo "$issue_json" | jq -r '[.labels[].name] | join(",")')
         title=$(echo "$issue_json" | jq -r '.title')
-        echo "  #${SPECIFIC_ISSUE}: ${title}  [${labels}]" >&2
+        verbose "  #${SPECIFIC_ISSUE}: ${title}  [${labels}]"
         if [[ "$labels" != *"approved"* ]]; then
             echo "  -> Skipped: not labeled 'approved'." >&2
             return 1
         fi
         if [[ "$labels" == *"blocked"* ]]; then
             echo "  -> Blocked: answer the question first." >&2
+            echo "$issue_json" | jq -r '"\(.number)\t\(.title)"'
             return 2
         fi
-        echo "  -> Selected." >&2
+        verbose "  -> Selected."
         echo "$issue_json" | jq -r '"\(.number)\t\(.title)"'
         return 0
     fi
 
-    echo "--- Fetching project board ---" >&2
+    verbose "--- Fetching project board ---"
     local board_issues
     board_issues=$(fetch_board_issues)
 
@@ -131,7 +147,7 @@ pick_next_issue() {
 
     local total
     total=$(echo "$board_issues" | jq 'length')
-    echo "  Found ${total} issue(s) on the board." >&2
+    verbose "  Found ${total} issue(s) on the board."
 
     # Log each open issue with its status and why it's eligible or not.
     echo "$board_issues" | jq -r '.[] | select(.state == "OPEN") | "\(.number)\t\(.title)\t\(.state)\t\(.labels | join(","))"' | \
@@ -144,7 +160,7 @@ pick_next_issue() {
         else
             reason="eligible"
         fi
-        echo "  #${num}: ${title}  [${labels:-no labels}] -> ${reason}" >&2
+        verbose "  #${num}: ${title}  [${labels:-no labels}] -> ${reason}"
     done
 
     # Filter to open, approved issues (in board order).
@@ -168,10 +184,11 @@ pick_next_issue() {
 
     if [[ "$first_labels" == *"blocked"* ]]; then
         echo "  Highest-priority eligible issue #${first_number} (${first_title}) is blocked." >&2
+        echo "${first_number}\t${first_title}"
         return 2
     fi
 
-    echo "  -> Picked #${first_number}: ${first_title} (highest priority, ${eligible_count} eligible)" >&2
+    verbose "  -> Picked #${first_number}: ${first_title} (highest priority, ${eligible_count} eligible)"
     echo "${first_number}\t${first_title}"
 }
 
@@ -235,7 +252,24 @@ list_all_eligible_issues() {
 }
 
 # Main loop.
-if [[ -n "$SPECIFIC_ISSUE" ]]; then
+if [[ "$PICK_ONLY" == "true" ]]; then
+    # Print the next eligible issue and exit.
+    # Output format: number\ttitle\tblocked|ready
+    line=$(pick_next_issue) && rc=0 || rc=$?
+    if [[ $rc -eq 2 ]]; then
+        issue_number=$(echo "$line" | cut -f1)
+        issue_title=$(echo "$line" | cut -f2-)
+        echo "${issue_number}\t${issue_title}\tblocked"
+    elif [[ $rc -ne 0 ]]; then
+        echo "No eligible issues." >&2
+        exit 1
+    else
+        issue_number=$(echo "$line" | cut -f1)
+        issue_title=$(echo "$line" | cut -f2-)
+        echo "${issue_number}\t${issue_title}\tready"
+    fi
+    exit 0
+elif [[ -n "$SPECIFIC_ISSUE" ]]; then
     # Process just the one specified issue.
     line=$(pick_next_issue) && rc=0 || rc=$?
     [[ $rc -ne 0 ]] && exit 1

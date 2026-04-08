@@ -18,14 +18,8 @@ Read `README.md` for project context.
 ## Input
 
 The issue number is provided as part of the session prompt (e.g., "Work on issue #4").
-
-If no issue number is given, pick the next issue from the **GitHub Project board**
-("openapi-ui-next agent backlog", project #1). The board's item order defines priority —
-work on the first open item. Query with:
-
-```
-gh api graphql -f query='{ repository(owner:"t1", name:"openapi-ui-next") { projectsV2(first:1) { nodes { items(first:50) { nodes { content { ... on Issue { number title state } } } } } } } }' --jq '[.data.repository.projectsV2.nodes[0].items.nodes[] | select(.content != null and .content.state == "OPEN") | .content] | first'
-```
+An issue number is always required — callers (the `process-issues` script or the `/next`
+command) are responsible for picking the next issue from the project board.
 
 ## Workflow
 
