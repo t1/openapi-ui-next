@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static com.github.t1.openapi.ui.generator.AppFixture.MOD;
 import static com.github.t1.openapi.ui.generator.AppFixture.MOD_LABEL;
@@ -2478,24 +2479,39 @@ class BrowserTest {
             app.waitForResponse();
         }
 
+        @Test void shouldShowLinkNameInBadge() {
+            navigateToPetDetailAndSend();
+
+            then(app.bodyLinkText(0)).isEqualTo("GetVisits");
+        }
+
+        @Test void shouldShowMultipleBadgesOnSameField() {
+            navigateToPetDetailAndSend();
+
+            var badgeTexts = IntStream.range(0, app.bodyLinkCount())
+                    .mapToObj(app::bodyLinkText)
+                    .toList();
+            then(badgeTexts).contains("GetVisits", "GetPetAgain");
+        }
+
         @Test void shouldWrapMatchingJsonValuesAsBodyLinks() {
             navigateToPetDetailAndSend();
 
-            then(app.bodyLinkCount()).isEqualTo(1);
-            then(app.bodyLinkText(0)).isEqualTo("7");  // owner.id → getOwner
-            then(app.bodyLinkHref(0)).contains("ownerId=7");
+            then(app.bodyLinkCount()).isEqualTo(3);
+            then(app.bodyLinkText(0)).isEqualTo("GetVisits");
+            then(app.bodyLinkHref(0)).contains("petId=42");
         }
 
         @Test void shouldNavigateToTargetOperationWhenClickingBodyLink() {
             navigateToPetDetailAndSend();
-            app.clickBodyLink(0); // ownerId→getOwner
+            app.clickBodyLink(2); // ownerId→getOwner
 
             app.waitForDetailContent("Get an owner");
         }
 
         @Test void shouldFillParameterFieldsWhenClickingBodyLink() {
             navigateToPetDetailAndSend();
-            app.clickBodyLink(0); // ownerId=7 → getOwner
+            app.clickBodyLink(2); // ownerId=7 → getOwner
             app.waitForDetailContent("Get an owner");
 
             then(app.inputValue("ownerId")).isEqualTo("7");
@@ -2511,16 +2527,16 @@ class BrowserTest {
             app.clickSend();
             app.waitForResponse();
 
-            // Only owner.id (7) should link to getOwner; top-level id and extra.id should not
-            then(app.bodyLinkCount()).isEqualTo(1);
-            then(app.bodyLinkHref(0)).contains("ownerId=7");
+            // owner.id links to GetOwner; top-level id links to GetVisits and GetPetAgain; extra.id has no link
+            then(app.bodyLinkCount()).isEqualTo(3);
+            then(app.bodyLinkHref(2)).contains("ownerId=7");
         }
 
         @Test void shouldNotWrapNonMatchingJsonValues() {
             navigateToPetDetailAndSend();
 
-            // "name":"Buddy" and "id":42 have no link parameter pointing to them
-            then(app.bodyLinkCount()).isEqualTo(1); // only ownerId
+            // "name":"Buddy" has no link; "id":42 links to GetVisits+GetPetAgain; "owner.id":7 links to GetOwner
+            then(app.bodyLinkCount()).isEqualTo(3);
         }
 
         @Test void shouldShowBodyLinksAsClickable() {
@@ -2539,9 +2555,9 @@ class BrowserTest {
             app.clickSend();
             app.waitForResponse();
 
-            // Only owner.id links; top-level id does not
-            then(app.bodyLinkCount()).isEqualTo(1);
-            then(app.bodyLinkHref(0)).contains("ownerId=3");
+            // owner.id links to GetOwner; top-level id links to GetVisits and GetPetAgain
+            then(app.bodyLinkCount()).isEqualTo(3);
+            then(app.bodyLinkHref(0)).contains("petId=1");
         }
 
         @Test void shouldTakeScreenshotOfResponseBodyLinks() {
@@ -2549,20 +2565,10 @@ class BrowserTest {
             app.screenshot("response-body-links");
         }
 
-        @Test void shouldHaveBoldFontWeightForBetterVisibility() {
+        @Test void shouldStyleBadgeWithBorder() {
             navigateToPetDetailAndSend();
 
-            then(app.bodyLinkFontWeight(0)).isIn("600", "700", "bold");
-        }
-
-        @Test void shouldShowExternalLinkIconAfterValue() {
-            navigateToPetDetailAndSend();
-
-            // Font Awesome fa-arrow-up-right-from-square icon (unicode f08e)
-            // CSS content property returns quoted strings
-            var afterContent = app.bodyLinkAfterContent(0);
-            then(afterContent).as("CSS ::after content should not be empty or none")
-                    .isNotIn("\"\"", "none", "normal");
+            then(app.bodyLinkBorderStyle(0)).isEqualTo("solid");
         }
     }
 }

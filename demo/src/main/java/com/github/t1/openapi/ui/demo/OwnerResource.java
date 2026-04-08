@@ -4,6 +4,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.links.Link;
+import org.eclipse.microprofile.openapi.annotations.links.LinkParameter;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.ArrayList;
@@ -28,7 +31,12 @@ public class OwnerResource {
                 .orElseThrow(() -> new OwnerNotFoundException(id));
     }
 
-    @GET @Path("/{id}") @Operation(operationId = "getOwner", summary = "Get an owner by ID")
+    @GET @Path("/{id}")
+    @Operation(operationId = "getOwner", summary = "Get an owner by ID")
+    @APIResponse(responseCode = "200", description = "An owner",
+            links = @Link(name = "pets", operationId = "listOwnerPets",
+                    description = "List pets owned by this person",
+                    parameters = @LinkParameter(name = "ownerId", expression = "$response.body#/id")))
     public OwnerResponse get(@PathParam("id") long id) {
         var owner = findById(id);
         var pets = PetResource.PETS.stream()
@@ -38,7 +46,7 @@ public class OwnerResource {
         return new OwnerResponse(owner.id(), owner.name(), owner.email(), pets);
     }
 
-    @GET @Path("/{ownerId}/pets") @Operation(summary = "List pets for an owner")
+    @GET @Path("/{ownerId}/pets") @Operation(operationId = "listOwnerPets", summary = "List pets for an owner")
     public List<Pet> listPets(@PathParam("ownerId") long ownerId) {
         return PetResource.PETS.stream()
                 .filter(p -> p.ownerId == ownerId).toList();

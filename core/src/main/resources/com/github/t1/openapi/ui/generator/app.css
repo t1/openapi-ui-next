@@ -437,21 +437,18 @@ section > .container > .split-layout > .split-second {
 /* response body links — clickable values that navigate to target operations */
 .body-link {
     color: var(--bulma-link);
-    text-decoration: underline;
-    text-decoration-style: dotted;
+    text-decoration: none;
     cursor: pointer;
-    font-weight: 600;
+    font-size: 0.75em;
+    border: 1px solid var(--bulma-link);
+    border-radius: 3px;
+    padding: 0 4px;
+    margin-left: 4px;
+    vertical-align: middle;
 }
 .body-link:hover {
-    text-decoration-style: solid;
-}
-.body-link::after {
-    content: "\f08e"; /* fa-arrow-up-right-from-square */
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900; /* fa-solid */
-    font-size: 0.65em;
-    opacity: 0.6;
-    margin-left: 0.2em;
+    background: var(--bulma-link);
+    color: var(--bulma-link-invert);
 }
 /* syntax highlighting with Bulma colors */
 pre.response code.hljs {

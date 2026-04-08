@@ -68,6 +68,16 @@ paths:
               parameters:
                 requestId: $response.header.X-Request-Id
               description: Look up by request ID
+            GetVisits:
+              operationId: getVisits
+              parameters:
+                petId: $response.body#/id
+              description: List visits for this pet
+            GetPetAgain:
+              operationId: getPet
+              parameters:
+                petId: $response.body#/id
+              description: Reload this pet
   /owners/{ownerId}:
     get:
       summary: Get an owner

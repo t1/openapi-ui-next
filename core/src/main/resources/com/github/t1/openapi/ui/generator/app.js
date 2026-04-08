@@ -816,7 +816,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 pointerMap[pointer].push({
                     operationId: link.operationId,
                     paramName: paramName,
-                    value: String(val)
+                    value: String(val),
+                    linkName: linkName
                 });
             }
         }
@@ -833,19 +834,21 @@ document.addEventListener('DOMContentLoaded', function() {
         if (typeof value === 'number') {
             var pointer = path.join('/');
             var entries = pointerMap[pointer];
+            var valueHtml = '<span class="hljs-number">' + value + '</span>';
             if (entries && entries.length > 0) {
-                return renderLinkedValue(String(value), entries[0], 'hljs-number');
+                return valueHtml + entries.map(renderLinkBadge).join('');
             }
-            return '<span class="hljs-number">' + value + '</span>';
+            return valueHtml;
         }
         if (typeof value === 'string') {
             var pointer = path.join('/');
             var entries = pointerMap[pointer];
             var escaped = escapeHtml(value);
+            var valueHtml = '<span class="hljs-string">"' + escaped + '"</span>';
             if (entries && entries.length > 0) {
-                return '<span class="hljs-string">"' + renderLinkedValue(escaped, entries[0], '') + '"</span>';
+                return valueHtml + entries.map(renderLinkBadge).join('');
             }
-            return '<span class="hljs-string">"' + escaped + '"</span>';
+            return valueHtml;
         }
         if (Array.isArray(value)) {
             if (value.length === 0) return '<span class="hljs-punctuation">[]</span>';
@@ -872,14 +875,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return String(value);
     }
 
-    function renderLinkedValue(text, entry, cssClass) {
+    function renderLinkBadge(entry) {
         var target = window._operationIdMap ? window._operationIdMap[entry.operationId] : null;
-        if (!target) {
-            return cssClass ? '<span class="' + cssClass + '">' + text + '</span>' : text;
-        }
+        if (!target) return '';
         var href = '#' + target.path + '/' + target.method + '?' + encodeURIComponent(entry.paramName) + '=' + encodeURIComponent(entry.value);
-        var inner = cssClass ? '<span class="' + cssClass + '">' + text + '</span>' : text;
-        return '<a class="body-link" href="' + escapeHtml(href) + '">' + inner + '</a>';
+        return ' <a class="body-link" href="' + escapeHtml(href) + '">' + escapeHtml(entry.linkName) + '</a>';
     }
 
     function escapeHtml(str) {

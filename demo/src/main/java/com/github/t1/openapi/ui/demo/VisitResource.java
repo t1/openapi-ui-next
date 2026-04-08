@@ -7,7 +7,10 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.links.Link;
+import org.eclipse.microprofile.openapi.annotations.links.LinkParameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.ArrayList;
@@ -38,7 +41,12 @@ public class VisitResource {
         return created;
     }
 
-    @GET @Path("/{visitId}") @Tag(name = "visits") @Tag(name = "pets") @Operation(summary = "Get a visit by ID")
+    @GET @Path("/{visitId}") @Tag(name = "visits") @Tag(name = "pets")
+    @Operation(operationId = "getVisit", summary = "Get a visit by ID")
+    @APIResponse(responseCode = "200", description = "A visit",
+            links = @Link(name = "pet", operationId = "getPet",
+                    description = "The pet for this visit",
+                    parameters = @LinkParameter(name = "id", expression = "$response.body#/petId")))
     public Visit get(@PathParam("petId") long petId, @PathParam("visitId") long visitId) {
         return VISITS.stream()
                 .filter(v -> v.petId() == petId && v.id() == visitId).findFirst()
