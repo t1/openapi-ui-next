@@ -517,6 +517,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("#detail pre.response .body-link").nth(index).evaluate("el => getComputedStyle(el).cursor").toString();
     }
 
+    String bodyLinkFontWeight(int index) {
+        return page.locator("#detail pre.response .body-link").nth(index).evaluate("el => getComputedStyle(el).fontWeight").toString();
+    }
+
     void clickBodyLink(int index) {
         page.locator("#detail pre.response .body-link").nth(index).click();
     }

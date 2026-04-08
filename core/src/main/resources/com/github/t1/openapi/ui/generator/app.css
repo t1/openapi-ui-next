@@ -440,6 +440,7 @@ section > .container > .split-layout > .split-second {
     text-decoration: underline;
     text-decoration-style: dotted;
     cursor: pointer;
+    font-weight: 600;
 }
 .body-link:hover {
     text-decoration-style: solid;

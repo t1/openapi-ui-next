@@ -2535,5 +2535,11 @@ class BrowserTest {
             navigateToPetDetailAndSend();
             app.screenshot("response-body-links");
         }
+
+        @Test void shouldHaveBoldFontWeightForBetterVisibility() {
+            navigateToPetDetailAndSend();
+
+            then(app.bodyLinkFontWeight(0)).isIn("600", "700", "bold");
+        }
     }
 }
