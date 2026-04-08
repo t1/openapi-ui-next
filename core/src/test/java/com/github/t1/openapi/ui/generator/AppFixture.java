@@ -503,6 +503,15 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 .count();
     }
 
+    boolean schemaLinkHasTabindex(String statusCode, String linkName) {
+        var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
+        var linkRow = page.locator(panel + " .schema-props .schema-link-row")
+                .filter(new FilterOptions().setHasText(linkName))
+                .first();
+        var tabindex = linkRow.getAttribute("tabindex");
+        return "0".equals(tabindex);
+    }
+
     int bodyLinkCount() {
         return page.locator("#detail pre.response .body-link").count();
     }

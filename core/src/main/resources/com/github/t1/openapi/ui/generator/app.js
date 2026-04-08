@@ -913,7 +913,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var target = window._operationIdMap ? window._operationIdMap[entry.operationId] : null;
         if (!target) return '';
         var href = '#' + target.path + '/' + target.method + '?' + encodeURIComponent(entry.paramName) + '=' + encodeURIComponent(entry.value);
-        return ' <a class="body-link" href="' + escapeHtml(href) + '">' + escapeHtml(entry.linkName) + '</a>';
+        return ' <a class="body-link" href="' + escapeHtml(href) + '" tabindex="0">' + escapeHtml(entry.linkName) + '</a>';
     }
 
     function escapeHtml(str) {

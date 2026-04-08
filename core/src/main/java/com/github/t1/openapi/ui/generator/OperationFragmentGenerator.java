@@ -588,7 +588,7 @@ class OperationFragmentGenerator {
     }
 
     private Element linkSubRow(String linkName, io.swagger.v3.oas.models.links.Link link, String contextSourceType) {
-        var row = span().classes("schema-link-row");
+        var row = span().classes("schema-link-row").attr("tabindex", "0");
         var href = operationIdHref(link.getOperationId());
         var nameEl = href != null
                 ? element("a").attr("href", href).content("→ " + linkName)

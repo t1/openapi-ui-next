@@ -2476,6 +2476,15 @@ class BrowserTest {
 
             then(app.schemaLinkSubRowExists("200", "GetVisitDetail")).isTrue();
         }
+
+        @Test void schemaLinkRowShouldBeFocusable() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.toggleSchema("response");
+
+            then(app.schemaLinkHasTabindex("200", "owner")).isTrue();
+        }
     }
 
     @ResourceLock("response-body-links") @Nested class GivenAppWithResponseBodyLinks {
