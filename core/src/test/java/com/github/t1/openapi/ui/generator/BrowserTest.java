@@ -1666,6 +1666,19 @@ class BrowserTest {
             then(app.activeElementSelector()).doesNotContain("schema-status-tab"); // should not be on a status tab anymore
         }
 
+        @Test void shouldFocusActiveTabOnShiftTabIntoStatusCodeTabs() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+
+            app.focusStatusCodeTab("200");
+            app.pressKey("Tab"); // move past status tabs
+
+            app.pressKey("Shift+Tab"); // back to status tabs — should land on 200 (active), not 404 (last)
+
+            then(app.activeElementSelector()).contains("schema-status-tab");
+            then(app.activeStatusCodeTab()).isEqualTo("200");
+        }
+
         @Test void shouldNavigateDownFromAcceptSelectToSendButton() {
             navigateToPetDetail();
             app.focusSelect("accept");

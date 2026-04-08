@@ -1100,6 +1100,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // Shift+Tab into status tabs: focus the active status tab, not the last one in DOM order
+        if (e.key === 'Tab' && e.shiftKey && (el.closest('#method-content') || el.closest('#detail'))) {
+            var allFocusable = Array.from(document.querySelectorAll(
+                'input, select, textarea, button, a[tabindex="0"], [tabindex="0"]'
+            )).filter(function(f) {
+                return f.offsetParent !== null && !f.disabled;
+            });
+            var currentIndex = allFocusable.indexOf(el);
+            if (currentIndex > 0) {
+                var prevElement = allFocusable[currentIndex - 1];
+                if (prevElement.classList.contains('schema-status-tab')) {
+                    var activeStatusTab = prevElement.closest('.schema-status-tabs').querySelector('.schema-status-tab.is-active');
+                    if (activeStatusTab) {
+                        e.preventDefault();
+                        activeStatusTab.focus();
+                        return;
+                    }
+                }
+            }
+        }
+
         const isArrow = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.key) >= 0;
         if (!isArrow && e.key !== 'Enter' && e.key !== 'Escape') return;
 
