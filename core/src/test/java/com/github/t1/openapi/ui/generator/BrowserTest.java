@@ -1048,6 +1048,16 @@ class BrowserTest {
             then(app.currentMode()).isEqualTo("try");
         }
 
+        @Test void shouldNotJumpToTabOnShiftTabFromSecondField() {
+            app.waitForInput("petId");
+            app.focusInput("fields"); // focus second parameter field
+
+            app.pressKey("Shift+Tab"); // should stay in content (normal tab order), not jump to tab
+
+            then(app.activeElementSelector()).contains("input");
+            then(app.isTabFocused()).isFalse();
+        }
+
         @Test void shouldTogglePersistWithShortcut() {
             app.waitForInput("petId");
             app.focusInput("petId");
@@ -1642,6 +1652,18 @@ class BrowserTest {
             app.pressKey("ArrowLeft");
 
             then(app.activeStatusCodeTab()).isEqualTo("200");
+        }
+
+        @Test void shouldFocusNextElementOnTabFromStatusCodeTab() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+
+            app.focusStatusCodeTab("200");
+            app.pressKey("Tab");
+
+            // Tab should move to next focusable element, not activate the next status tab
+            then(app.activeStatusCodeTab()).isEqualTo("200"); // 200 should still be active, not 404
+            then(app.activeElementSelector()).doesNotContain("schema-status-tab"); // should not be on a status tab anymore
         }
 
         @Test void shouldNavigateDownFromAcceptSelectToSendButton() {

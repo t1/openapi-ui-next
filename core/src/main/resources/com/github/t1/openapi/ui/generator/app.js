@@ -1049,6 +1049,29 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el.closest('[role="tree"]')) return;
         if (el.closest('.toggle')) return;
 
+        // Tab/Shift+Tab on status code tabs: move to next/prev non-status-tab element
+        if (e.key === 'Tab' && el.classList.contains('schema-status-tab')) {
+            e.preventDefault();
+            // Find all focusable elements
+            var allFocusable = Array.from(document.querySelectorAll(
+                'input, select, textarea, button, a[tabindex="0"], [tabindex="0"]'
+            )).filter(function(f) {
+                return f.offsetParent !== null && !f.disabled;
+            });
+            var currentIndex = allFocusable.indexOf(el);
+            if (currentIndex >= 0) {
+                // Find next/prev element that's not a status tab
+                var delta = e.shiftKey ? -1 : 1;
+                for (var i = currentIndex + delta; i >= 0 && i < allFocusable.length; i += delta) {
+                    if (!allFocusable[i].classList.contains('schema-status-tab')) {
+                        allFocusable[i].focus();
+                        return;
+                    }
+                }
+            }
+            return;
+        }
+
         // Tab/Shift+Tab on a tab: jump into content or back to tree
         if (e.key === 'Tab' && el.closest('.tabs')) {
             e.preventDefault();
@@ -1062,13 +1085,19 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Shift+Tab from content fields: go to the active tab, not the last one
+        // Shift+Tab from FIRST content element: go to the active tab, not the last one
         if (e.key === 'Tab' && e.shiftKey && (el.closest('#method-content') || el.closest('#detail'))) {
-            e.preventDefault();
+            // Check if we're at the first element by seeing if going down from tabs reaches us
             var activeTabLink = document.querySelector('.tabs .is-active a');
-            if (activeTabLink) activeTabLink.focus();
-            else { var tree = document.querySelector('[role="tree"]'); if (tree) tree.focus(); }
-            return;
+            if (activeTabLink) {
+                var firstContentElement = findSpatialTarget(activeTabLink, 'down');
+                if (firstContentElement === el) {
+                    // We're at the first content element - jump back to tab
+                    e.preventDefault();
+                    activeTabLink.focus();
+                    return;
+                }
+            }
         }
 
         const isArrow = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.key) >= 0;
