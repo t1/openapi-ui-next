@@ -97,32 +97,57 @@ fetch_board_issues() {
 pick_next_issue() {
     if [[ -n "$SPECIFIC_ISSUE" ]]; then
         # Verify the specific issue is approved and not blocked.
+        echo "--- Picking issue #${SPECIFIC_ISSUE} (explicitly requested) ---" >&2
         local issue_json
         issue_json=$(gh issue view "$SPECIFIC_ISSUE" --json number,title,labels 2>/dev/null) || {
-            echo "Issue #$SPECIFIC_ISSUE not found." >&2
+            echo "  Issue #$SPECIFIC_ISSUE not found." >&2
             return 1
         }
-        local labels
+        local labels title
         labels=$(echo "$issue_json" | jq -r '[.labels[].name] | join(",")')
+        title=$(echo "$issue_json" | jq -r '.title')
+        echo "  #${SPECIFIC_ISSUE}: ${title}  [${labels}]" >&2
         if [[ "$labels" != *"approved"* ]]; then
-            echo "Issue #$SPECIFIC_ISSUE is not labeled 'approved'. Skipping." >&2
+            echo "  -> Skipped: not labeled 'approved'." >&2
             return 1
         fi
         if [[ "$labels" == *"blocked"* ]]; then
-            echo "Issue #$SPECIFIC_ISSUE is labeled 'blocked'. Answer the question first." >&2
+            echo "  -> Blocked: answer the question first." >&2
             return 2
         fi
+        echo "  -> Selected." >&2
         echo "$issue_json" | jq -r '"\(.number)\t\(.title)"'
         return 0
     fi
 
+    echo "--- Fetching project board ---" >&2
     local board_issues
     board_issues=$(fetch_board_issues)
 
     if [[ "$board_issues" == "[]" || -z "$board_issues" ]]; then
-        echo "No issues on the project board." >&2
+        echo "  No issues on the project board." >&2
         return 1
     fi
+
+    local total
+    total=$(echo "$board_issues" | jq 'length')
+    echo "  Found ${total} issue(s) on the board." >&2
+
+    # Log each issue with its status and why it's eligible or not.
+    echo "$board_issues" | jq -r '.[] | "\(.number)\t\(.title)\t\(.state)\t\(.labels | join(","))"' | \
+    while IFS=$'\t' read -r num title state labels; do
+        local reason=""
+        if [[ "$state" != "OPEN" ]]; then
+            reason="not open (${state})"
+        elif [[ "$labels" != *"approved"* ]]; then
+            reason="not approved"
+        elif [[ "$labels" == *"blocked"* ]]; then
+            reason="blocked"
+        else
+            reason="eligible"
+        fi
+        echo "  #${num}: ${title}  [${state}, ${labels:-no labels}] -> ${reason}" >&2
+    done
 
     # Filter to open, approved issues (in board order).
     local eligible
@@ -130,22 +155,25 @@ pick_next_issue() {
         [.[] | select(.state == "OPEN" and (.labels | index("approved")))]
     ')
 
-    if [[ "$(echo "$eligible" | jq 'length')" -eq 0 ]]; then
-        echo "No eligible issues on the board." >&2
+    local eligible_count
+    eligible_count=$(echo "$eligible" | jq 'length')
+    if [[ "$eligible_count" -eq 0 ]]; then
+        echo "  No eligible issues (open + approved) on the board." >&2
         return 1
     fi
 
-    # Check the FIRST eligible issue. If it's blocked, stop entirely.
+    # Check the FIRST eligible issue. If it's blocked, wait.
     local first_labels first_number first_title
     first_number=$(echo "$eligible" | jq -r '.[0].number')
     first_title=$(echo "$eligible" | jq -r '.[0].title')
     first_labels=$(echo "$eligible" | jq -r '.[0].labels | join(",")')
 
     if [[ "$first_labels" == *"blocked"* ]]; then
-        echo "Highest-priority issue #${first_number} (${first_title}) is blocked." >&2
+        echo "  Highest-priority eligible issue #${first_number} (${first_title}) is blocked." >&2
         return 2
     fi
 
+    echo "  -> Picked #${first_number}: ${first_title} (highest priority, ${eligible_count} eligible)" >&2
     echo "${first_number}\t${first_title}"
 }
 
