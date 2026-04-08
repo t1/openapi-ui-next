@@ -114,8 +114,14 @@ and iterative refinement that cannot happen autonomously.
 
 **If running interactively:**
 1. Use the `brainstorming` skill to explore the design with the user.
-2. Write a spec to `docs/superpowers/specs/YYYY-MM-DD-issue-<N>-<slug>.md`.
-3. Proceed to Phase 3.
+2. When a design decision is reached, **hand off to the autonomous harness:**
+   a. Post a structured decision comment on the issue summarizing the chosen approach,
+      implementation details, and alternatives considered.
+   b. Remove the `blocked` label: `gh issue edit <N> --remove-label blocked`
+   c. STOP. The process-issues harness will pick up the issue in its next run
+      and implement autonomously based on the decision comment.
+3. Do NOT proceed to implementation yourself — the handoff keeps brainstorming
+   sessions short and lets the autonomous agent do the coding work.
 
 ### Phase 3: Plan (exploratory issues only)
 
@@ -202,8 +208,12 @@ Instead:
 
 When resuming a previously blocked issue:
 - The `blocked` label has been removed by the human.
-- Read all issue comments to find the human's answer.
-- Resume from where the agent left off (assessment comment and any existing code indicate progress).
+- Read all issue comments to find the human's answer or brainstorming decision.
+- If a **brainstorming decision comment** exists (structured comment with chosen approach
+  and implementation details), treat it as the spec — skip assessment and proceed
+  directly to Phase 4 (Implement) using the decision as your guide.
+- Otherwise, resume from where the agent left off (assessment comment and any existing
+  code indicate progress).
 
 ## Rules
 
