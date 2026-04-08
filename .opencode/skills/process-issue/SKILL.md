@@ -159,7 +159,7 @@ In both cases:
 ### Phase 6: Commit & Close
 
 1. Squash all work into a single commit: `feat: <description> (#<N>)` or `fix: <description> (#<N>)`.
-2. If the prompt says to push and wait for CI:
+2. Push to trunk and wait for CI:
    a. Push to trunk: `git push`
    b. Wait for the CI workflow to complete: `gh run watch --exit-status`
    c. If CI fails, post the failure details as a comment, add `blocked` label, and STOP.
@@ -167,10 +167,10 @@ In both cases:
    ```
    ## Agent: done
 
-   **Commit:** [short sha]
+   **Commit:** [short sha linked to GitHub, e.g. [`abc1234`](https://github.com/t1/openapi-ui-next/commit/abc1234)]
    **Summary:** [what was changed, 2-3 sentences]
    **Tests:** [what tests were added/modified]
-   **CI:** [passed / not pushed]
+   **CI:** [passed]
    ```
 4. Close the issue: `gh issue close <N>`
 

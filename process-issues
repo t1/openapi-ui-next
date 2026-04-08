@@ -2,16 +2,16 @@
 # process-issues — loop over approved GitHub issues and process them with OpenCode.
 #
 # Issues are processed in project board order (top = highest priority).
-# If the highest-priority issue is blocked, processing stops entirely —
-# lower-priority issues are not processed because they may depend on it.
+# If the highest-priority issue is blocked, the loop waits (polling every
+# 10 minutes) until it is unblocked — lower-priority issues are not
+# processed because they may depend on it.
 #
 # Usage:
-#   ./process-issues [--dry-run] [--issue N] [--push] [--model MODEL]
+#   ./process-issues [--dry-run] [--issue N] [--model MODEL]
 #
 # Options:
 #   --dry-run     List issues that would be processed without spawning agents.
 #   --issue N     Process only issue #N (skip the automatic selection).
-#   --push        Push to trunk and wait for CI after each issue.
 #   --model MODEL Model to use (default: portkey/@vertex-ai/anthropic.claude-sonnet-4-6).
 #
 # Requires: A GitHub Project board owned by the repo owner (t1) linked to this repo.
@@ -24,7 +24,6 @@ PROJECT_NUMBER=1  # ← update after creating the project board
 
 DRY_RUN=false
 SPECIFIC_ISSUE=""
-PUSH=false
 MODEL="portkey/@vertex-ai/anthropic.claude-sonnet-4-6"
 
 while [[ $# -gt 0 ]]; do
@@ -37,17 +36,13 @@ while [[ $# -gt 0 ]]; do
             SPECIFIC_ISSUE="$2"
             shift 2
             ;;
-        --push)
-            PUSH=true
-            shift
-            ;;
         --model)
             MODEL="$2"
             shift 2
             ;;
         *)
             echo "Unknown option: $1" >&2
-            echo "Usage: $0 [--dry-run] [--issue N] [--push] [--model MODEL]" >&2
+            echo "Usage: $0 [--dry-run] [--issue N] [--model MODEL]" >&2
             exit 1
             ;;
     esac
@@ -109,7 +104,7 @@ pick_next_issue() {
         fi
         if [[ "$labels" == *"blocked"* ]]; then
             echo "Issue #$SPECIFIC_ISSUE is labeled 'blocked'. Answer the question first." >&2
-            return 1
+            return 2
         fi
         echo "$issue_json" | jq -r '"\(.number)\t\(.title)"'
         return 0
@@ -141,8 +136,8 @@ pick_next_issue() {
     first_labels=$(echo "$eligible" | jq -r '.[0].labels | join(",")')
 
     if [[ "$first_labels" == *"blocked"* ]]; then
-        echo "Highest-priority issue #${first_number} (${first_title}) is blocked. Stopping." >&2
-        return 1
+        echo "Highest-priority issue #${first_number} (${first_title}) is blocked." >&2
+        return 2
     fi
 
     echo "${first_number}\t${first_title}"
@@ -160,10 +155,7 @@ process_one_issue() {
     fi
 
     # Build the prompt.
-    local prompt="Load the process-issue skill. Work on issue #${issue_number} for the openapi-ui-next project. This is autonomous mode."
-    if [[ "$PUSH" == "true" ]]; then
-        prompt="${prompt} After committing, push to trunk and wait for CI to pass."
-    fi
+    local prompt="Load the process-issue skill. Work on issue #${issue_number} for the openapi-ui-next project. This is autonomous mode. After committing, push to trunk and wait for CI to pass."
 
     # Spawn a fresh OpenCode session.
     opencode run "$prompt" \
@@ -227,10 +219,17 @@ elif [[ "$DRY_RUN" == "true" ]]; then
 else
     # In real mode, pick one at a time (state changes after processing).
     while true; do
-        line=$(pick_next_issue) || {
-            echo "No more eligible issues (or top issue is blocked)."
+        line=$(pick_next_issue)
+        rc=$?
+        if [[ $rc -eq 2 ]]; then
+            # Top issue is blocked — wait for it to be unblocked.
+            echo "Waiting 10 minutes before re-checking..."
+            sleep 600
+            continue
+        elif [[ $rc -ne 0 ]]; then
+            echo "No more eligible issues."
             break
-        }
+        fi
         if [[ "$line" == "null"* || -z "$line" ]]; then
             echo "No more eligible issues."
             break
