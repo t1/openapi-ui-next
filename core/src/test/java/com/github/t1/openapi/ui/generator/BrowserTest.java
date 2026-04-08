@@ -2554,5 +2554,15 @@ class BrowserTest {
 
             then(app.bodyLinkFontWeight(0)).isIn("600", "700", "bold");
         }
+
+        @Test void shouldShowExternalLinkIconAfterValue() {
+            navigateToPetDetailAndSend();
+
+            // Font Awesome fa-arrow-up-right-from-square icon (unicode f08e)
+            // CSS content property returns quoted strings
+            var afterContent = app.bodyLinkAfterContent(0);
+            then(afterContent).as("CSS ::after content should not be empty or none")
+                    .isNotIn("\"\"", "none", "normal");
+        }
     }
 }
