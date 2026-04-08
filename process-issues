@@ -133,20 +133,18 @@ pick_next_issue() {
     total=$(echo "$board_issues" | jq 'length')
     echo "  Found ${total} issue(s) on the board." >&2
 
-    # Log each issue with its status and why it's eligible or not.
-    echo "$board_issues" | jq -r '.[] | "\(.number)\t\(.title)\t\(.state)\t\(.labels | join(","))"' | \
+    # Log each open issue with its status and why it's eligible or not.
+    echo "$board_issues" | jq -r '.[] | select(.state == "OPEN") | "\(.number)\t\(.title)\t\(.state)\t\(.labels | join(","))"' | \
     while IFS=$'\t' read -r num title state labels; do
         local reason=""
-        if [[ "$state" != "OPEN" ]]; then
-            reason="not open (${state})"
-        elif [[ "$labels" != *"approved"* ]]; then
+        if [[ "$labels" != *"approved"* ]]; then
             reason="not approved"
         elif [[ "$labels" == *"blocked"* ]]; then
             reason="blocked"
         else
             reason="eligible"
         fi
-        echo "  #${num}: ${title}  [${state}, ${labels:-no labels}] -> ${reason}" >&2
+        echo "  #${num}: ${title}  [${labels:-no labels}] -> ${reason}" >&2
     done
 
     # Filter to open, approved issues (in board order).
