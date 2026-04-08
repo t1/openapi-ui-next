@@ -7,12 +7,13 @@
 # processed because they may depend on it.
 #
 # Usage:
-#   ./process-issues [--dry-run] [--issue N] [--model MODEL]
+#   ./process-issues [--dry-run] [--issue N] [--model MODEL] [--poll MINUTES]
 #
 # Options:
-#   --dry-run     List issues that would be processed without spawning agents.
-#   --issue N     Process only issue #N (skip the automatic selection).
-#   --model MODEL Model to use (default: portkey/@vertex-ai/anthropic.claude-sonnet-4-6).
+#   --dry-run       List issues that would be processed without spawning agents.
+#   --issue N       Process only issue #N (skip the automatic selection).
+#   --model MODEL   Model to use (default: portkey/@vertex-ai/anthropic.claude-sonnet-4-6).
+#   --poll MINUTES  Poll interval when blocked (default: 10).
 #
 # Requires: A GitHub Project board owned by the repo owner (t1) linked to this repo.
 # Set the project number below.
@@ -25,6 +26,7 @@ PROJECT_NUMBER=1  # ← update after creating the project board
 DRY_RUN=false
 SPECIFIC_ISSUE=""
 MODEL="portkey/@vertex-ai/anthropic.claude-sonnet-4-6"
+POLL_MINUTES=10
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -40,9 +42,13 @@ while [[ $# -gt 0 ]]; do
             MODEL="$2"
             shift 2
             ;;
+        --poll)
+            POLL_MINUTES="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown option: $1" >&2
-            echo "Usage: $0 [--dry-run] [--issue N] [--model MODEL]" >&2
+            echo "Usage: $0 [--dry-run] [--issue N] [--model MODEL] [--poll MINUTES]" >&2
             exit 1
             ;;
     esac
@@ -223,8 +229,8 @@ else
         rc=$?
         if [[ $rc -eq 2 ]]; then
             # Top issue is blocked — wait for it to be unblocked.
-            echo "Waiting 10 minutes before re-checking..."
-            sleep 600
+            echo "Waiting ${POLL_MINUTES} minutes before re-checking..."
+            sleep $((POLL_MINUTES * 60))
             continue
         elif [[ $rc -ne 0 ]]; then
             echo "No more eligible issues."
