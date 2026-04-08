@@ -34,10 +34,12 @@ gh api graphql -f query='{ repository(owner:"t1", name:"openapi-ui-next") { proj
 1. Fetch issue details: `gh issue view <N> --json number,title,body,labels,comments`
 2. Check for sub-issues:
    ```
-   gh api graphql -f query='{ repository(owner:"t1", name:"openapi-ui-next") { issue(number:<N>) { subIssues(first:20) { nodes { number title state } } } } }' --jq '.data.repository.issue.subIssues.nodes'
+   gh api graphql -f query='{ repository(owner:"t1", name:"openapi-ui-next") { issue(number:<N>) { subIssues(first:20) { nodes { number title state labels(first:10) { nodes { name } } } } } } }' --jq '.data.repository.issue.subIssues.nodes'
    ```
-   - If open sub-issues exist → work on the first open sub-issue (restart Phase 1 with that issue number).
-   - If all sub-issues are closed → close the parent issue and STOP.
+   Use the `labels` field to identify blocked sub-issues (those with the `blocked` label).
+   - If open, non-blocked sub-issues exist → work on the first one (restart Phase 1 with that issue number).
+   - If open sub-issues exist but **all** are blocked → add `blocked` to the parent, leave it open, and STOP (the harness will skip blocked issues).
+   - If all sub-issues are closed → close the parent issue and STOP (the harness will pick the next issue).
    - If no sub-issues → continue.
 3. Read all issue comments for prior Q&A from previous blocked runs.
 4. Classify the issue into one of three tiers:
