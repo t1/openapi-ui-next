@@ -1320,9 +1320,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 }).map(function(h) {
                     return h + ':' + requestHeaders[h];
                 }).join(' ');
+                
+                // Apply httpie defaults: use http/https command based on scheme, omit GET method, omit scheme prefix, omit localhost
+                const urlObj = new URL(url);
+                const isHttps = urlObj.protocol === 'https:';
+                const command = isHttps ? 'https' : 'http';
+                const isLocalhost = urlObj.hostname === 'localhost';
+                const hostAndPath = isLocalhost 
+                    ? urlObj.pathname + urlObj.search
+                    : urlObj.hostname + (urlObj.port ? ':' + urlObj.port : '') + urlObj.pathname + urlObj.search;
+                const methodPart = method === 'GET' ? '' : method + ' ';
+                
                 let cmd = bodyValue
-                        ? "echo '" + bodyValue + "' | http " + method + ' ' + url + " Content-Type:application/json"
-                        : 'http ' + method + ' ' + url;
+                        ? "echo '" + bodyValue + "' | " + command + ' ' + methodPart + hostAndPath + " Content-Type:application/json"
+                        : command + ' ' + methodPart + hostAndPath;
                 if (headerArgs) cmd += ' ' + headerArgs;
                 if (cookieParts.length > 0) cmd += ' Cookie:' + cookieParts.join('\\; ');
                 navigator.clipboard.writeText(cmd);

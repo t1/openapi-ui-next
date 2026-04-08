@@ -1212,8 +1212,9 @@ class BrowserTest {
             app.clickSend();
 
             then(app.readClipboard())
-                    .contains("http GET")
-                    .contains("https://api.example.com/pets/42");
+                    .startsWith("https ")
+                    .doesNotContain("GET")
+                    .contains("api.example.com/pets/42");
         }
     }
 
@@ -1229,6 +1230,55 @@ class BrowserTest {
             app.waitForResponse();
 
             then(app.responseText()).contains("\"id\"");
+        }
+
+        @Test void shouldIncludeMethodInHttpieCommandForPOST() {
+            app.clickModeButton("httpie");
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .startsWith("http POST ")
+                    .contains("/api/pets")
+                    .doesNotContain("localhost");
+        }
+    }
+
+    @ResourceLock("httpie-localhost") @Nested class GivenAppWithHttpLocalhostUrl {
+        @RegisterExtension static AppFixture app = launch("http-localhost.yaml");
+
+        @Test void shouldCopyHttpieCommandWithoutLocalhostForGET() {
+            app.clickModeButton("httpie");
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{id}/index.html");
+            app.waitForInput("id");
+            app.fillInput("id", "42");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .isEqualTo("http /pets/42")
+                    .doesNotContain("GET")
+                    .doesNotContain("localhost");
+        }
+    }
+
+    @ResourceLock("httpie-http-api") @Nested class GivenAppWithHttpApiUrl {
+        @RegisterExtension static AppFixture app = launch("http-api.yaml");
+
+        @Test void shouldCopyHttpieCommandWithHttpCommandForNonLocalhostGET() {
+            app.clickModeButton("httpie");
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{id}/index.html");
+            app.waitForInput("id");
+            app.fillInput("id", "42");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .startsWith("http ")
+                    .doesNotContain("GET")
+                    .contains("api.example.com/pets/42")
+                    .doesNotContain("http://");
         }
     }
 
