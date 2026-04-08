@@ -2466,6 +2466,16 @@ class BrowserTest {
 
             then(app.inputValue("petId")).isEqualTo("42");
         }
+
+        @Test void shouldShowXLinksInSchemaView() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.toggleSchema("response");
+            app.expandNestedSchema("visits");
+
+            then(app.schemaLinkSubRowExists("200", "GetVisitDetail")).isTrue();
+        }
     }
 
     @ResourceLock("response-body-links") @Nested class GivenAppWithResponseBodyLinks {
@@ -2572,6 +2582,77 @@ class BrowserTest {
             navigateToPetDetailAndSend();
 
             then(app.bodyLinkBorderStyle(0)).isEqualTo("solid");
+        }
+    }
+
+    @ResourceLock("x-links-body") @Nested class GivenAppWithXLinksBodyLinks {
+        @RegisterExtension static AppFixture app = launch("response-links.yaml").withBaseUrlOverride();
+
+        private void navigateToPetDetailAndSendWithVisits() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.fillInput("petId", "42");
+            app.mockEndpoint("/pets/42", "application/json",
+                    "{\"id\":42,\"name\":\"Buddy\",\"owner\":{\"id\":7,\"name\":\"Alice\"},"
+                    + "\"visits\":[{\"id\":10,\"reason\":\"Checkup\"},{\"id\":11,\"reason\":\"Vaccination\"}]}");
+            app.clickSend();
+            app.waitForResponse();
+        }
+
+        @Test void shouldShowBodyLinkBadgesOnArrayItems() {
+            navigateToPetDetailAndSendWithVisits();
+
+            // Standard links: id→GetVisits, id→GetPetAgain, owner/id→GetOwner = 3
+            // x-links: visits/0/id→GetVisitDetail, visits/1/id→GetVisitDetail = 2
+            // Total = 5
+            then(app.bodyLinkCount()).isEqualTo(5);
+        }
+
+        @Test void shouldShowXLinkBadgeWithCorrectName() {
+            navigateToPetDetailAndSendWithVisits();
+
+            var badgeTexts = IntStream.range(0, app.bodyLinkCount())
+                    .mapToObj(app::bodyLinkText)
+                    .toList();
+            then(badgeTexts).contains("GetVisitDetail");
+        }
+
+        @Test void shouldFillParameterWhenClickingXLinkBadge() {
+            navigateToPetDetailAndSendWithVisits();
+
+            // Find the GetVisitDetail badge and click it
+            var xLinkIndex = IntStream.range(0, app.bodyLinkCount())
+                    .filter(i -> "GetVisitDetail".equals(app.bodyLinkText(i)))
+                    .findFirst().orElseThrow();
+            app.clickBodyLink(xLinkIndex);
+            app.waitForDetailContent("Get a visit");
+            app.waitForInputValue("visitId", "10");
+
+            then(app.inputValue("visitId")).isEqualTo("10");
+        }
+
+        @Test void shouldExpandMultiLevelWildcards() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+            app.fillInput("petId", "42");
+            app.mockEndpoint("/pets/42", "application/json",
+                    "{\"id\":42,\"name\":\"Buddy\",\"owner\":{\"id\":7,\"name\":\"Alice\"},"
+                    + "\"visits\":[{\"id\":10,\"reason\":\"Checkup\","
+                    + "\"treatments\":[{\"id\":100,\"name\":\"Antibiotics\"},{\"id\":101,\"name\":\"Painkillers\"}]}]}");
+            app.clickSend();
+            app.waitForResponse();
+
+            var badgeTexts = IntStream.range(0, app.bodyLinkCount())
+                    .mapToObj(app::bodyLinkText)
+                    .toList();
+            // Standard: GetVisits, GetPetAgain on id=42; GetOwner on owner/id=7 (3)
+            // x-links: GetVisitDetail on visits/0/id=10 (1)
+            // x-links: GetTreatment on visits/0/treatments/0/id=100, visits/0/treatments/1/id=101 (2)
+            // Total = 6
+            then(app.bodyLinkCount()).isEqualTo(6);
+            then(badgeTexts).contains("GetTreatment");
         }
     }
 }

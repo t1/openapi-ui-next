@@ -19,6 +19,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.extensions.Extension;
 import org.eclipse.microprofile.openapi.annotations.headers.Header;
 import org.eclipse.microprofile.openapi.annotations.links.Link;
 import org.eclipse.microprofile.openapi.annotations.links.LinkParameter;
@@ -84,7 +85,11 @@ public class PetResource {
                             parameters = @LinkParameter(name = "id", expression = "$response.body#/owner/id")),
                     @Link(name = "visits", operationId = "listPetVisits",
                             description = "List visits for this pet",
-                            parameters = @LinkParameter(name = "petId", expression = "$response.body#/id"))})
+                            parameters = @LinkParameter(name = "petId", expression = "$response.body#/id"))},
+            extensions = @Extension(name = "x-links", parseValue = true,
+                    value = "{\"visitDetail\":{\"operationId\":\"getVisit\","
+                            + "\"description\":\"Get details of this visit\","
+                            + "\"parameters\":{\"visitId\":\"$response.body#/visits[*]/id\"}}}"))
     @APIResponse(responseCode = "400", description = "Business error",
             content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
     @APIResponse(responseCode = "500", description = "Internal server error",

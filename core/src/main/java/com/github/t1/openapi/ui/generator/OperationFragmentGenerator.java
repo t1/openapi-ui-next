@@ -117,12 +117,13 @@ class OperationFragmentGenerator {
         var firstStatus = true;
         for (var entry : operation.getResponses().entrySet()) {
             var response = entry.getValue();
-            if (response.getLinks() == null || response.getLinks().isEmpty()) continue;
+            var links = allLinks(response);
+            if (links.isEmpty()) continue;
             if (!firstStatus) linksJson.append(",");
             firstStatus = false;
             linksJson.append("\"").append(entry.getKey()).append("\":{");
             var firstLink = true;
-            for (var linkEntry : response.getLinks().entrySet()) {
+            for (var linkEntry : links.entrySet()) {
                 if (!firstLink) linksJson.append(",");
                 firstLink = false;
                 var link = linkEntry.getValue();
@@ -494,23 +495,70 @@ class OperationFragmentGenerator {
         var responseHasHeaders = response.getHeaders() != null && !response.getHeaders().isEmpty();
         var responseHasBody = response.getContent() != null
                 && response.getContent().values().iterator().next().getSchema() != null;
+        var links = allLinks(response);
         if (responseHasHeaders) {
             if (responseHasBody) panel.content(span("Headers"));
-            panel.content(schemaHeaders(response, response.getLinks()));
+            panel.content(schemaHeaders(response, links));
         }
         if (responseHasBody) {
             if (responseHasHeaders) panel.content(span("Body"));
             var mediaType = response.getContent().values().iterator().next();
-            new SchemaRenderer(response.getLinks()).render(panel, mediaType.getSchema());
+            new SchemaRenderer(links).render(panel, mediaType.getSchema());
         }
         return panel;
+    }
+
+    private static final String X_LINKS_EXTENSION = "x-links";
+
+    /**
+     * Merges standard response links with x-links from response extensions.
+     * x-links use the same Link Object structure but support [*] array wildcards in body expressions.
+     */
+    private static Map<String, io.swagger.v3.oas.models.links.Link> allLinks(ApiResponse response) {
+        var result = new LinkedHashMap<String, io.swagger.v3.oas.models.links.Link>();
+        if (response.getLinks() != null) result.putAll(response.getLinks());
+        if (response.getExtensions() != null) {
+            result.putAll(parseXLinks(response.getExtensions()));
+        }
+        return result;
+    }
+
+    /**
+     * Parses x-links from response extensions map.
+     * Returns an empty map if no x-links extension is present.
+     */
+    @SuppressWarnings("unchecked")
+    private static Map<String, io.swagger.v3.oas.models.links.Link> parseXLinks(Map<String, Object> extensions) {
+        var result = new LinkedHashMap<String, io.swagger.v3.oas.models.links.Link>();
+        var xLinks = extensions.get(X_LINKS_EXTENSION);
+        if (xLinks instanceof Map<?, ?> extensionMap) {
+            for (var entry : ((Map<String, Object>) extensionMap).entrySet()) {
+                if (entry.getValue() instanceof Map<?, ?> linkData) {
+                    var link = new io.swagger.v3.oas.models.links.Link();
+                    var linkDataMap = (Map<String, Object>) linkData;
+                    link.setOperationId((String) linkDataMap.get("operationId"));
+                    link.setDescription((String) linkDataMap.get("description"));
+                    if (linkDataMap.get("parameters") instanceof Map<?, ?> parametersData) {
+                        var paramMap = new LinkedHashMap<String, String>();
+                        for (var p : ((Map<String, Object>) parametersData).entrySet()) {
+                            paramMap.put(p.getKey(), String.valueOf(p.getValue()));
+                        }
+                        link.setParameters(paramMap);
+                    }
+                    result.put(entry.getKey(), link);
+                }
+            }
+        }
+        return result;
     }
 
     /** Parses `$response.body#/owner/id` → `["body", "owner/id"]` or `$response.header.X-Foo` → `["header", "X-Foo"]`. */
     private static String[] parseResponseSource(String expression) {
         if (expression == null) return null;
         if (expression.startsWith("$response.body#/")) {
-            return new String[]{"body", expression.substring("$response.body#/".length())};
+            var path = expression.substring("$response.body#/".length());
+            path = path.replace("[*]", ""); // strip array wildcards for schema matching
+            return new String[]{"body", path};
         }
         if (expression.startsWith("$response.header.")) {
             return new String[]{"header", expression.substring("$response.header.".length())};

@@ -57,6 +57,11 @@ backend, so they load instantly. The dynamic UX is provided mainly by HTMX, e.g.
 - Request body editor with JSON skeleton and schema documentation
 - Response schema with status code tabs, property types, required markers, and examples
 - Collapsible nested object and array properties in schema views
+- `x-links` extension for array item links: when a response embeds an array of sub-resources
+  (e.g., a pet's visits), `x-links` lets you declare per-item links using `[*]` as an array
+  wildcard in the parameter expression (e.g., `$response.body#/visits[*]/id`). These render
+  as clickable badges on each array element in the response body, and as link rows in the
+  schema view — same visual treatment as standard OpenAPI Links.
 - Accept header select for multi-content-type endpoints
 - Boolean parameters rendered as checkboxes (two-state: omit or send `true`; explicitly
   sending `false` is not supported -- a three-state control would add UX complexity for a
@@ -81,6 +86,33 @@ backend, so they load instantly. The dynamic UX is provided mainly by HTMX, e.g.
 
 ![Nested schema expanded — light](docs/screenshots/nested-schema-expanded.png#gh-light-mode-only)
 ![Nested schema expanded — dark](docs/screenshots/nested-schema-expanded-dark.png#gh-dark-mode-only)
+</details>
+
+<details>
+<summary>x-links for array items</summary>
+
+Standard OpenAPI Links can't express "for each item in an array, link to its detail operation"
+because JSON Pointer has no wildcard syntax. The `x-links` extension uses the same Link Object
+structure but supports `[*]` in body expressions:
+
+```yaml
+responses:
+  200:
+    links:
+      GetOwner:
+        operationId: getOwner
+        parameters:
+          ownerId: $response.body#/owner/id
+    x-links:
+      GetVisit:
+        operationId: getVisit
+        parameters:
+          visitId: $response.body#/visits[*]/id
+```
+
+After "Try it out", each visit's `id` in the response body gets a clickable `→ GetVisit` badge
+that navigates to the target operation and fills in the parameter. Multiple `[*]` segments are
+supported for nested arrays (e.g., `$response.body#/visits[*]/treatments[*]/id`).
 </details>
 
 **Request Headers**

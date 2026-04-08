@@ -805,20 +805,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 var match = expr.match(/^\$response\.body#\/(.+)$/);
                 if (!match) continue;
                 var pointer = match[1];
-                var parts = pointer.split('/');
-                var val = parsed;
-                for (var i = 0; i < parts.length; i++) {
-                    if (val === undefined || val === null) break;
-                    val = val[parts[i]];
+                if (pointer.indexOf('[*]') >= 0) {
+                    // Expand wildcard expressions into indexed pointer entries
+                    expandWildcardPointer(pointer.split('/'), 0, parsed, [], pointerMap, link, paramName, linkName);
+                } else {
+                    // Standard pointer resolution (no wildcards)
+                    var parts = pointer.split('/');
+                    var val = parsed;
+                    for (var i = 0; i < parts.length; i++) {
+                        if (val === undefined || val === null) break;
+                        val = val[parts[i]];
+                    }
+                    if (val === undefined || val === null) continue;
+                    if (!pointerMap[pointer]) pointerMap[pointer] = [];
+                    pointerMap[pointer].push({
+                        operationId: link.operationId,
+                        paramName: paramName,
+                        value: String(val),
+                        linkName: linkName
+                    });
                 }
-                if (val === undefined || val === null) continue;
-                if (!pointerMap[pointer]) pointerMap[pointer] = [];
-                pointerMap[pointer].push({
-                    operationId: link.operationId,
-                    paramName: paramName,
-                    value: String(val),
-                    linkName: linkName
-                });
             }
         }
         if (Object.keys(pointerMap).length === 0) return;
@@ -826,6 +832,34 @@ document.addEventListener('DOMContentLoaded', function() {
         // Render JSON with links
         var codeEl = pre.querySelector('code') || pre;
         codeEl.innerHTML = renderJsonWithLinks(parsed, pointerMap, []);
+    }
+
+    function expandWildcardPointer(segments, segIdx, current, pathSoFar, pointerMap, link, paramName, linkName) {
+        if (current === undefined || current === null) return;
+        if (segIdx >= segments.length) {
+            var pointer = pathSoFar.join('/');
+            if (!pointerMap[pointer]) pointerMap[pointer] = [];
+            pointerMap[pointer].push({
+                operationId: link.operationId,
+                paramName: paramName,
+                value: String(current),
+                linkName: linkName
+            });
+            return;
+        }
+        var seg = segments[segIdx];
+        if (seg.endsWith('[*]')) {
+            // Property access + array wildcard: e.g. "visits[*]"
+            var prop = seg.substring(0, seg.length - 3);
+            var arr = current[prop];
+            if (!Array.isArray(arr)) return;
+            for (var i = 0; i < arr.length; i++) {
+                expandWildcardPointer(segments, segIdx + 1, arr[i], pathSoFar.concat(prop, String(i)), pointerMap, link, paramName, linkName);
+            }
+        } else {
+            // Regular property access
+            expandWildcardPointer(segments, segIdx + 1, current[seg], pathSoFar.concat(seg), pointerMap, link, paramName, linkName);
+        }
     }
 
     function renderJsonWithLinks(value, pointerMap, path) {

@@ -57,6 +57,24 @@ paths:
                         type: integer
                       name:
                         type: string
+                  visits:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        reason:
+                          type: string
+                        treatments:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              name:
+                                type: string
           links:
             GetOwner:
               operationId: getOwner
@@ -78,6 +96,17 @@ paths:
               parameters:
                 petId: $response.body#/id
               description: Reload this pet
+          x-links:
+            GetVisitDetail:
+              operationId: getVisitDetail
+              parameters:
+                visitId: $response.body#/visits[*]/id
+              description: Get details of this visit
+            GetTreatment:
+              operationId: getTreatment
+              parameters:
+                treatmentId: $response.body#/visits[*]/treatments[*]/id
+              description: Get treatment details
   /owners/{ownerId}:
     get:
       summary: Get an owner
@@ -146,3 +175,52 @@ paths:
                       type: integer
                     date:
                       type: string
+  /pets/{petId}/visits/{visitId}:
+    get:
+      summary: Get a visit
+      operationId: getVisitDetail
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: visitId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A visit
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  reason:
+                    type: string
+  /treatments/{treatmentId}:
+    get:
+      summary: Get a treatment
+      operationId: getTreatment
+      parameters:
+        - name: treatmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A treatment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
