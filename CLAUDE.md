@@ -22,6 +22,9 @@ If you create a new file, also stage exactly this file to git, but not any other
   to the full suite (`mvn test -pl core`) and any `-Dtest` selection that includes BrowserTest.
 - Use a 1-minute timeout (`timeout: 60000`) for `mvn test` — the full suite takes ~30 s.
   If it times out, something is wrong — investigate rather than retry.
+- **Treat flaky tests as bugs.** If a test fails on CI but passes locally, investigate the
+  root cause immediately — do not dismiss it as "pre-existing" or "timing issue" and do not
+  just re-run CI. Flaky tests are never acceptable. Use the `systematic-debugging` skill.
 
 ## Skills
 
