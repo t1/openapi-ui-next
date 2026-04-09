@@ -15,6 +15,11 @@ If you create a new file, also stage exactly this file to git, but not any other
 
 - Before committing a core change (feature or fix), verify the demo app exercises it.
 
+## Tools
+
+Never use `intellij_execute_terminal_command` — it causes a confirmation dialog in the IDE.
+Use the native `Bash` tool for all shell commands instead.
+
 ## Shell Commands
 
 - Run `mvn test` with `dangerouslyDisableSandbox: true` when the run includes Playwright
