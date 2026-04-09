@@ -53,9 +53,8 @@
         </dependency>
         <dependency>
             <groupId>com.github.t1</groupId>
-            <artifactId>openapi-ui-maven-plugin</artifactId>
+            <artifactId>openapi-ui-quarkus</artifactId>
             <version>${project.version}</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -83,38 +82,6 @@
                             <goal>generate-code</goal>
                             <goal>generate-code-tests</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-open-api-maven-plugin</artifactId>
-                <version>4.3.0</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>generate-schema</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/generated</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>com.github.t1</groupId>
-                <artifactId>openapi-ui-maven-plugin</artifactId>
-                <version>${project.version}</version>
-                <executions>
-                    <execution>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <specFile>${project.build.directory}/generated/openapi.yaml</specFile>
-                            <outputDirectory>${project.build.directory}/classes/META-INF/resources/openapi-ui</outputDirectory>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
