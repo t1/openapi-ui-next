@@ -46,7 +46,8 @@ public class OwnerResource {
         return new OwnerResponse(owner.id(), owner.name(), owner.email(), pets);
     }
 
-    @GET @Path("/{ownerId}/pets") @Operation(operationId = "listOwnerPets", summary = "List pets for an owner")
+    @GET @Path("/{ownerId}/pets")
+    @Operation(operationId = "listOwnerPets", summary = "List pets for an owner identified by the owner's id")
     public List<Pet> listPets(@PathParam("ownerId") long ownerId) {
         return PetResource.PETS.stream()
                 .filter(p -> p.ownerId == ownerId).toList();

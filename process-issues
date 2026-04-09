@@ -134,14 +134,14 @@ notify_milestone_complete() {
     local milestone="$1"
     local message="Milestone ${milestone} is complete — ready for release!"
 
-    echo ""
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║  RELEASE READY: ${milestone}"
-    echo "║  All issues in this milestone are closed."
-    echo "║  Build, release, and close the milestone to unblock the"
-    echo "║  next one."
-    echo "╚══════════════════════════════════════════════════════════════╝"
-    echo ""
+    echo "" >&2
+    echo "╔══════════════════════════════════════════════════════════════╗" >&2
+    echo "║  RELEASE READY: ${milestone}                                          ║" >&2
+    echo "║  All issues in this milestone are closed.                    ║" >&2
+    echo "║  Build, release, and close the milestone to unblock the      ║" >&2
+    echo "║  next one.                                                   ║" >&2
+    echo "╚══════════════════════════════════════════════════════════════╝" >&2
+    echo "" >&2
 
     # macOS desktop notification (silent no-op on other platforms).
     if command -v osascript &>/dev/null; then

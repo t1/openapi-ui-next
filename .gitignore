@@ -2,6 +2,7 @@
 
 .classpath
 .project
+.factorypath
 **/.settings/org.eclipse.*
 
 /.links/
