@@ -68,7 +68,7 @@ class MainTest {
         var exitCode = run("nonexistent.yaml", tempDir.resolve("output").toString());
 
         then(exitCode).isEqualTo(2);
-        then(stderr.toString()).startsWith("NullPointerException: ");
+        then(stderr.toString()).startsWith("RuntimeException: could not parse spec: nonexistent.yaml");
         then(stderr.toString()).doesNotContain("at com.github.t1");
     }
 
