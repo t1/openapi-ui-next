@@ -160,12 +160,17 @@ In both cases:
 
 ### Phase 6: Commit & Close
 
-1. Squash all work into a single commit: `feat: <description> (#<N>)` or `fix: <description> (#<N>)`.
-2. Push to trunk and wait for CI:
+1. Delete any spec/plan files created during this issue:
+   - `docs/superpowers/plans/*-issue-<N>-*`
+   - `docs/superpowers/specs/*-issue-<N>-*`
+   - Remove empty `docs/superpowers/plans/` and `docs/superpowers/specs/` directories if they become empty.
+2. Squash implementation work into a single commit: `feat: <description> (#<N>)` or `fix: <description> (#<N>)`.
+   - Exclude the Phase 3 spec/plan commit from the squash — it stays as a separate commit so the spec/plan are preserved in git history.
+3. Push to trunk and wait for CI:
    a. Push to trunk: `git push`
    b. Wait for the CI workflow to complete: `gh run watch --exit-status`
    c. If CI fails, post the failure details as a comment, add `blocked` label, and STOP.
-3. Post a completion comment on the issue:
+4. Post a completion comment on the issue:
    ```
    ## Agent: done
 
@@ -174,7 +179,7 @@ In both cases:
    **Tests:** [what tests were added/modified]
    **CI:** [passed]
    ```
-4. Close the issue: `gh issue close <N>`
+5. Close the issue: `gh issue close <N>`
 
 ## Question Protocol
 
