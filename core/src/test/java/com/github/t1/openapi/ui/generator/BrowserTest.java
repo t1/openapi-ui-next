@@ -1772,7 +1772,6 @@ class BrowserTest {
 
             then(app.detailText()).contains("Create a pet");
             then(app.isTabActive(2)).isTrue();
-            then(app.isTabFocused()).isTrue();
         }
 
         @Test void shouldIncludeMethodInHashWhenEnteringTabs() {

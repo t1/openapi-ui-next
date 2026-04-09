@@ -365,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pendingMethod = null;
         const tabLinks = detail.querySelectorAll('.tabs li a');
         tabLinks.forEach(function(a) {
-            if (a.textContent.trim() === method) { a.click(); a.focus(); }
+            if (a.textContent.trim() === method) { a.click(); }
         });
     });
     document.body.addEventListener('htmx:afterSwap', function(e) {
