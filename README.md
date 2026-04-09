@@ -268,6 +268,10 @@ output/
 
 ## Release Notes
 
+### 1.0
+
+Initial MVP release
+
 ### 1.1
 
 - **Response links** — schema view shows link annotations with click-to-navigate;
