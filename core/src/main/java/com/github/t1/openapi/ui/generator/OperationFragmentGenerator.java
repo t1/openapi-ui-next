@@ -5,11 +5,14 @@ import com.github.t1.bulmajava.elements.Box;
 import com.github.t1.bulmajava.form.Form;
 import com.github.t1.htmljava.Element;
 import com.github.t1.htmljava.Renderable;
-import io.swagger.v3.oas.models.PathItem.HttpMethod;
-import io.swagger.v3.oas.models.media.MediaType;
-import io.swagger.v3.oas.models.media.Schema;
-import io.swagger.v3.oas.models.responses.ApiResponse;
-import io.swagger.v3.oas.models.responses.ApiResponses;
+import org.eclipse.microprofile.openapi.models.PathItem.HttpMethod;
+import org.eclipse.microprofile.openapi.models.links.Link;
+import org.eclipse.microprofile.openapi.models.media.MediaType;
+import org.eclipse.microprofile.openapi.models.media.Schema;
+import org.eclipse.microprofile.openapi.models.parameters.Parameter;
+import org.eclipse.microprofile.openapi.models.responses.APIResponse;
+import org.eclipse.microprofile.openapi.models.responses.APIResponses;
+import org.eclipse.microprofile.openapi.OASFactory;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -52,10 +55,17 @@ import static java.lang.Boolean.TRUE;
 
 class OperationFragmentGenerator {
     private final HttpMethod method;
-    private final io.swagger.v3.oas.models.Operation operation;
+    private final org.eclipse.microprofile.openapi.models.Operation operation;
     private final ApiPath path;
     private final ApiPath displayPath;
     private final Map<String, String[]> operationIdMap;
+
+    /// Helper to get type as string from MicroProfile's List<SchemaType>
+    private static String typeAsString(Schema schema) {
+        var types = schema.getType();
+        if (types == null || types.isEmpty()) return null;
+        return types.getFirst().toString().toLowerCase();
+    }
 
     private OperationFragmentGenerator(Operation operation, Map<String, String[]> operationIdMap) {
         this.method = operation.method();
@@ -115,7 +125,7 @@ class OperationFragmentGenerator {
         if (operation.getResponses() == null) return;
         var linksJson = new StringBuilder("{");
         var firstStatus = true;
-        for (var entry : operation.getResponses().entrySet()) {
+        for (var entry : operation.getResponses().getAPIResponses().entrySet()) {
             var response = entry.getValue();
             var links = allLinks(response);
             if (links.isEmpty()) continue;
@@ -186,7 +196,7 @@ class OperationFragmentGenerator {
     private void parameterFields(Form operationForm) {
         if (operation.getParameters() == null) return;
         for (var param : operation.getParameters()) {
-            var badges = tagsAddon().content(tag(param.getIn())).classes("is-inline-flex", "ml-2");
+            var badges = tagsAddon().content(tag(param.getIn().toString())).classes("is-inline-flex", "ml-2");
             if (TRUE == param.getRequired()) badges.content(tag("required").is(DANGER));
             var inputField = field().label(span(param.getName()), badges);
             inputField.content(parameterInput(param));
@@ -196,22 +206,22 @@ class OperationFragmentGenerator {
         }
     }
 
-    private Renderable parameterInput(io.swagger.v3.oas.models.parameters.Parameter param) {
+    private Renderable parameterInput(Parameter param) {
         var schema = param.getSchema();
-        var enumValues = (schema != null) ? schema.getEnum() : null;
+        var enumValues = (schema != null) ? schema.getEnumeration() : null;
         var required = TRUE == param.getRequired();
         if (enumValues != null && !enumValues.isEmpty()) {
             return selectInput(param, enumValues, required);
-        } else if ("boolean".equals(schema != null ? schema.getType() : null)) {
+        } else if ("boolean".equals(schema != null ? typeAsString(schema) : null)) {
             return checkboxInput(param);
         } else {
             return textInput(param, required);
         }
     }
 
-    private Renderable selectInput(io.swagger.v3.oas.models.parameters.Parameter param, List<?> enumValues, boolean required) {
+    private Renderable selectInput(Parameter param, List<?> enumValues, boolean required) {
         var sel = select(param.getName()).is(FULLWIDTH).option("", "(any)");
-        sel.attr("data-param-in", param.getIn());
+        sel.attr("data-param-in", param.getIn().toString());
         if (required) sel.attr("required", "");
         for (var value : enumValues) {
             sel.option(value.toString(), value.toString());
@@ -219,21 +229,21 @@ class OperationFragmentGenerator {
         return sel;
     }
 
-    private Renderable checkboxInput(io.swagger.v3.oas.models.parameters.Parameter param) {
+    private Renderable checkboxInput(Parameter param) {
         var cb = element("input").attr("type", "checkbox")
-                .attr("name", param.getName()).attr("data-param-in", param.getIn());
+                .attr("name", param.getName()).attr("data-param-in", param.getIn().toString());
         return element("label").classes("checkbox").content(cb);
     }
 
-    private Renderable textInput(io.swagger.v3.oas.models.parameters.Parameter param, boolean required) {
+    private Renderable textInput(Parameter param, boolean required) {
         var inp = input(TEXT).attr("name", param.getName());
-        inp.attr("data-param-in", param.getIn());
+        inp.attr("data-param-in", param.getIn().toString());
         if (required) inp.attr("required", "");
         return inp;
     }
 
-    private void parameterHelp(com.github.t1.bulmajava.form.Field inputField, io.swagger.v3.oas.models.parameters.Parameter param) {
-        if ("cookie".equals(param.getIn())) {
+    private void parameterHelp(com.github.t1.bulmajava.form.Field inputField, Parameter param) {
+        if (Parameter.In.COOKIE.equals(param.getIn())) {
             var help = p().classes("help");
             if (param.getDescription() != null) help.content(span(param.getDescription() + " — "));
             help.content(element("em").classes("cookie-notice")
@@ -260,8 +270,8 @@ class OperationFragmentGenerator {
     private MediaType resolveJsonContent() {
         if (operation.getRequestBody() == null || operation.getRequestBody().getContent() == null) return null;
         var content = operation.getRequestBody().getContent();
-        var jsonContent = content.get("application/json");
-        if (jsonContent == null) jsonContent = content.get("*/*");
+        var jsonContent = content.getMediaTypes().get("application/json");
+        if (jsonContent == null) jsonContent = content.getMediaTypes().get("*/*");
         if (jsonContent == null || jsonContent.getSchema() == null) return null;
         return jsonContent;
     }
@@ -300,7 +310,7 @@ class OperationFragmentGenerator {
         return select;
     }
 
-    private Renderable requestBodyEditor(String skeleton, Schema<?> schema) {
+    private Renderable requestBodyEditor(String skeleton, Schema schema) {
         var textareaEl = textarea()
                 .attr("data-request-body", "true")
                 .classes("is-family-code");
@@ -319,7 +329,7 @@ class OperationFragmentGenerator {
     private Map<String, String> responseFragmentFiles() {
         if (operation.getResponses() == null) return Map.of();
         var fragments = new LinkedHashMap<String, String>();
-        for (var entry : operation.getResponses().entrySet()) {
+        for (var entry : operation.getResponses().getAPIResponses().entrySet()) {
             var code = entry.getKey();
             var response = entry.getValue();
             var panel = responsePanel(code, response);
@@ -329,7 +339,7 @@ class OperationFragmentGenerator {
         return fragments;
     }
 
-    private Element responsePanel(String code, ApiResponse response) {
+    private Element responsePanel(String code, APIResponse response) {
         var status = StatusCode.of(code);
         var responseInfo = div().classes("response-info").content(
                 div().classes("response-info-top").content(
@@ -363,7 +373,7 @@ class OperationFragmentGenerator {
         return panel;
     }
 
-    private Element documentedHeaders(ApiResponse response) {
+    private Element documentedHeaders(APIResponse response) {
         if (response.getHeaders() == null || response.getHeaders().isEmpty()) return null;
         var docGrid = div().classes("response-header-rows", "response-documented-headers");
         for (var headerEntry : response.getHeaders().entrySet()) {
@@ -413,8 +423,8 @@ class OperationFragmentGenerator {
         }
     }
 
-    private Renderable responseBox(ApiResponses responses) {
-        var statusCodes = responses.entrySet().stream()
+    private Renderable responseBox(APIResponses responses) {
+        var statusCodes = responses.getAPIResponses().entrySet().stream()
                 .filter(e -> e.getValue().getContent() != null
                         || e.getValue().getHeaders() != null
                         || e.getValue().getDescription() != null
@@ -425,19 +435,19 @@ class OperationFragmentGenerator {
         if (statusCodes.isEmpty()) return null;
 
         var hasSchemaProperties = statusCodes.stream()
-                .filter(code -> responses.get(code).getContent() != null)
-                .anyMatch(code -> responses.get(code).getContent().values().stream()
+                .filter(code -> responses.getAPIResponses().get(code).getContent() != null)
+                .anyMatch(code -> responses.getAPIResponses().get(code).getContent().getMediaTypes().values().stream()
                         .anyMatch(mt -> mt.getSchema() != null && (mt.getSchema().getProperties() != null
                                 || ("array".equals(mt.getSchema().getType()) && mt.getSchema().getItems() != null))));
         var hasHeaders = statusCodes.stream()
-                .anyMatch(code -> responses.get(code).getHeaders() != null && !responses.get(code).getHeaders().isEmpty());
+                .anyMatch(code -> responses.getAPIResponses().get(code).getHeaders() != null && !responses.getAPIResponses().get(code).getHeaders().isEmpty());
         var hasLinks = statusCodes.stream()
-                .anyMatch(code -> responses.get(code).getLinks() != null && !responses.get(code).getLinks().isEmpty());
+                .anyMatch(code -> responses.getAPIResponses().get(code).getLinks() != null && !responses.getAPIResponses().get(code).getLinks().isEmpty());
         var hasExpandableContent = hasSchemaProperties || hasHeaders || hasLinks;
 
-        var allContentTypes = responses.values().stream()
+        var allContentTypes = responses.getAPIResponses().values().stream()
                 .filter(r -> r.getContent() != null)
-                .flatMap(r -> r.getContent().keySet().stream())
+                .flatMap(r -> r.getContent().getMediaTypes().keySet().stream())
                 .distinct()
                 .toList();
         if (!hasExpandableContent && allContentTypes.size() <= 1) return null;
@@ -448,7 +458,7 @@ class OperationFragmentGenerator {
         var content = div().classes("schema-box-content");
         content.content(statusCodeTabs(statusCodes));
         for (var code : statusCodes) {
-            content.content(statusCodePanel(code, responses.get(code), statusCodes.getFirst().equals(code)));
+            content.content(statusCodePanel(code, responses.getAPIResponses().get(code), statusCodes.getFirst().equals(code)));
         }
         responseBox.content(content);
         return responseBox;
@@ -484,7 +494,7 @@ class OperationFragmentGenerator {
         return tabs;
     }
 
-    private Element statusCodePanel(String code, ApiResponse response, boolean isActive) {
+    private Element statusCodePanel(String code, APIResponse response, boolean isActive) {
         var panel = div().classes("schema-status-panel", "content").attr("data-status", code);
         if (!isActive) panel.style("display:none");
 
@@ -494,7 +504,7 @@ class OperationFragmentGenerator {
 
         var responseHasHeaders = response.getHeaders() != null && !response.getHeaders().isEmpty();
         var responseHasBody = response.getContent() != null
-                && response.getContent().values().iterator().next().getSchema() != null;
+                && response.getContent().getMediaTypes().values().iterator().next().getSchema() != null;
         var links = allLinks(response);
         if (responseHasHeaders) {
             if (responseHasBody) panel.content(span("Headers"));
@@ -502,7 +512,7 @@ class OperationFragmentGenerator {
         }
         if (responseHasBody) {
             if (responseHasHeaders) panel.content(span("Body"));
-            var mediaType = response.getContent().values().iterator().next();
+            var mediaType = response.getContent().getMediaTypes().values().iterator().next();
             new SchemaRenderer(links).render(panel, mediaType.getSchema());
         }
         return panel;
@@ -514,8 +524,8 @@ class OperationFragmentGenerator {
      * Merges standard response links with x-links from response extensions.
      * x-links use the same Link Object structure but support [*] array wildcards in body expressions.
      */
-    private static Map<String, io.swagger.v3.oas.models.links.Link> allLinks(ApiResponse response) {
-        var result = new LinkedHashMap<String, io.swagger.v3.oas.models.links.Link>();
+    private static Map<String, Link> allLinks(APIResponse response) {
+        var result = new LinkedHashMap<String, Link>();
         if (response.getLinks() != null) result.putAll(response.getLinks());
         if (response.getExtensions() != null) {
             result.putAll(parseXLinks(response.getExtensions()));
@@ -528,13 +538,13 @@ class OperationFragmentGenerator {
      * Returns an empty map if no x-links extension is present.
      */
     @SuppressWarnings("unchecked")
-    private static Map<String, io.swagger.v3.oas.models.links.Link> parseXLinks(Map<String, Object> extensions) {
-        var result = new LinkedHashMap<String, io.swagger.v3.oas.models.links.Link>();
+    private static Map<String, Link> parseXLinks(Map<String, Object> extensions) {
+        var result = new LinkedHashMap<String, Link>();
         var xLinks = extensions.get(X_LINKS_EXTENSION);
         if (xLinks instanceof Map<?, ?> extensionMap) {
             for (var entry : ((Map<String, Object>) extensionMap).entrySet()) {
                 if (entry.getValue() instanceof Map<?, ?> linkData) {
-                    var link = new io.swagger.v3.oas.models.links.Link();
+                    var link = OASFactory.createLink();
                     var linkDataMap = (Map<String, Object>) linkData;
                     link.setOperationId((String) linkDataMap.get("operationId"));
                     link.setDescription((String) linkDataMap.get("description"));
@@ -543,7 +553,7 @@ class OperationFragmentGenerator {
                         for (var p : ((Map<String, Object>) parametersData).entrySet()) {
                             paramMap.put(p.getKey(), String.valueOf(p.getValue()));
                         }
-                        link.setParameters(paramMap);
+                        link.setParameters(new LinkedHashMap<>(paramMap));
                     }
                     result.put(entry.getKey(), link);
                 }
@@ -569,15 +579,15 @@ class OperationFragmentGenerator {
     /** Returns links whose parameters reference the given property path in the given source type.
      * For body properties, `propertyPath` is the full JSON Pointer path (e.g. `owner/id`).
      * For headers, it's the header name (e.g. `X-Request-Id`). */
-    private static Map<String, io.swagger.v3.oas.models.links.Link> linksForProperty(
-            Map<String, io.swagger.v3.oas.models.links.Link> allLinks, String sourceType, String propertyPath) {
+    private static Map<String, Link> linksForProperty(
+            Map<String, Link> allLinks, String sourceType, String propertyPath) {
         if (allLinks == null) return Map.of();
-        var result = new LinkedHashMap<String, io.swagger.v3.oas.models.links.Link>();
+        var result = new LinkedHashMap<String, Link>();
         for (var entry : allLinks.entrySet()) {
             var link = entry.getValue();
             if (link.getParameters() == null) continue;
             for (var param : link.getParameters().values()) {
-                var source = parseResponseSource(param);
+                var source = parseResponseSource(String.valueOf(param));
                 if (source != null && source[0].equals(sourceType) && source[1].equals(propertyPath)) {
                     result.put(entry.getKey(), link);
                     break;
@@ -587,7 +597,7 @@ class OperationFragmentGenerator {
         return result;
     }
 
-    private Element linkSubRow(String linkName, io.swagger.v3.oas.models.links.Link link, String contextSourceType) {
+    private Element linkSubRow(String linkName, Link link, String contextSourceType) {
         var row = span().classes("schema-link-row").attr("tabindex", "0");
         var href = operationIdHref(link.getOperationId());
         var nameEl = href != null
@@ -599,7 +609,7 @@ class OperationFragmentGenerator {
         }
         if (link.getParameters() != null) {
             for (var param : link.getParameters().entrySet()) {
-                var display = formatParamShort(param.getValue(), contextSourceType);
+                var display = formatParamShort(String.valueOf(param.getValue()), contextSourceType);
                 row.content(span(param.getKey() + " ← " + display).classes("schema-link-param"));
             }
         }
@@ -623,15 +633,15 @@ class OperationFragmentGenerator {
         return "#" + target[0] + "/" + target[1];
     }
 
-    private Element schemaHeaders(ApiResponse response, Map<String, io.swagger.v3.oas.models.links.Link> links) {
+    private Element schemaHeaders(APIResponse response, Map<String, Link> links) {
         var headersSection = div().classes("schema-response-headers");
         var headerProps = div().classes("schema-props");
         for (var entry : response.getHeaders().entrySet()) {
             var headerObj = entry.getValue();
             var nameEl = span(entry.getKey()).classes("schema-prop-name");
             var details = span().classes("schema-prop-details");
-            if (headerObj.getSchema() != null && headerObj.getSchema().getType() != null) {
-                details.content(span(headerObj.getSchema().getType()).classes("schema-prop-type"));
+            if (headerObj.getSchema() != null && typeAsString(headerObj.getSchema()) != null) {
+                details.content(span(typeAsString(headerObj.getSchema())).classes("schema-prop-type"));
             }
             if (TRUE == headerObj.getRequired()) {
                 details.content(tag("required").is(DANGER));
@@ -655,20 +665,20 @@ class OperationFragmentGenerator {
 
 
     private class SchemaRenderer {
-        private final Set<Schema<?>> visited = Collections.newSetFromMap(new IdentityHashMap<>());
-        private final Map<String, io.swagger.v3.oas.models.links.Link> links;
+        private final Set<Schema> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        private final Map<String, Link> links;
 
-        SchemaRenderer(Map<String, io.swagger.v3.oas.models.links.Link> links) {
+        SchemaRenderer(Map<String, Link> links) {
             this.links = links != null ? links : Map.of();
         }
 
         @SuppressWarnings("rawtypes")
-        void render(Element container, Schema<?> schema) {
+        void render(Element container, Schema schema) {
             render(container, schema, "");
         }
 
         @SuppressWarnings("rawtypes")
-        private void render(Element container, Schema<?> schema, String pathPrefix) {
+        private void render(Element container, Schema schema, String pathPrefix) {
             if (!visited.add(schema)) return; // cycle detection
             if (schema.getTitle() != null) {
                 var titleBar = div().classes("schema-title");
@@ -678,7 +688,7 @@ class OperationFragmentGenerator {
                 }
                 container.content(titleBar);
             }
-            var isArray = "array".equals(schema.getType()) && schema.getItems() != null;
+            var isArray = "array".equals(typeAsString(schema)) && schema.getItems() != null;
             if (isArray) container.content(tag("array").is(NORMAL).classes("schema-type-badge"));
             var effectiveSchema = isArray ? schema.getItems() : schema;
             var required = effectiveSchema.getRequired() != null ? effectiveSchema.getRequired() : List.<String>of();
@@ -692,12 +702,12 @@ class OperationFragmentGenerator {
             }
         }
 
-        private void addPropertyRow(Element table, String name, Schema<?> propSchema, List<String> required, String pathPrefix) {
-            var type = propSchema.getType() != null ? propSchema.getType() : "object";
-            if (propSchema.getEnum() != null && !propSchema.getEnum().isEmpty()) type = "enum";
+        private void addPropertyRow(Element table, String name, Schema propSchema, List<String> required, String pathPrefix) {
+            var type = typeAsString(propSchema) != null ? typeAsString(propSchema) : "object";
+            if (propSchema.getEnumeration() != null && !propSchema.getEnumeration().isEmpty()) type = "enum";
 
             // determine if this property has nested sub-properties
-            Schema<?> nestedSchema = null;
+            Schema nestedSchema = null;
             if ("object".equals(type) && propSchema.getProperties() != null) {
                 nestedSchema = propSchema;
             } else if ("array".equals(type) && propSchema.getItems() != null && propSchema.getItems().getProperties() != null) {
@@ -719,8 +729,8 @@ class OperationFragmentGenerator {
             var example = JsonSkeletonGenerator.resolveExample(propSchema);
             if (example != null) {
                 details.content(span("e.g. " + example).classes("schema-prop-example"));
-            } else if (propSchema.getEnum() != null && !propSchema.getEnum().isEmpty()) {
-                var values = String.join(" | ", propSchema.getEnum().stream().map(Object::toString).toList());
+            } else if (propSchema.getEnumeration() != null && !propSchema.getEnumeration().isEmpty()) {
+                var values = String.join(" | ", propSchema.getEnumeration().stream().map(Object::toString).toList());
                 details.content(span(values).classes("schema-prop-example"));
             }
             if (propSchema.getDescription() != null) {
@@ -745,7 +755,7 @@ class OperationFragmentGenerator {
 
     private static class JsonSkeletonGenerator {
         @SuppressWarnings("rawtypes")
-        static String generate(Schema<?> schema) {
+        static String generate(Schema schema) {
             Map<String, Schema> properties = schema.getProperties();
             if (properties == null) return "{}";
             var sb = new StringBuilder("{\n");
@@ -760,29 +770,29 @@ class OperationFragmentGenerator {
             return sb.toString();
         }
 
-        static Object resolveExample(Schema<?> schema) {
+        static Object resolveExample(Schema schema) {
             var example = schema.getExample();
             if (example == null && schema.getExamples() != null && !schema.getExamples().isEmpty())
                 example = schema.getExamples().getFirst();
             return example;
         }
 
-        static String sampleValue(Schema<?> schema) {
+        static String sampleValue(Schema schema) {
             var example = resolveExample(schema);
             if (example != null) {
-                return formatSampleValue(schema.getType(), example);
+                return formatSampleValue(typeAsString(schema), example);
             }
-            if (schema.getDefault() != null) {
-                return formatSampleValue(schema.getType(), schema.getDefault());
+            if (schema.getDefaultValue() != null) {
+                return formatSampleValue(typeAsString(schema), schema.getDefaultValue());
             }
-            if (schema.getEnum() != null && !schema.getEnum().isEmpty()) {
-                return formatSampleValue(schema.getType(), schema.getEnum().getFirst());
+            if (schema.getEnumeration() != null && !schema.getEnumeration().isEmpty()) {
+                return formatSampleValue(typeAsString(schema), schema.getEnumeration().getFirst());
             }
             if (schema.getFormat() != null) {
                 var formatted = formatBasedSample(schema.getFormat());
                 if (formatted != null) return "\"" + formatted + "\"";
             }
-            var type = schema.getType();
+            var type = typeAsString(schema);
             if (type == null) return "null";
             return switch (type) {
                 case "string" -> "\"\"";

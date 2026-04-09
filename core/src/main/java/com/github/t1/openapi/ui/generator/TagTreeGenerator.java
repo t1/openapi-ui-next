@@ -1,8 +1,8 @@
 package com.github.t1.openapi.ui.generator;
 
 import com.github.t1.htmljava.Renderable;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.PathItem.HttpMethod;
+import org.eclipse.microprofile.openapi.models.OpenAPI;
+import org.eclipse.microprofile.openapi.models.PathItem.HttpMethod;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -17,7 +17,7 @@ import static com.github.t1.openapi.ui.components.Tree.tree;
 import static com.github.t1.openapi.ui.generator.OpenApiUiGenerator.methodColor;
 
 class TagTreeGenerator {
-    private record TaggedOperation(HttpMethod method, ApiPath path, io.swagger.v3.oas.models.Operation operation, List<String> allTags) {}
+    private record TaggedOperation(HttpMethod method, ApiPath path, org.eclipse.microprofile.openapi.models.Operation operation, List<String> allTags) {}
 
     static Renderable tagTree(OpenAPI openApi, PathNode root) {
         var tagOps = new LinkedHashMap<String, List<TaggedOperation>>();

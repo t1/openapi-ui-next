@@ -1,5 +1,5 @@
 package com.github.t1.openapi.ui.generator;
 
-import io.swagger.v3.oas.models.PathItem.HttpMethod;
+import org.eclipse.microprofile.openapi.models.PathItem.HttpMethod;
 
-record Operation(HttpMethod method, io.swagger.v3.oas.models.Operation spec, ApiPath path) {}
+record Operation(HttpMethod method, org.eclipse.microprofile.openapi.models.Operation spec, ApiPath path) {}

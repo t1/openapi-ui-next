@@ -1,6 +1,7 @@
 package com.github.t1.openapi.ui.generator;
 
-import io.swagger.v3.oas.models.PathItem;
+import org.eclipse.microprofile.openapi.models.Operation;
+import org.eclipse.microprofile.openapi.models.PathItem;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -9,15 +10,15 @@ import java.util.Map;
 
 class PathNode {
     private final Map<String, PathNode> children = new LinkedHashMap<>();
-    private final Map<PathItem.HttpMethod, io.swagger.v3.oas.models.Operation> operations = new LinkedHashMap<>();
+    private final Map<PathItem.HttpMethod, Operation> operations = new LinkedHashMap<>();
 
     Map<String, PathNode> children() { return Collections.unmodifiableMap(children); }
 
-    Map<PathItem.HttpMethod, io.swagger.v3.oas.models.Operation> operations() { return Collections.unmodifiableMap(operations); }
+    Map<PathItem.HttpMethod, Operation> operations() { return Collections.unmodifiableMap(operations); }
 
     void add(List<String> segments, int index, PathItem pathItem) {
         if (index >= segments.size()) {
-            operations.putAll(pathItem.readOperationsMap());
+            operations.putAll(pathItem.getOperations());
             return;
         }
         var segment = segments.get(index);

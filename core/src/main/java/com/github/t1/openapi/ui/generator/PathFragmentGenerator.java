@@ -1,7 +1,8 @@
 package com.github.t1.openapi.ui.generator;
 
 import com.github.t1.htmljava.Element;
-import io.swagger.v3.oas.models.PathItem.HttpMethod;
+import org.eclipse.microprofile.openapi.models.Operation;
+import org.eclipse.microprofile.openapi.models.PathItem.HttpMethod;
 
 import java.util.Map;
 
@@ -10,7 +11,7 @@ import static com.github.t1.htmljava.HtmlBasics.element;
 import static com.github.t1.openapi.ui.generator.OperationFragmentGenerator.operationFragment;
 
 class PathFragmentGenerator {
-    static Element pathFragment(ApiPath path, Map<HttpMethod, io.swagger.v3.oas.models.Operation> operations, Map<String, String[]> operationIdMap) {
+    static Element pathFragment(ApiPath path, Map<HttpMethod, Operation> operations, Map<String, String[]> operationIdMap) {
         var tabList = element("ul");
         var first = true;
         Element firstMethodContent = null;
@@ -27,7 +28,7 @@ class PathFragmentGenerator {
             tabList.content(li);
             if (first) {
                 firstMethodContent = operationFragment(
-                        new Operation(method, opEntry.getValue(), path), operationIdMap);
+                        new com.github.t1.openapi.ui.generator.Operation(method, opEntry.getValue(), path), operationIdMap);
                 first = false;
             }
         }

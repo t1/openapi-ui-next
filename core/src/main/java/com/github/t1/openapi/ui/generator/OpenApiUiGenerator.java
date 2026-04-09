@@ -7,10 +7,9 @@ import com.github.t1.openapi.ui.components.SplitPane;
 import com.github.t1.openapi.ui.components.Toggle;
 import com.github.t1.openapi.ui.components.Tree;
 import com.github.t1.openapi.ui.components.TreeContainer;
-import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.media.Schema;
-import io.swagger.v3.parser.OpenAPIV3Parser;
-import io.swagger.v3.parser.core.models.ParseOptions;
+import io.smallrye.openapi.runtime.io.Format;
+import org.eclipse.microprofile.openapi.models.PathItem;
+import org.eclipse.microprofile.openapi.models.media.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,14 +60,14 @@ public class OpenApiUiGenerator {
         var openApi = parseSpec();
 
         var root = new PathNode();
-        for (var pathEntry : openApi.getPaths().entrySet()) {
+        for (var pathEntry : openApi.getPaths().getPathItems().entrySet()) {
             var segments = splitSegments(pathEntry.getKey());
             root.add(segments, 0, pathEntry.getValue());
         }
 
-        var pathCount = openApi.getPaths().size();
-        var operationCount = openApi.getPaths().values().stream()
-                .mapToInt(p -> p.readOperationsMap().size()).sum();
+        var pathCount = openApi.getPaths().getPathItems().size();
+        var operationCount = openApi.getPaths().getPathItems().values().stream()
+                .mapToInt(p -> p.getOperations().size()).sum();
         log.info("Found {} paths with {} operations", pathCount, operationCount);
 
         var operationIdMap = new LinkedHashMap<String, String[]>();
@@ -81,26 +80,27 @@ public class OpenApiUiGenerator {
         writeOutput(page, root, tagTree, pathTree, operationIdMap);
     }
 
-    private boolean shouldDefaultToTagView(io.swagger.v3.oas.models.OpenAPI openApi, int pathCount) {
-        var uniqueTags = openApi.getPaths().values().stream()
-                .flatMap(p -> p.readOperationsMap().values().stream())
+    private boolean shouldDefaultToTagView(org.eclipse.microprofile.openapi.models.OpenAPI openApi, int pathCount) {
+        var uniqueTags = openApi.getPaths().getPathItems().values().stream()
+                .flatMap(p -> p.getOperations().values().stream())
                 .filter(op -> op.getTags() != null)
                 .flatMap(op -> op.getTags().stream())
                 .distinct().count();
-        var singleSegmentPaths = openApi.getPaths().keySet().stream()
+        var singleSegmentPaths = openApi.getPaths().getPathItems().keySet().stream()
                 .filter(p -> splitSegments(p).size() == 1).count();
         return uniqueTags > 1 && singleSegmentPaths > pathCount / 2;
     }
 
-    private io.swagger.v3.oas.models.OpenAPI parseSpec() {
+    private org.eclipse.microprofile.openapi.models.OpenAPI parseSpec() {
         log.info("Parsing {}", specFile);
-        System.setProperty(Schema.BIND_TYPE_AND_TYPES, "true"); // make getType() work for OpenAPI 3.1 schemas
-        var parseOptions = new ParseOptions();
-        parseOptions.setResolveFully(true);
-        return new OpenAPIV3Parser().read(specFile.toString(), null, parseOptions);
+        try {
+            return io.smallrye.openapi.runtime.io.OpenApiParser.parse(specFile.toUri().toURL());
+        } catch (IOException e) {
+            throw new RuntimeException("could not parse spec: " + specFile, e);
+        }
     }
 
-    private Renderable pageLayout(io.swagger.v3.oas.models.OpenAPI openApi, Renderable pathTree, Renderable tagTree, boolean defaultToTags, Map<String, String[]> operationIdMap) {
+    private Renderable pageLayout(org.eclipse.microprofile.openapi.models.OpenAPI openApi, Renderable pathTree, Renderable tagTree, boolean defaultToTags, Map<String, String[]> operationIdMap) {
         var viewToggle = viewToggle(defaultToTags);
         Renderable defaultTree = defaultToTags ? tagTree : pathTree;
         var treeContainer = div().id("tree-container").content(defaultTree);
@@ -132,7 +132,7 @@ public class OpenApiUiGenerator {
         return viewToggle;
     }
 
-    private static String resolveBaseUrl(io.swagger.v3.oas.models.OpenAPI openApi) {
+    private static String resolveBaseUrl(org.eclipse.microprofile.openapi.models.OpenAPI openApi) {
         var servers = openApi.getServers();
         return (servers != null && !servers.isEmpty()) ? servers.getFirst().getUrl() : "/";
     }

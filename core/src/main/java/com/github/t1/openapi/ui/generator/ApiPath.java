@@ -1,6 +1,7 @@
 package com.github.t1.openapi.ui.generator;
 
-import io.swagger.v3.oas.models.Operation;
+import org.eclipse.microprofile.openapi.models.Operation;
+import org.eclipse.microprofile.openapi.models.parameters.Parameter;
 
 record ApiPath(String value) {
     static final ApiPath ROOT = new ApiPath("");
@@ -16,7 +17,7 @@ record ApiPath(String value) {
     ApiPath withResolvedParams(Operation operation) {
         if (operation.getParameters() == null) return this;
         var pathParams = operation.getParameters().stream()
-                .filter(p -> "path".equals(p.getIn()))
+                .filter(p -> Parameter.In.PATH.equals(p.getIn()))
                 .toList();
         var segments = value.split("/");
         var paramIndex = 0;
