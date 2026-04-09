@@ -741,4 +741,26 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("response-area");
         then(fragment).contains("type=\"submit\"");
     }
+
+    @Test void shouldAcceptOpenAPIModelDirectly() throws Exception {
+        var specPath = Path.of(requireNonNull(getClass().getResource("/one-get.yaml")).toURI());
+        var openApi = io.smallrye.openapi.runtime.io.OpenApiParser.parse(specPath.toUri().toURL());
+
+        new OpenApiUiGenerator(openApi, outputDir).generate();
+
+        then(outputDir.resolve("index.html")).exists();
+        then(outputDir.resolve("pets/GET.html")).exists();
+    }
+
+    @Test void shouldGenerateToMemory() throws Exception {
+        var specPath = Path.of(requireNonNull(getClass().getResource("/one-get.yaml")).toURI());
+        var openApi = io.smallrye.openapi.runtime.io.OpenApiParser.parse(specPath.toUri().toURL());
+
+        var files = new OpenApiUiGenerator(openApi, outputDir).generateToMemory();
+
+        then(files).containsKey("index.html");
+        then(files).containsKey("pets/GET.html");
+        then(files).containsKey("openapi-ui.css");
+        then(new String(files.get("index.html"))).contains("Test API");
+    }
 }

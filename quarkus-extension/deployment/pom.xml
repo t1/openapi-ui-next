@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.github.t1</groupId>
+        <artifactId>openapi-ui-quarkus-parent</artifactId>
+        <version>1.0.3-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>openapi-ui-quarkus-deployment</artifactId>
+
+    <name>OpenAPI UI Quarkus Extension - Deployment</name>
+
+    <dependencies>
+        <!-- Runtime dependency -->
+        <dependency>
+            <groupId>com.github.t1</groupId>
+            <artifactId>openapi-ui-quarkus</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Quarkus core deployment -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
+        </dependency>
+
+        <!-- SmallRye OpenAPI SPI for consuming OpenApiDocumentBuildItem -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-openapi-spi</artifactId>
+        </dependency>
+
+        <!-- OpenAPI UI core generator -->
+        <dependency>
+            <groupId>com.github.t1</groupId>
+            <artifactId>openapi-ui-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
+                            <version>${quarkus.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

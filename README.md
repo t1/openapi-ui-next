@@ -202,12 +202,13 @@ Then open http://localhost:8080/openapi-ui/index.html.
 
 ## Modules
 
-| Module         | Description                                                  |
-|----------------|--------------------------------------------------------------|
-| `core`         | Generator library: parses specs and produces HTML + CSS + JS |
-| `cli`          | Command-line tool: executable fat jar with shell header      |
-| `maven-plugin` | Maven plugin: integrates generation into build pipelines     |
-| `demo`         | Quarkus petstore app: exercises the plugin end-to-end        |
+| Module                    | Description                                                           |
+|---------------------------|-----------------------------------------------------------------------|
+| `core`                    | Generator library: parses specs and produces HTML + CSS + JS          |
+| `cli`                     | Command-line tool: executable fat jar with shell header               |
+| `maven-plugin`            | Maven plugin: integrates generation into build pipelines              |
+| `quarkus-extension`       | Quarkus extension: dev-mode integration with auto-refresh             |
+| `demo`                    | Quarkus petstore app: exercises the plugin end-to-end                 |
 
 ## Tech Stack
 
@@ -280,6 +281,8 @@ Initial MVP release
   ([#4](https://github.com/t1/openapi-ui-next/issues/4))
 - **httpie defaults** — `GET` default method, `http://localhost` default base URL
   ([#5](https://github.com/t1/openapi-ui-next/issues/5))
+- **Quarkus extension** — dev-mode integration: change JAX-RS code, browser auto-refreshes UI
+  ([#26](https://github.com/t1/openapi-ui-next/issues/26))
 - Bug fixes: request body toggle without schema ([#6][i6]), textarea auto-grow ([#8][i8]),
   keyboard navigation ([#21][i21], [#23][i23])
 

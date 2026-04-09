@@ -43,6 +43,7 @@
         <module>core</module>
         <module>maven-plugin</module>
         <module>cli</module>
+        <module>quarkus-extension</module>
         <module>demo</module>
     </modules>
 
@@ -132,6 +133,9 @@
                     <waitUntil>published</waitUntil>
                     <excludeArtifacts>
                         <excludeArtifact>openapi-ui-demo</excludeArtifact>
+                        <excludeArtifact>openapi-ui-quarkus-parent</excludeArtifact>
+                        <excludeArtifact>openapi-ui-quarkus</excludeArtifact>
+                        <excludeArtifact>openapi-ui-quarkus-deployment</excludeArtifact>
                     </excludeArtifacts>
                 </configuration>
             </plugin>
