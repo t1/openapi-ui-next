@@ -9,6 +9,10 @@ If the highest-priority issue is blocked, the loop waits (polling every
 10 minutes) until it is unblocked — lower-priority issues are not
 processed because they may depend on it.
 
+Milestone gate: the script will not start issues from a milestone while
+an earlier milestone is still open (unreleased). Close the milestone on
+GitHub after releasing to unblock the next one.
+
 Usage:
   ./process-issues [--dry-run] [--pick] [--verbose] [--issue N] [--model MODEL] [--poll MINUTES]
 
@@ -124,6 +128,63 @@ fetch_board_issues() {
     )' 2>/dev/null || echo "[]"
 }
 
+# Notify the owner that a milestone is complete and ready for release.
+# Prints a prominent banner and sends a macOS notification if available.
+notify_milestone_complete() {
+    local milestone="$1"
+    local message="Milestone ${milestone} is complete — ready for release!"
+
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║  RELEASE READY: ${milestone}"
+    echo "║  All issues in this milestone are closed."
+    echo "║  Build, release, and close the milestone to unblock the"
+    echo "║  next one."
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo ""
+
+    # macOS desktop notification (silent no-op on other platforms).
+    if command -v osascript &>/dev/null; then
+        osascript -e "display notification \"$message\" with title \"Release Ready\" sound name \"Glass\"" 2>/dev/null || true
+    fi
+}
+
+# Check whether an earlier milestone is still open (unreleased).
+# Returns 0 if OK to proceed, 1 if a previous milestone blocks progress.
+# Arg 1: milestone title of the candidate issue (may be "~" for no milestone).
+check_milestone_gate() {
+    local candidate_milestone="$1"
+
+    # Issues without a milestone are never gated.
+    [[ "$candidate_milestone" == "~" || -z "$candidate_milestone" ]] && return 0
+
+    # Fetch all open milestones from the repo.
+    local open_milestones
+    open_milestones=$(gh api repos/${PROJECT_OWNER}/openapi-ui-next/milestones \
+        --jq '[.[] | select(.state == "open") | .title]' 2>/dev/null) || return 0
+
+    # Find any open milestone that sorts before the candidate.
+    local blocking
+    blocking=$(echo "$open_milestones" | jq -r --arg candidate "$candidate_milestone" '
+        [.[] | select(
+            (split(".") | map(tonumber)) as $v |
+            ($candidate | split(".") | map(tonumber)) as $c |
+            ($v | length) as $vlen | ($c | length) as $clen |
+            # Compare element by element: $v < $c
+            ([$v, $c] | transpose | map(select(.[0] != .[1])) | first // [0,0]) as $diff |
+            $diff[0] < $diff[1]
+        )] | first // empty
+    ' 2>/dev/null)
+
+    if [[ -n "$blocking" ]]; then
+        echo "  Milestone ${blocking} is still open — must be released before starting ${candidate_milestone}." >&2
+        notify_milestone_complete "$blocking"
+        return 1
+    fi
+
+    return 0
+}
+
 pick_next_issue() {
     if [[ -n "$SPECIFIC_ISSUE" ]]; then
         # Verify the specific issue is approved and not blocked.
@@ -203,28 +264,15 @@ pick_next_issue() {
         return 2
     fi
 
+    # Milestone gate: don't start a milestone while a previous one is still open (unreleased).
+    local first_milestone
+    first_milestone=$(echo "$eligible" | jq -r '.[0].milestone')
+    if ! check_milestone_gate "$first_milestone"; then
+        return 2
+    fi
+
     verbose "  -> Picked #${first_number}: ${first_title} (highest priority, ${eligible_count} eligible)"
     echo "${first_number}\t${first_title}"
-}
-
-# Notify the owner that a milestone is complete and ready for release.
-# Prints a prominent banner and sends a macOS notification if available.
-notify_milestone_complete() {
-    local milestone="$1"
-    local message="Milestone ${milestone} is complete — ready for release!"
-
-    echo ""
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║  RELEASE READY: ${milestone}"
-    echo "║  All issues in this milestone are closed."
-    echo "║  Build and release when ready."
-    echo "╚══════════════════════════════════════════════════════════════╝"
-    echo ""
-
-    # macOS desktop notification (silent no-op on other platforms).
-    if command -v osascript &>/dev/null; then
-        osascript -e "display notification \"$message\" with title \"Release Ready\" sound name \"Glass\"" 2>/dev/null || true
-    fi
 }
 
 # Check whether the milestone of a just-closed issue is now fully complete.
