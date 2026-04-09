@@ -77,7 +77,7 @@ public class OpenApiUiGenerator {
         var tagTree = TagTreeGenerator.tagTree(openApi, root);
 
         var page = pageLayout(openApi, pathTree, tagTree, shouldDefaultToTagView(openApi, pathCount), operationIdMap);
-        writeOutput(page, root, tagTree, pathTree, operationIdMap);
+        writeOutput(page, root, tagTree, pathTree, operationIdMap, openApi.getComponents());
     }
 
     private boolean shouldDefaultToTagView(org.eclipse.microprofile.openapi.models.OpenAPI openApi, int pathCount) {
@@ -190,11 +190,11 @@ public class OpenApiUiGenerator {
         return sb.toString();
     }
 
-    private void writeOutput(Renderable page, PathNode root, Renderable tagTree, Renderable pathTree, Map<String, String[]> operationIdMap) throws IOException {
+    private void writeOutput(Renderable page, PathNode root, Renderable tagTree, Renderable pathTree, Map<String, String[]> operationIdMap, org.eclipse.microprofile.openapi.models.Components components) throws IOException {
         Files.createDirectories(outputDir);
         writeHtmlFiles(page, tagTree, pathTree);
         writeCss();
-        generateFragments(root, ApiPath.ROOT, operationIdMap);
+        generateFragments(root, ApiPath.ROOT, operationIdMap, components);
         copyVendorResources();
         log.info("Done. Output written to {}", outputDir);
     }
@@ -296,13 +296,13 @@ public class OpenApiUiGenerator {
         return PathNode.isPathParam(segment) ? "tree-param" : "tree-segment";
     }
 
-    private void generateFragments(PathNode node, ApiPath path, Map<String, String[]> operationIdMap) throws IOException {
+    private void generateFragments(PathNode node, ApiPath path, Map<String, String[]> operationIdMap, org.eclipse.microprofile.openapi.models.Components components) throws IOException {
         for (var entry : node.children().entrySet()) {
             var segment = entry.getKey();
             var child = entry.getValue();
             var childPath = path.resolve(segment);
             for (var opEntry : child.operations().entrySet()) {
-                var operation = new Operation(opEntry.getKey(), opEntry.getValue(), childPath);
+                var operation = new Operation(opEntry.getKey(), opEntry.getValue(), childPath, components);
                 var fragment = operationFragment(operation, operationIdMap);
                 var fragmentDir = outputDir.resolve(childPath.toString());
                 Files.createDirectories(fragmentDir);
@@ -312,12 +312,12 @@ public class OpenApiUiGenerator {
                 }
             }
             if (!child.operations().isEmpty()) {
-                var pathFrag = pathFragment(childPath, child.operations(), operationIdMap);
+                var pathFrag = pathFragment(childPath, child.operations(), operationIdMap, components);
                 var pathFragmentDir = outputDir.resolve(childPath.toString());
                 Files.createDirectories(pathFragmentDir);
                 Files.writeString(pathFragmentDir.resolve("index.html"), pathFrag.render());
             }
-            generateFragments(child, childPath, operationIdMap);
+            generateFragments(child, childPath, operationIdMap, components);
         }
     }
 

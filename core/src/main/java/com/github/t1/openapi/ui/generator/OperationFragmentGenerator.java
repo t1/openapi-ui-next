@@ -1,6 +1,8 @@
 package com.github.t1.openapi.ui.generator;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.t1.bulmajava.elements.Box;
 import com.github.t1.bulmajava.form.Form;
 import com.github.t1.htmljava.Element;
@@ -59,6 +61,7 @@ class OperationFragmentGenerator {
     private final ApiPath path;
     private final ApiPath displayPath;
     private final Map<String, String[]> operationIdMap;
+    private final Map<String, Schema> schemas;
 
     /// Helper to get type as string from MicroProfile's List<SchemaType>
     private static String typeAsString(Schema schema) {
@@ -73,6 +76,9 @@ class OperationFragmentGenerator {
         this.path = operation.path();
         this.displayPath = path.withResolvedParams(this.operation);
         this.operationIdMap = operationIdMap;
+        this.schemas = operation.components() != null && operation.components().getSchemas() != null 
+            ? operation.components().getSchemas() 
+            : Map.of();
     }
 
     static Element operationFragment(Operation operation, Map<String, String[]> operationIdMap) {
@@ -277,7 +283,7 @@ class OperationFragmentGenerator {
     }
 
     private String skeleton(MediaType jsonContent) {
-        var skeleton = JsonSkeletonGenerator.generate(jsonContent.getSchema());
+        var skeleton = JsonSkeletonGenerator.generate(jsonContent.getSchema(), schemas);
         if ("{}".equals(skeleton)) skeleton = JsonSkeletonGenerator.mediaTypeExample(jsonContent);
         return skeleton;
     }
@@ -290,7 +296,7 @@ class OperationFragmentGenerator {
             bodyControls.content(span("Example").classes("schema-accept-label"));
             bodyControls.content(div().classes("select", "is-small").content(exampleSelect(jsonContent)));
         }
-        var schema = jsonContent.getSchema();
+        var schema = SchemaResolver.resolve(jsonContent.getSchema(), schemas);
         if (schema.getProperties() != null && !schema.getProperties().isEmpty()) {
             bodyControls.content(element("button").attr("type", "button").classes("schema-toggle").content("Schema ▶"));
         }
@@ -437,8 +443,11 @@ class OperationFragmentGenerator {
         var hasSchemaProperties = statusCodes.stream()
                 .filter(code -> responses.getAPIResponses().get(code).getContent() != null)
                 .anyMatch(code -> responses.getAPIResponses().get(code).getContent().getMediaTypes().values().stream()
-                        .anyMatch(mt -> mt.getSchema() != null && (mt.getSchema().getProperties() != null
-                                || ("array".equals(mt.getSchema().getType()) && mt.getSchema().getItems() != null))));
+                        .anyMatch(mt -> {
+                            if (mt.getSchema() == null) return false;
+                            var resolved = SchemaResolver.resolve(mt.getSchema(), schemas);
+                            return resolved.getProperties() != null || (typeAsString(resolved) != null && "array".equals(typeAsString(resolved)) && resolved.getItems() != null);
+                        }));
         var hasHeaders = statusCodes.stream()
                 .anyMatch(code -> responses.getAPIResponses().get(code).getHeaders() != null && !responses.getAPIResponses().get(code).getHeaders().isEmpty());
         var hasLinks = statusCodes.stream()
@@ -679,18 +688,19 @@ class OperationFragmentGenerator {
 
         @SuppressWarnings("rawtypes")
         private void render(Element container, Schema schema, String pathPrefix) {
-            if (!visited.add(schema)) return; // cycle detection
-            if (schema.getTitle() != null) {
+            var resolved = SchemaResolver.resolve(schema, schemas);
+            if (!visited.add(resolved)) return; // cycle detection
+            if (resolved.getTitle() != null) {
                 var titleBar = div().classes("schema-title");
-                titleBar.content(span(schema.getTitle()).classes("schema-title-name"));
-                if (schema.getDescription() != null) {
-                    titleBar.content(span("— " + schema.getDescription()).classes("schema-title-desc"));
+                titleBar.content(span(resolved.getTitle()).classes("schema-title-name"));
+                if (resolved.getDescription() != null) {
+                    titleBar.content(span("— " + resolved.getDescription()).classes("schema-title-desc"));
                 }
                 container.content(titleBar);
             }
-            var isArray = "array".equals(typeAsString(schema)) && schema.getItems() != null;
+            var isArray = "array".equals(typeAsString(resolved)) && resolved.getItems() != null;
             if (isArray) container.content(tag("array").is(NORMAL).classes("schema-type-badge"));
-            var effectiveSchema = isArray ? schema.getItems() : schema;
+            var effectiveSchema = isArray ? resolved.getItems() : resolved;
             var required = effectiveSchema.getRequired() != null ? effectiveSchema.getRequired() : List.<String>of();
             Map<String, Schema> properties = effectiveSchema.getProperties();
             if (properties != null) {
@@ -703,15 +713,19 @@ class OperationFragmentGenerator {
         }
 
         private void addPropertyRow(Element table, String name, Schema propSchema, List<String> required, String pathPrefix) {
-            var type = typeAsString(propSchema) != null ? typeAsString(propSchema) : "object";
-            if (propSchema.getEnumeration() != null && !propSchema.getEnumeration().isEmpty()) type = "enum";
+            var resolved = SchemaResolver.resolve(propSchema, schemas);
+            var type = typeAsString(resolved) != null ? typeAsString(resolved) : "object";
+            if (resolved.getEnumeration() != null && !resolved.getEnumeration().isEmpty()) type = "enum";
 
             // determine if this property has nested sub-properties
             Schema nestedSchema = null;
-            if ("object".equals(type) && propSchema.getProperties() != null) {
-                nestedSchema = propSchema;
-            } else if ("array".equals(type) && propSchema.getItems() != null && propSchema.getItems().getProperties() != null) {
-                nestedSchema = propSchema.getItems();
+            if ("object".equals(type) && resolved.getProperties() != null) {
+                nestedSchema = resolved;
+            } else if ("array".equals(type) && resolved.getItems() != null) {
+                var items = SchemaResolver.resolve(resolved.getItems(), schemas);
+                if (items.getProperties() != null) {
+                    nestedSchema = items;
+                }
             }
             var hasNested = nestedSchema != null && !visited.contains(nestedSchema);
 
@@ -726,15 +740,15 @@ class OperationFragmentGenerator {
             if (required.contains(name)) {
                 details.content(tag("required").is(DANGER));
             }
-            var example = JsonSkeletonGenerator.resolveExample(propSchema);
+            var example = JsonSkeletonGenerator.resolveExample(resolved);
             if (example != null) {
                 details.content(span("e.g. " + example).classes("schema-prop-example"));
-            } else if (propSchema.getEnumeration() != null && !propSchema.getEnumeration().isEmpty()) {
-                var values = String.join(" | ", propSchema.getEnumeration().stream().map(Object::toString).toList());
+            } else if (resolved.getEnumeration() != null && !resolved.getEnumeration().isEmpty()) {
+                var values = String.join(" | ", resolved.getEnumeration().stream().map(Object::toString).toList());
                 details.content(span(values).classes("schema-prop-example"));
             }
-            if (propSchema.getDescription() != null) {
-                details.content(span(propSchema.getDescription()).classes("schema-prop-desc"));
+            if (resolved.getDescription() != null) {
+                details.content(span(resolved.getDescription()).classes("schema-prop-desc"));
             }
             table.content(details);
 
@@ -755,8 +769,9 @@ class OperationFragmentGenerator {
 
     private static class JsonSkeletonGenerator {
         @SuppressWarnings("rawtypes")
-        static String generate(Schema schema) {
-            Map<String, Schema> properties = schema.getProperties();
+        static String generate(Schema schema, Map<String, Schema> schemas) {
+            var resolved = SchemaResolver.resolve(schema, schemas);
+            Map<String, Schema> properties = resolved.getProperties();
             if (properties == null) return "{}";
             var sb = new StringBuilder("{\n");
             var first = true;
@@ -764,7 +779,7 @@ class OperationFragmentGenerator {
                 if (!first) sb.append(",\n");
                 first = false;
                 sb.append("  \"").append(entry.getKey()).append("\": ");
-                sb.append(sampleValue(entry.getValue()));
+                sb.append(sampleValue(entry.getValue(), schemas));
             }
             sb.append("\n}");
             return sb.toString();
@@ -777,22 +792,23 @@ class OperationFragmentGenerator {
             return example;
         }
 
-        static String sampleValue(Schema schema) {
-            var example = resolveExample(schema);
+        static String sampleValue(Schema schema, Map<String, Schema> schemas) {
+            var resolved = SchemaResolver.resolve(schema, schemas);
+            var example = resolveExample(resolved);
             if (example != null) {
-                return formatSampleValue(typeAsString(schema), example);
+                return formatSampleValue(typeAsString(resolved), example);
             }
-            if (schema.getDefaultValue() != null) {
-                return formatSampleValue(typeAsString(schema), schema.getDefaultValue());
+            if (resolved.getDefaultValue() != null) {
+                return formatSampleValue(typeAsString(resolved), resolved.getDefaultValue());
             }
-            if (schema.getEnumeration() != null && !schema.getEnumeration().isEmpty()) {
-                return formatSampleValue(typeAsString(schema), schema.getEnumeration().getFirst());
+            if (resolved.getEnumeration() != null && !resolved.getEnumeration().isEmpty()) {
+                return formatSampleValue(typeAsString(resolved), resolved.getEnumeration().getFirst());
             }
-            if (schema.getFormat() != null) {
-                var formatted = formatBasedSample(schema.getFormat());
+            if (resolved.getFormat() != null) {
+                var formatted = formatBasedSample(resolved.getFormat());
                 if (formatted != null) return "\"" + formatted + "\"";
             }
-            var type = typeAsString(schema);
+            var type = typeAsString(resolved);
             if (type == null) return "null";
             return switch (type) {
                 case "string" -> "\"\"";
@@ -811,7 +827,11 @@ class OperationFragmentGenerator {
             if (example == null) return "{}";
             if (example instanceof JsonNode node)
                 return node.toPrettyString();
-            return example.toString();
+            try {
+                return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(example);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("could not serialize example to JSON", e);
+            }
         }
 
         private static String formatSampleValue(String type, Object value) {
