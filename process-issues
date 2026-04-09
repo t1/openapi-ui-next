@@ -119,8 +119,8 @@ fetch_board_issues() {
         }
     ]
     | sort_by(
-        if .milestone == "~" then [999999]
-        else [.milestone | split(".") | .[] | tonumber] end
+        if .milestone == "~" then [1]
+        else [0, (.milestone | split(".") | .[] | tonumber)] end
     )' 2>/dev/null || echo "[]"
 }
 
@@ -207,6 +207,47 @@ pick_next_issue() {
     echo "${first_number}\t${first_title}"
 }
 
+# Notify the owner that a milestone is complete and ready for release.
+# Prints a prominent banner and sends a macOS notification if available.
+notify_milestone_complete() {
+    local milestone="$1"
+    local message="Milestone ${milestone} is complete — ready for release!"
+
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║  RELEASE READY: ${milestone}"
+    echo "║  All issues in this milestone are closed."
+    echo "║  Build and release when ready."
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo ""
+
+    # macOS desktop notification (silent no-op on other platforms).
+    if command -v osascript &>/dev/null; then
+        osascript -e "display notification \"$message\" with title \"Release Ready\" sound name \"Glass\"" 2>/dev/null || true
+    fi
+}
+
+# Check whether the milestone of a just-closed issue is now fully complete.
+# If so, notify the owner.
+check_milestone_complete() {
+    local issue_number="$1"
+
+    # Get the milestone for this issue.
+    local milestone
+    milestone=$(gh issue view "$issue_number" --json milestone --jq '.milestone.title // empty' 2>/dev/null) || return 0
+    [[ -z "$milestone" ]] && return 0
+
+    # Count open issues remaining in this milestone.
+    local open_count
+    open_count=$(gh issue list --milestone "$milestone" --state open --json number --jq 'length' 2>/dev/null) || return 0
+
+    if [[ "$open_count" -eq 0 ]]; then
+        notify_milestone_complete "$milestone"
+    else
+        verbose "  Milestone ${milestone}: ${open_count} open issue(s) remaining."
+    fi
+}
+
 process_one_issue() {
     local issue_number="$1"
     local issue_title="$2"
@@ -243,6 +284,7 @@ process_one_issue() {
 
     if [[ "$state" == "CLOSED" ]]; then
         echo "  -> Issue #${issue_number} COMPLETED."
+        check_milestone_complete "$issue_number"
         return 0
     fi
 
