@@ -7,10 +7,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.smallrye.openapi.runtime.io.OpenApiParser;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
@@ -19,17 +24,23 @@ import static org.assertj.core.api.BDDAssertions.then;
 class OpenApiUiGeneratorTest {
     @TempDir Path outputDir;
 
-    TestLogger log = TestLoggerFactory.getTestLogger(OpenApiUiGenerator.class);
+    TestLogger generatorLog = TestLoggerFactory.getTestLogger(OpenApiUiGenerator.class);
+    TestLogger fileGeneratorLog = TestLoggerFactory.getTestLogger(OpenApiUiFileGenerator.class);
 
-    @BeforeEach void clearLogs() { log.clear(); }
+    @BeforeEach void clearLogs() {
+        generatorLog.clear();
+        fileGeneratorLog.clear();
+    }
 
     void generate(String path) throws URISyntaxException, IOException {
         var specPath = Path.of(requireNonNull(getClass().getResource(path)).toURI());
-        new OpenApiUiGenerator(specPath, outputDir).generate();
+        new OpenApiUiFileGenerator(specPath, outputDir).generate();
     }
 
     String logMessages() {
-        return log.getLoggingEvents().stream()
+        return Stream.concat(
+                        fileGeneratorLog.getLoggingEvents().stream(),
+                        generatorLog.getLoggingEvents().stream())
                 .map(LoggingEvent::getFormattedMessage)
                 .collect(joining("\n"));
     }
@@ -744,23 +755,36 @@ class OpenApiUiGeneratorTest {
 
     @Test void shouldAcceptOpenAPIModelDirectly() throws Exception {
         var specPath = Path.of(requireNonNull(getClass().getResource("/one-get.yaml")).toURI());
-        var openApi = io.smallrye.openapi.runtime.io.OpenApiParser.parse(specPath.toUri().toURL());
+        var openApi = OpenApiParser.parse(specPath.toUri().toURL());
 
-        new OpenApiUiGenerator(openApi, outputDir).generate();
+        new OpenApiUiGenerator(openApi, writeToOutputDir()).generate();
 
         then(outputDir.resolve("index.html")).exists();
         then(outputDir.resolve("pets/GET.html")).exists();
     }
 
-    @Test void shouldGenerateToMemory() throws Exception {
+    @Test void shouldGenerateViaConsumer() throws Exception {
         var specPath = Path.of(requireNonNull(getClass().getResource("/one-get.yaml")).toURI());
-        var openApi = io.smallrye.openapi.runtime.io.OpenApiParser.parse(specPath.toUri().toURL());
+        var openApi = OpenApiParser.parse(specPath.toUri().toURL());
+        var files = new LinkedHashMap<String, byte[]>();
 
-        var files = new OpenApiUiGenerator(openApi, outputDir).generateToMemory();
+        new OpenApiUiGenerator(openApi, files::put).generate();
 
         then(files).containsKey("index.html");
         then(files).containsKey("pets/GET.html");
         then(files).containsKey("openapi-ui.css");
         then(new String(files.get("index.html"))).contains("Test API");
+    }
+
+    private BiConsumer<String, byte[]> writeToOutputDir() {
+        return (name, content) -> {
+            try {
+                var file = outputDir.resolve(name);
+                Files.createDirectories(file.getParent());
+                Files.write(file, content);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        };
     }
 }

@@ -917,7 +917,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
             var specPath = Optional.ofNullable(getClass().getResource("/" + specFilename))
                     .map(URL::toString).map(URI::create).map(Path::of)
                     .orElseThrow(() -> new RuntimeException("spec not found: " + specFilename));
-            new OpenApiUiGenerator(specPath, outputDir).generate();
+            new OpenApiUiFileGenerator(specPath, outputDir).generate();
 
             server = HttpServer.create(new InetSocketAddress(0), 0);
             server.createContext("/", exchange -> {

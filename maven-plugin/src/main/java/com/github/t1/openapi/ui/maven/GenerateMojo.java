@@ -1,6 +1,6 @@
 package com.github.t1.openapi.ui.maven;
 
-import com.github.t1.openapi.ui.generator.OpenApiUiGenerator;
+import com.github.t1.openapi.ui.generator.OpenApiUiFileGenerator;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -20,7 +20,7 @@ public class GenerateMojo extends AbstractMojo {
 
     @Override public void execute() throws MojoExecutionException {
         try {
-            new OpenApiUiGenerator(specFile.toPath(), outputDirectory.toPath())
+            new OpenApiUiFileGenerator(specFile.toPath(), outputDirectory.toPath())
                     .generate();
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to generate OpenAPI UI", e);

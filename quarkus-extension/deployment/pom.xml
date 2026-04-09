@@ -32,6 +32,12 @@
             <artifactId>quarkus-smallrye-openapi-spi</artifactId>
         </dependency>
 
+        <!-- Dev UI SPI for extension card -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devui-deployment-spi</artifactId>
+        </dependency>
+
         <!-- OpenAPI UI core generator -->
         <dependency>
             <groupId>com.github.t1</groupId>

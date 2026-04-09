@@ -1,16 +1,22 @@
 package com.github.t1.openapi.ui.quarkus.deployment;
 
 import com.github.t1.openapi.ui.generator.OpenApiUiGenerator;
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.annotations.Produce;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.openapi.deployment.spi.OpenApiDocumentBuildItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 
 /**
@@ -23,13 +29,22 @@ import java.util.List;
 public class OpenApiUiProcessor {
     private static final Logger log = LoggerFactory.getLogger(OpenApiUiProcessor.class);
 
-    private static final String RESOURCE_PREFIX = "META-INF/resources/openapi-ui/";
+    private static final String ENDPOINT_PREFIX = "/openapi-ui/";
+
+    @BuildStep CardPageBuildItem devUiCard() {
+        var card = new CardPageBuildItem();
+        card.addPage(Page.externalPageBuilder("OpenAPI UI")
+                .url(ENDPOINT_PREFIX + "index.html")
+                .doNotEmbed()
+                .icon("font-awesome-solid:file-code"));
+        return card;
+    }
 
     @BuildStep
+    @Produce(ArtifactResultBuildItem.class)
     void generateOpenApiUi(
             List<OpenApiDocumentBuildItem> openApiDocuments,
-            BuildProducer<GeneratedResourceBuildItem> generatedResources,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources)
+            OutputTargetBuildItem outputTarget)
             throws IOException {
 
         if (openApiDocuments.isEmpty()) {
@@ -37,23 +52,42 @@ public class OpenApiUiProcessor {
             return;
         }
 
-        // Use the first (default) document
         var defaultDoc = openApiDocuments.getFirst();
 
         log.info("Generating OpenAPI UI from OpenAPI document");
 
+        // Write directly to classes/META-INF/resources/ so Quarkus serves them as static resources.
+        // Clean the output directory first to remove stale files from previous builds.
+        var outputDir = outputTarget.getOutputDirectory().resolve("classes/META-INF/resources/openapi-ui");
+        deleteRecursively(outputDir);
+
         var openApi = defaultDoc.getSmallRyeOpenAPI().model();
-        var generator = new OpenApiUiGenerator(openApi, Path.of("unused"));
-        var files = generator.generateToMemory();
+        new OpenApiUiGenerator(openApi, (name, content) -> writeFile(outputDir, name, content)).generate();
+    }
 
-        log.info("Generated {} OpenAPI UI files", files.size());
-
-        // Produce GeneratedResourceBuildItem for each file
-        for (var entry : files.entrySet()) {
-            var resourcePath = RESOURCE_PREFIX + entry.getKey();
-            log.debug("Producing resource: {}", resourcePath);
-            generatedResources.produce(new GeneratedResourceBuildItem(resourcePath, entry.getValue()));
-            nativeImageResources.produce(new NativeImageResourceBuildItem(resourcePath));
+    private static void writeFile(Path outputDir, String name, byte[] content) {
+        try {
+            var file = outputDir.resolve(name);
+            Files.createDirectories(file.getParent());
+            Files.write(file, content);
+            log.debug("Wrote static resource: {}", file);
+        } catch (IOException e) {
+            throw new RuntimeException("could not write file: " + name, e);
         }
+    }
+
+    private static void deleteRecursively(Path dir) throws IOException {
+        if (!Files.exists(dir)) return;
+        Files.walkFileTree(dir, new SimpleFileVisitor<>() {
+            @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 }

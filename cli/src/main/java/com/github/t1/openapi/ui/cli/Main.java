@@ -5,7 +5,7 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.OutputStreamAppender;
-import com.github.t1.openapi.ui.generator.OpenApiUiGenerator;
+import com.github.t1.openapi.ui.generator.OpenApiUiFileGenerator;
 import org.slf4j.LoggerFactory;
 
 import java.io.PrintStream;
@@ -27,7 +27,7 @@ public class Main {
             return 1;
         }
         try {
-            new OpenApiUiGenerator(Path.of(argList.get(0)), Path.of(argList.get(1))).generate();
+            new OpenApiUiFileGenerator(Path.of(argList.get(0)), Path.of(argList.get(1))).generate();
             return 0;
         } catch (Exception e) {
             if (verbose) {

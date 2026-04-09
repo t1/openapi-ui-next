@@ -1,0 +1,11 @@
+name: OpenAPI UI
+description: Generates static, keyboard-navigable HTML UIs from OpenAPI specifications
+metadata:
+  guide: https://github.com/t1/openapi-ui-next
+  categories:
+    - "web"
+  keywords:
+    - "openapi"
+    - "swagger"
+    - "ui"
+    - "documentation"
