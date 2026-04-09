@@ -266,6 +266,24 @@ output/
                 └── GET.html # Fragment for GET /pets/{petId}/visits/{visitId}
 ```
 
+## Release Notes
+
+### 1.1
+
+- **Response links** — schema view shows link annotations with click-to-navigate;
+  response bodies get named badges that fill parameters in the target operation;
+  `x-links` extension for array items; keyboard-focusable
+  ([#4](https://github.com/t1/openapi-ui-next/issues/4))
+- **httpie defaults** — `GET` default method, `http://localhost` default base URL
+  ([#5](https://github.com/t1/openapi-ui-next/issues/5))
+- Bug fixes: request body toggle without schema ([#6][i6]), textarea auto-grow ([#8][i8]),
+  keyboard navigation ([#21][i21], [#23][i23])
+
+[i6]: https://github.com/t1/openapi-ui-next/issues/6
+[i8]: https://github.com/t1/openapi-ui-next/issues/8
+[i21]: https://github.com/t1/openapi-ui-next/issues/21
+[i23]: https://github.com/t1/openapi-ui-next/issues/23
+
 ## Contributing
 
 Even just using the project and leaving a star helps a lot -- it shows there's interest

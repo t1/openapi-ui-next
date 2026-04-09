@@ -164,13 +164,18 @@ In both cases:
    - `docs/superpowers/plans/*-issue-<N>-*`
    - `docs/superpowers/specs/*-issue-<N>-*`
    - Remove empty `docs/superpowers/plans/` and `docs/superpowers/specs/` directories if they become empty.
-2. Squash implementation work into a single commit: `feat: <description> (#<N>)` or `fix: <description> (#<N>)`.
+2. Update the **Release Notes** section in `README.md`:
+   - Add or update an entry under the issue's milestone version heading.
+   - Features get a bold name, brief summary, and issue link. Group related features (e.g. sub-issues of the same parent) into a single bullet.
+   - Bug fixes are grouped into a single "Bug fixes:" line with issue links.
+   - Keep entries compact — one line per feature, one line for all bug fixes.
+3. Squash implementation work into a single commit: `feat: <description> (#<N>)` or `fix: <description> (#<N>)`.
    - Exclude the Phase 3 spec/plan commit from the squash — it stays as a separate commit so the spec/plan are preserved in git history.
-3. Push to trunk and wait for CI:
+4. Push to trunk and wait for CI:
    a. Push to trunk: `git push`
    b. Wait for the CI workflow to complete: `gh run watch --exit-status`
    c. If CI fails, post the failure details as a comment, add `blocked` label, and STOP.
-4. Post a completion comment on the issue:
+5. Post a completion comment on the issue:
    ```
    ## Agent: done
 
@@ -179,7 +184,7 @@ In both cases:
    **Tests:** [what tests were added/modified]
    **CI:** [passed]
    ```
-5. Close the issue: `gh issue close <N>`
+6. Close the issue: `gh issue close <N>`
 
 ## Question Protocol
 
