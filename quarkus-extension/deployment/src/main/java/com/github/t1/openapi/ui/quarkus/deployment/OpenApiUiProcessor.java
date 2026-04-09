@@ -1,9 +1,9 @@
 package com.github.t1.openapi.ui.quarkus.deployment;
 
 import com.github.t1.openapi.ui.generator.OpenApiUiGenerator;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Produce;
-import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -41,10 +41,10 @@ public class OpenApiUiProcessor {
     }
 
     @BuildStep
-    @Produce(ArtifactResultBuildItem.class)
     void generateOpenApiUi(
             List<OpenApiDocumentBuildItem> openApiDocuments,
-            OutputTargetBuildItem outputTarget)
+            OutputTargetBuildItem outputTarget,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources)
             throws IOException {
 
         if (openApiDocuments.isEmpty()) {
@@ -56,13 +56,17 @@ public class OpenApiUiProcessor {
 
         log.info("Generating OpenAPI UI from OpenAPI document");
 
-        // Write directly to classes/META-INF/resources/ so Quarkus serves them as static resources.
-        // Clean the output directory first to remove stale files from previous builds.
+        // Write to classes/META-INF/resources/ so Quarkus serves them as static resources,
+        // and produce GeneratedResourceBuildItem so Quarkus re-runs this step on hot-reload.
         var outputDir = outputTarget.getOutputDirectory().resolve("classes/META-INF/resources/openapi-ui");
         deleteRecursively(outputDir);
 
         var openApi = defaultDoc.getSmallRyeOpenAPI().model();
-        new OpenApiUiGenerator(openApi, (name, content) -> writeFile(outputDir, name, content)).generate();
+        new OpenApiUiGenerator(openApi, (name, content) -> {
+            writeFile(outputDir, name, content);
+            generatedResources.produce(new GeneratedResourceBuildItem(
+                    "META-INF/resources/openapi-ui/" + name, content));
+        }).generate();
     }
 
     private static void writeFile(Path outputDir, String name, byte[] content) {

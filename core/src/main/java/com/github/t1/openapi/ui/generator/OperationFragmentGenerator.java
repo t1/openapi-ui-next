@@ -512,8 +512,9 @@ class OperationFragmentGenerator {
         }
 
         var responseHasHeaders = response.getHeaders() != null && !response.getHeaders().isEmpty();
-        var responseHasBody = response.getContent() != null
-                && response.getContent().getMediaTypes().values().iterator().next().getSchema() != null;
+        var firstMediaType = (response.getContent() != null && !response.getContent().getMediaTypes().isEmpty())
+                ? response.getContent().getMediaTypes().values().iterator().next() : null;
+        var responseHasBody = firstMediaType != null && firstMediaType.getSchema() != null;
         var links = allLinks(response);
         if (responseHasHeaders) {
             if (responseHasBody) panel.content(span("Headers"));
@@ -521,8 +522,7 @@ class OperationFragmentGenerator {
         }
         if (responseHasBody) {
             if (responseHasHeaders) panel.content(span("Body"));
-            var mediaType = response.getContent().getMediaTypes().values().iterator().next();
-            new SchemaRenderer(links).render(panel, mediaType.getSchema());
+            new SchemaRenderer(links).render(panel, firstMediaType.getSchema());
         }
         return panel;
     }
@@ -576,7 +576,8 @@ class OperationFragmentGenerator {
         if (expression == null) return null;
         if (expression.startsWith("$response.body#/")) {
             var path = expression.substring("$response.body#/".length());
-            path = path.replace("[*]", ""); // strip array wildcards for schema matching
+            path = path.replace("[*]", "").replaceAll("/+", "/"); // strip array wildcards for schema matching
+            if (path.startsWith("/")) path = path.substring(1);
             return new String[]{"body", path};
         }
         if (expression.startsWith("$response.header.")) {
@@ -700,7 +701,7 @@ class OperationFragmentGenerator {
             }
             var isArray = "array".equals(typeAsString(resolved)) && resolved.getItems() != null;
             if (isArray) container.content(tag("array").is(NORMAL).classes("schema-type-badge"));
-            var effectiveSchema = isArray ? resolved.getItems() : resolved;
+            var effectiveSchema = isArray ? SchemaResolver.resolve(resolved.getItems(), schemas) : resolved;
             var required = effectiveSchema.getRequired() != null ? effectiveSchema.getRequired() : List.<String>of();
             Map<String, Schema> properties = effectiveSchema.getProperties();
             if (properties != null) {

@@ -4,13 +4,18 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.extensions.Extension;
 import org.eclipse.microprofile.openapi.annotations.links.Link;
 import org.eclipse.microprofile.openapi.annotations.links.LinkParameter;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.eclipse.microprofile.openapi.annotations.enums.SchemaType.ARRAY;
 
 @Path("/owners")
 @Tag(name = "owners")
@@ -47,7 +52,24 @@ public class OwnerResource {
     }
 
     @GET @Path("/{ownerId}/pets")
-    @Operation(operationId = "listOwnerPets", summary = "List pets for an owner identified by the owner's id")
+    @Operation(operationId = "listOwnerPets", summary = "List pets for an owner")
+    @APIResponse(responseCode = "200", description = "List of pets",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(type = ARRAY, implementation = Pet.class)),
+            links = {
+                    @Link(name = "pet", operationId = "getPet",
+                            description = "Get details of a pet",
+                            parameters = @LinkParameter(name = "id", expression = "$response.body#/id")),
+                    @Link(name = "visits", operationId = "listPetVisits",
+                            description = "List visits for a pet",
+                            parameters = @LinkParameter(name = "petId", expression = "$response.body#/id"))},
+            extensions = @Extension(name = "x-links", parseValue = true,
+                    value = "{\"pet\":{\"operationId\":\"getPet\","
+                            + "\"description\":\"Get details of a pet\","
+                            + "\"parameters\":{\"id\":\"$response.body#/[*]/id\"}},"
+                            + "\"visits\":{\"operationId\":\"listPetVisits\","
+                            + "\"description\":\"List visits for a pet\","
+                            + "\"parameters\":{\"petId\":\"$response.body#/[*]/id\"}}}"))
     public List<Pet> listPets(@PathParam("ownerId") long ownerId) {
         return PetResource.PETS.stream()
                 .filter(p -> p.ownerId == ownerId).toList();

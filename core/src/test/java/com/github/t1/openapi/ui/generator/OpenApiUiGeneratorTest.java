@@ -776,6 +776,30 @@ class OpenApiUiGeneratorTest {
         then(new String(files.get("index.html"))).contains("Test API");
     }
 
+    @Test void shouldNotCrashOnEmptyContentMediaTypes() throws Exception {
+        generate("/empty-content.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("items/GET.html"));
+        then(fragment).contains("listItems");
+    }
+
+    @Test void shouldRenderXLinksWithWildcardInSchema() throws Exception {
+        generate("/array-xlinks.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("schema-link-row");
+        then(fragment).contains("→ pet");
+    }
+
+    @Test void shouldRenderArrayItemPropertiesFromRef() throws Exception {
+        generate("/array-ref-response.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("schema-prop-name");
+        then(fragment).contains("name");
+        then(fragment).contains("id");
+    }
+
     private BiConsumer<String, byte[]> writeToOutputDir() {
         return (name, content) -> {
             try {

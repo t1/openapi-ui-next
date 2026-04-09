@@ -2735,4 +2735,21 @@ class BrowserTest {
             then(badgeTexts).contains("GetTreatment");
         }
     }
+
+    @ResourceLock("array-xlinks") @Nested class GivenAppWithArrayXLinks {
+        @RegisterExtension static AppFixture app = launch("array-xlinks.yaml").withBaseUrlOverride();
+
+        @Test void shouldShowBodyLinksForTopLevelArrayResponse() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("List pets");
+            app.mockEndpoint("/pets", "application/json",
+                    "[{\"id\":1,\"name\":\"Max\"},{\"id\":2,\"name\":\"Buddy\"}]");
+            app.clickSend();
+            app.waitForResponse();
+
+            then(app.bodyLinkCount()).isEqualTo(2);
+            then(app.bodyLinkText(0)).isEqualTo("pet");
+        }
+    }
 }

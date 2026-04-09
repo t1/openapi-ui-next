@@ -871,12 +871,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         var seg = segments[segIdx];
         if (seg.endsWith('[*]')) {
-            // Property access + array wildcard: e.g. "visits[*]"
+            // Property access + array wildcard: e.g. "visits[*]" or bare "[*]" for top-level arrays
             var prop = seg.substring(0, seg.length - 3);
-            var arr = current[prop];
+            var arr = prop ? current[prop] : current;
             if (!Array.isArray(arr)) return;
             for (var i = 0; i < arr.length; i++) {
-                expandWildcardPointer(segments, segIdx + 1, arr[i], pathSoFar.concat(prop, String(i)), pointerMap, link, paramName, linkName);
+                var pathParts = prop ? pathSoFar.concat(prop, String(i)) : pathSoFar.concat(String(i));
+                expandWildcardPointer(segments, segIdx + 1, arr[i], pathParts, pointerMap, link, paramName, linkName);
             }
         } else {
             // Regular property access
