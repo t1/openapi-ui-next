@@ -2485,6 +2485,61 @@ class BrowserTest {
 
             then(app.schemaLinkHasTabindex("200", "owner")).isTrue();
         }
+
+        @Test void shouldNavigateToTargetOperationWhenPressingEnterOnInlineLink() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            app.expandNestedSchema("owner");
+            app.focusInlineLink("200", "GetOwner");
+            app.pressKey("Enter");
+
+            app.waitForDetailContent("Get an owner");
+        }
+
+        @Test void shouldNavigateToTargetOperationWhenPressingSpaceOnInlineLink() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            app.expandNestedSchema("owner");
+            app.focusInlineLink("200", "GetOwner");
+            app.pressKey(" ");
+
+            app.waitForDetailContent("Get an owner");
+        }
+
+        @Test void shouldNavigateWhenPressingEnterOnSchemaLinkRow() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            app.expandNestedSchema("owner");
+            app.focusSchemaLinkRow("200", "GetOwner");
+            app.pressKey("Enter");
+
+            app.waitForDetailContent("Get an owner");
+        }
+
+        @Test void shouldNavigateWhenPressingSpaceOnSchemaLinkRow() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            app.expandNestedSchema("owner");
+            app.focusSchemaLinkRow("200", "GetOwner");
+            app.pressKey(" ");
+
+            app.waitForDetailContent("Get an owner");
+        }
+
+        @Test void shouldPreserveNestedSchemaToggleStateAfterNavigatingAwayAndBack() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            app.expandNestedSchema("owner");
+            then(app.isNestedSchemaExpanded("owner")).isTrue();
+
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("List pets");
+
+            app.clickTreeNode("pets/{petId}/index.html");
+            app.waitForDetailContent("Get a pet");
+
+            then(app.isNestedSchemaExpanded("owner")).isTrue();
+        }
     }
 
     @ResourceLock("response-body-links") @Nested class GivenAppWithResponseBodyLinks {
@@ -2591,6 +2646,22 @@ class BrowserTest {
             navigateToPetDetailAndSend();
 
             then(app.bodyLinkBorderStyle(0)).isEqualTo("solid");
+        }
+
+        @Test void shouldNavigateToTargetOperationWhenPressingEnterOnBodyLink() {
+            navigateToPetDetailAndSend();
+            app.focusBodyLink(2); // ownerId→getOwner
+            app.pressKey("Enter");
+
+            app.waitForDetailContent("Get an owner");
+        }
+
+        @Test void shouldNavigateToTargetOperationWhenPressingSpaceOnBodyLink() {
+            navigateToPetDetailAndSend();
+            app.focusBodyLink(2); // ownerId→getOwner
+            app.pressKey(" ");
+
+            app.waitForDetailContent("Get an owner");
         }
     }
 

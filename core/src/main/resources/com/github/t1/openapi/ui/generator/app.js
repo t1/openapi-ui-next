@@ -40,12 +40,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function findNestedContent(propName) {
+        var sibling = propName;
+        while (sibling && !(sibling.nextElementSibling && sibling.nextElementSibling.classList.contains('schema-nested'))) {
+            sibling = sibling.nextElementSibling;
+        }
+        return sibling ? sibling.nextElementSibling : null;
+    }
+
     function saveSchemaToggles(form) {
         const key = opKey(form);
         const state = {};
         form.querySelectorAll('.schema-box[data-box]').forEach(function(box) {
             state[box.getAttribute('data-box')] = !box.classList.contains('is-collapsed');
         });
+        var nested = [];
+        form.querySelectorAll('.schema-nested-toggle[aria-expanded="true"]').forEach(function(toggle) {
+            var propName = toggle.closest('.schema-prop-name');
+            if (propName) nested.push(propName.getAttribute('data-prop'));
+        });
+        state._nested = nested;
         schemaToggleCache.set(key, state);
     }
 
@@ -62,6 +76,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (toggle) toggle.textContent = expanded ? 'Schema ▼' : 'Schema ▶';
             }
         });
+        if (state._nested) {
+            state._nested.forEach(function(prop) {
+                var propName = form.querySelector('.schema-prop-name[data-prop="' + prop + '"]');
+                if (!propName) return;
+                var toggle = propName.querySelector('.schema-nested-toggle');
+                if (toggle) toggle.setAttribute('aria-expanded', 'true');
+                var nested = findNestedContent(propName);
+                if (nested) nested.classList.add('is-expanded');
+            });
+        }
     }
 
     function restoreResponse(form) {
@@ -599,13 +623,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const expanded = nestedToggle.getAttribute('aria-expanded') === 'true';
             nestedToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
             nestedToggle.focus(); // Safari doesn't focus buttons on click
-            // find the .schema-nested sibling: it's in the same grid, after the details span
             const propName = nestedToggle.closest('.schema-prop-name');
-            let sibling = propName;
-            while (sibling && !(sibling.nextElementSibling && sibling.nextElementSibling.classList.contains('schema-nested'))) {
-                sibling = sibling.nextElementSibling;
-            }
-            if (sibling && sibling.nextElementSibling) sibling.nextElementSibling.classList.toggle('is-expanded');
+            var nested = findNestedContent(propName);
+            if (nested) nested.classList.toggle('is-expanded');
+            const form = nestedToggle.closest('form[data-path]');
+            if (form) saveSchemaToggles(form);
             return;
         }
         const tab = e.target.closest('.schema-status-tab');
@@ -1156,7 +1178,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const isArrow = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.key) >= 0;
-        if (!isArrow && e.key !== 'Enter' && e.key !== 'Escape') return;
+        if (!isArrow && e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Escape') return;
 
         // text input/textarea: Left/Right stay native
         if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight')
@@ -1186,13 +1208,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             e.preventDefault();
             e.stopPropagation();
-        } else if (e.key === 'Enter') {
-            if (el.classList.contains('schema-toggle')) {
+        } else if (e.key === 'Enter' || e.key === ' ') {
+            var link = (el.tagName === 'A' && el.hasAttribute('href')) ? el
+                : el.querySelector && el.querySelector('a[href]');
+            if (link) {
+                link.click();
+            } else if (e.key === 'Enter' && el.classList.contains('schema-toggle')) {
                 el.click();
-            } else if (el.tagName !== 'SELECT') {
+            } else if (e.key === 'Enter' && el.tagName !== 'SELECT') {
                 const mc = document.getElementById('method-content') || document.getElementById('detail');
                 const sendBtn = mc ? mc.querySelector('button[type=submit]') : null;
                 if (sendBtn) sendBtn.click();
+            } else {
+                return;
             }
             e.preventDefault();
             e.stopPropagation();

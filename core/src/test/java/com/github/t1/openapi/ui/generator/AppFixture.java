@@ -415,6 +415,11 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator(".schema-box[data-box='" + boxType + "'] .schema-nested-toggle[aria-expanded='true']").count() > 0;
     }
 
+    boolean isNestedSchemaExpanded(String propertyName) {
+        return "true".equals(page.locator(".schema-prop-name[data-prop='" + propertyName + "'] .schema-nested-toggle")
+                .getAttribute("aria-expanded"));
+    }
+
     void expandNestedSchema(String propertyName) {
         page.locator(".schema-prop-name[data-prop='" + propertyName + "'] .schema-nested-toggle").click();
     }
@@ -481,6 +486,22 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 .click();
     }
 
+    void focusInlineLink(String statusCode, String linkName) {
+        var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
+        page.locator(panel + " .schema-link-row a")
+                .filter(new FilterOptions().setHasText(linkName))
+                .first()
+                .focus();
+    }
+
+    void focusSchemaLinkRow(String statusCode, String linkName) {
+        var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
+        page.locator(panel + " .schema-link-row")
+                .filter(new FilterOptions().setHasText(linkName))
+                .first()
+                .focus();
+    }
+
     String inlineLinkCursor(String statusCode, String linkName) {
         var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
         return page.locator(panel + " .schema-link-row a")
@@ -534,6 +555,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void clickBodyLink(int index) {
         page.locator("#detail pre.response .body-link").nth(index).click();
+    }
+
+    void focusBodyLink(int index) {
+        page.locator("#detail pre.response .body-link").nth(index).focus();
     }
 
     String operationFormAttribute(String attribute) {
