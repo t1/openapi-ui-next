@@ -93,6 +93,9 @@ fetch_board_issues() {
                                     number
                                     title
                                     state
+                                    milestone {
+                                        title
+                                    }
                                     labels(first: 10) {
                                         nodes { name }
                                     }
@@ -111,9 +114,14 @@ fetch_board_issues() {
             number: .content.number,
             title: .content.title,
             state: .content.state,
+            milestone: (.content.milestone.title // "~"),
             labels: [.content.labels.nodes[].name]
         }
-    ]' 2>/dev/null || echo "[]"
+    ]
+    | sort_by(
+        if .milestone == "~" then [999999]
+        else [.milestone | split(".") | .[] | tonumber] end
+    )' 2>/dev/null || echo "[]"
 }
 
 pick_next_issue() {
