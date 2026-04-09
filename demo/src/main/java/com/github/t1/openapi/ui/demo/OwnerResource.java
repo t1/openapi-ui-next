@@ -56,13 +56,6 @@ public class OwnerResource {
     @APIResponse(responseCode = "200", description = "List of pets",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(type = ARRAY, implementation = Pet.class)),
-            links = {
-                    @Link(name = "pet", operationId = "getPet",
-                            description = "Get details of a pet",
-                            parameters = @LinkParameter(name = "id", expression = "$response.body#/id")),
-                    @Link(name = "visits", operationId = "listPetVisits",
-                            description = "List visits for a pet",
-                            parameters = @LinkParameter(name = "petId", expression = "$response.body#/id"))},
             extensions = @Extension(name = "x-links", parseValue = true,
                     value = "{\"pet\":{\"operationId\":\"getPet\","
                             + "\"description\":\"Get details of a pet\","

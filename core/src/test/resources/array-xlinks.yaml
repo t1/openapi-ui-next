@@ -25,6 +25,18 @@ paths:
               parameters:
                 id: "$response.body#/[*]/id"
   /pets/{id}:
+    put:
+      summary: Update a pet
+      operationId: updatePet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Updated pet
     get:
       summary: Get a pet
       operationId: getPet

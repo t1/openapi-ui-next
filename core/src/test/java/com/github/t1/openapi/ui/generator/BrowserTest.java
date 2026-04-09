@@ -2751,5 +2751,20 @@ class BrowserTest {
             then(app.bodyLinkCount()).isEqualTo(2);
             then(app.bodyLinkText(0)).isEqualTo("pet");
         }
+
+        @Test void shouldFillParameterWhenClickingBodyLinkToMultiMethodPath() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("List pets");
+            app.mockEndpoint("/pets", "application/json",
+                    "[{\"id\":1,\"name\":\"Max\"},{\"id\":2,\"name\":\"Buddy\"}]");
+            app.clickSend();
+            app.waitForResponse();
+            app.clickBodyLink(0);
+            app.waitForDetailContent("Get a pet");
+            app.waitForInputValue("id", "1");
+
+            then(app.inputValue("id")).isEqualTo("1");
+        }
     }
 }

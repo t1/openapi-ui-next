@@ -439,8 +439,9 @@ document.addEventListener('DOMContentLoaded', function() {
             new ResizeObserver(function() { autoGrow(ta); }).observe(ta);
             autoGrow(ta);
         });
-        // Fill parameters from hash query string or body link navigation
-        if (window._pendingParams) {
+        // Fill parameters from hash query string or body link navigation.
+        // Wait until method tab selection is done (pendingMethod is null) so params go into the right form.
+        if (window._pendingParams && !pendingMethod) {
             var params = window._pendingParams;
             window._pendingParams = null;
             var targetForm = document.querySelector('#detail form[data-path]');
