@@ -175,9 +175,18 @@ In both cases:
    - Remove empty `docs/superpowers/plans/` and `docs/superpowers/specs/` directories if they become empty.
 2. Update the **Release Notes** section in `README.md`:
    - Add or update an entry under the issue's milestone version heading.
-   - Features get a bold name, brief summary, and issue link. Group related features (e.g. sub-issues of the same parent) into a single bullet.
-   - Bug fixes are grouped into a single "Bug fixes:" line with issue links.
-   - Keep entries compact — one line per feature, one line for all bug fixes.
+   - Features get a bold name, a colon separator, brief summary, and inline issue link:
+     `- **Feature name**: summary ([#N](url))`
+   - Bug fixes get a nested list under a bold "Bug fixes" bullet:
+     ```
+     - **Bug fixes**:
+       - description ([#N](url))
+       - description ([#N](url))
+     ```
+   - Use colons (`:`) as separators — never em dashes (`—`).
+   - Use inline links (`[#N](url)`) — never reference-style links (`[#N][ref]`).
+   - Group related features (e.g. sub-issues of the same parent) into a single bullet.
+   - Keep entries compact — one line per feature, one sub-item per bug fix.
 3. Squash implementation work into a single commit: `feat: <description> (#<N>)` or `fix: <description> (#<N>)`.
    - Exclude the Phase 3 spec/plan commit from the squash — it stays as a separate commit so the spec/plan are preserved in git history.
 4. Push to trunk and wait for CI:

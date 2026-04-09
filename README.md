@@ -6,8 +6,8 @@
 
 Generates static, keyboard-navigable HTML UIs from OpenAPI specifications; via CLI or Maven plugin.
 
-![OpenAPI UI Next — light](docs/screenshots/hero.png#gh-light-mode-only)
-![OpenAPI UI Next — dark](docs/screenshots/hero-dark.png#gh-dark-mode-only)
+![OpenAPI UI Next: light](docs/screenshots/hero.png#gh-light-mode-only)
+![OpenAPI UI Next: dark](docs/screenshots/hero-dark.png#gh-dark-mode-only)
 
 ## Why?
 
@@ -46,8 +46,8 @@ backend, so they load instantly. The dynamic UX is provided mainly by HTMX, e.g.
 <details>
 <summary>Tag-based tree view</summary>
 
-![Tag view — light](docs/screenshots/tag-view.png#gh-light-mode-only)
-![Tag view — dark](docs/screenshots/tag-view-dark.png#gh-dark-mode-only)
+![Tag view: light](docs/screenshots/tag-view.png#gh-light-mode-only)
+![Tag view: dark](docs/screenshots/tag-view-dark.png#gh-dark-mode-only)
 </details>
 
 **API Documentation**
@@ -61,7 +61,7 @@ backend, so they load instantly. The dynamic UX is provided mainly by HTMX, e.g.
   (e.g., a pet's visits), `x-links` lets you declare per-item links using `[*]` as an array
   wildcard in the parameter expression (e.g., `$response.body#/visits[*]/id`). These render
   as clickable badges on each array element in the response body, and as link rows in the
-  schema view — same visual treatment as standard OpenAPI Links.
+  schema view: same visual treatment as standard OpenAPI Links.
 - Accept header select for multi-content-type endpoints
 - Boolean parameters rendered as checkboxes (two-state: omit or send `true`; explicitly
   sending `false` is not supported -- a three-state control would add UX complexity for a
@@ -70,22 +70,22 @@ backend, so they load instantly. The dynamic UX is provided mainly by HTMX, e.g.
 <details>
 <summary>Parameter inputs</summary>
 
-![Parameters filled — light](docs/screenshots/params-filled.png#gh-light-mode-only)
-![Parameters filled — dark](docs/screenshots/params-filled-dark.png#gh-dark-mode-only)
+![Parameters filled: light](docs/screenshots/params-filled.png#gh-light-mode-only)
+![Parameters filled: dark](docs/screenshots/params-filled-dark.png#gh-dark-mode-only)
 </details>
 
 <details>
 <summary>Response schema tabs</summary>
 
-![Response schema tabs — light](docs/screenshots/response-schema-tabs.png#gh-light-mode-only)
-![Response schema tabs — dark](docs/screenshots/response-schema-tabs-dark.png#gh-dark-mode-only)
+![Response schema tabs: light](docs/screenshots/response-schema-tabs.png#gh-light-mode-only)
+![Response schema tabs: dark](docs/screenshots/response-schema-tabs-dark.png#gh-dark-mode-only)
 </details>
 
 <details>
 <summary>Nested schema expanded</summary>
 
-![Nested schema expanded — light](docs/screenshots/nested-schema-expanded.png#gh-light-mode-only)
-![Nested schema expanded — dark](docs/screenshots/nested-schema-expanded-dark.png#gh-dark-mode-only)
+![Nested schema expanded: light](docs/screenshots/nested-schema-expanded.png#gh-light-mode-only)
+![Nested schema expanded: dark](docs/screenshots/nested-schema-expanded-dark.png#gh-dark-mode-only)
 </details>
 
 <details>
@@ -131,8 +131,8 @@ supported for nested arrays (e.g., `$response.body#/visits[*]/treatments[*]/id`)
 <details>
 <summary>Try mode with JSON response</summary>
 
-![Try mode — light](docs/screenshots/try-mode-json-response.png#gh-light-mode-only)
-![Try mode — dark](docs/screenshots/try-mode-json-response-dark.png#gh-dark-mode-only)
+![Try mode: light](docs/screenshots/try-mode-json-response.png#gh-light-mode-only)
+![Try mode: dark](docs/screenshots/try-mode-json-response-dark.png#gh-dark-mode-only)
 </details>
 
 ## Usage
@@ -275,21 +275,18 @@ Initial MVP release
 
 ### 1.1
 
-- **Response links** — schema view shows link annotations with click-to-navigate;
+- **Response links**: schema view shows link annotations with click-to-navigate;
   response bodies get named badges that fill parameters in the target operation;
   `x-links` extension for array items; keyboard-focusable
   ([#4](https://github.com/t1/openapi-ui-next/issues/4))
-- **httpie defaults** — `GET` default method, `http://localhost` default base URL
+- **httpie defaults**: `GET` default method, `http://localhost` default base URL
   ([#5](https://github.com/t1/openapi-ui-next/issues/5))
-- **Quarkus extension** — dev-mode integration: change JAX-RS code, browser auto-refreshes UI
+- **Quarkus extension**: dev-mode integration: change JAX-RS code, browser auto-refreshes UI
   ([#26](https://github.com/t1/openapi-ui-next/issues/26))
-- Bug fixes: request body toggle without schema ([#6][i6]), textarea auto-grow ([#8][i8]),
-  keyboard navigation ([#21][i21], [#23][i23])
-
-[i6]: https://github.com/t1/openapi-ui-next/issues/6
-[i8]: https://github.com/t1/openapi-ui-next/issues/8
-[i21]: https://github.com/t1/openapi-ui-next/issues/21
-[i23]: https://github.com/t1/openapi-ui-next/issues/23
+- **Bug fixes**:
+  - request body toggle without schema ([#6](https://github.com/t1/openapi-ui-next/issues/6))
+  - textarea auto-grow ([#8](https://github.com/t1/openapi-ui-next/issues/8))
+  - keyboard navigation ([#21](https://github.com/t1/openapi-ui-next/issues/21), [#23](https://github.com/t1/openapi-ui-next/issues/23))
 
 ## Contributing
 
