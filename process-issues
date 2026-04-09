@@ -1,26 +1,29 @@
 #!/usr/bin/env zsh
-# process-issues — loop over approved GitHub issues and process them with OpenCode.
-#
-# Issues are processed in project board order (top = highest priority).
-# If the highest-priority issue is blocked, the loop waits (polling every
-# 10 minutes) until it is unblocked — lower-priority issues are not
-# processed because they may depend on it.
-#
-# Usage:
-#   ./process-issues [--dry-run] [--pick] [--verbose] [--issue N] [--model MODEL] [--poll MINUTES]
-#
-# Options:
-#   --dry-run       List issues that would be processed without spawning agents.
-#   --pick          Print the next eligible issue (number\ttitle\tblocked?) and exit.
-#   --verbose       Print diagnostic output to stderr (off by default).
-#   --issue N       Process only issue #N (skip the automatic selection).
-#   --model MODEL   Model to use (default: portkey/@vertex-ai/anthropic.claude-sonnet-4-6).
-#   --poll MINUTES  Poll interval when blocked (default: 10).
-#
-# Requires: A GitHub Project board owned by the repo owner (t1) linked to this repo.
-# Set the project number below.
-
 set -euo pipefail
+
+read -r -d '' USAGE <<'EOF' || true
+process-issues — loop over approved GitHub issues and process them with OpenCode.
+
+Issues are processed in project board order (top = highest priority).
+If the highest-priority issue is blocked, the loop waits (polling every
+10 minutes) until it is unblocked — lower-priority issues are not
+processed because they may depend on it.
+
+Usage:
+  ./process-issues [--dry-run] [--pick] [--verbose] [--issue N] [--model MODEL] [--poll MINUTES]
+
+Options:
+  --help          Show this help message and exit.
+  --dry-run       List issues that would be processed without spawning agents.
+  --pick          Print the next eligible issue (number\ttitle\tblocked?) and exit.
+  --verbose       Print diagnostic output to stderr (off by default).
+  --issue N       Process only issue #N (skip the automatic selection).
+  --model MODEL   Model to use (default: portkey/@vertex-ai/anthropic.claude-sonnet-4-6).
+  --poll MINUTES  Poll interval when blocked (default: 10).
+
+Requires: A GitHub Project board owned by the repo owner (t1) linked to this repo.
+Set the project number below.
+EOF
 
 PROJECT_OWNER="t1"
 PROJECT_NUMBER=1  # ← update after creating the project board
@@ -34,6 +37,10 @@ POLL_MINUTES=10
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --help)
+            printf '%s\n' "$USAGE"
+            exit 0
+            ;;
         --dry-run)
             DRY_RUN=true
             shift
@@ -60,7 +67,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown option: $1" >&2
-            echo "Usage: $0 [--dry-run] [--pick] [--verbose] [--issue N] [--model MODEL] [--poll MINUTES]" >&2
+            printf '%s\n' "$USAGE" >&2
             exit 1
             ;;
     esac
