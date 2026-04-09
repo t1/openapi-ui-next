@@ -1,0 +1,30 @@
+openapi: 3.0.3
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /pets:
+    delete:
+      summary: Delete all pets
+      operationId: deleteAll
+      responses:
+        '204':
+          description: Deleted
+    post:
+      summary: Add a pet
+      operationId: addPet
+      responses:
+        '201':
+          description: Created
+    get:
+      summary: List pets
+      operationId: listPets
+      responses:
+        '200':
+          description: A list of pets
+    put:
+      summary: Replace all pets
+      operationId: replaceAll
+      responses:
+        '200':
+          description: Replaced

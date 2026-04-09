@@ -2,19 +2,39 @@ package com.github.t1.openapi.ui.generator;
 
 import org.eclipse.microprofile.openapi.models.Operation;
 import org.eclipse.microprofile.openapi.models.PathItem;
+import org.eclipse.microprofile.openapi.models.PathItem.HttpMethod;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.eclipse.microprofile.openapi.models.PathItem.HttpMethod.DELETE;
+import static org.eclipse.microprofile.openapi.models.PathItem.HttpMethod.GET;
+import static org.eclipse.microprofile.openapi.models.PathItem.HttpMethod.HEAD;
+import static org.eclipse.microprofile.openapi.models.PathItem.HttpMethod.OPTIONS;
+import static org.eclipse.microprofile.openapi.models.PathItem.HttpMethod.PATCH;
+import static org.eclipse.microprofile.openapi.models.PathItem.HttpMethod.POST;
+import static org.eclipse.microprofile.openapi.models.PathItem.HttpMethod.PUT;
+import static org.eclipse.microprofile.openapi.models.PathItem.HttpMethod.TRACE;
+
 class PathNode {
+    private static final List<HttpMethod> METHOD_ORDER = List.of(
+            GET, HEAD, OPTIONS, TRACE, POST, PUT, PATCH, DELETE);
+
     private final Map<String, PathNode> children = new LinkedHashMap<>();
-    private final Map<PathItem.HttpMethod, Operation> operations = new LinkedHashMap<>();
+    private final Map<HttpMethod, Operation> operations = new LinkedHashMap<>();
 
     Map<String, PathNode> children() { return Collections.unmodifiableMap(children); }
 
-    Map<PathItem.HttpMethod, Operation> operations() { return Collections.unmodifiableMap(operations); }
+    Map<HttpMethod, Operation> operations() {
+        var sorted = new LinkedHashMap<HttpMethod, Operation>();
+        operations.entrySet().stream()
+                .sorted(Comparator.comparingInt(e -> METHOD_ORDER.indexOf(e.getKey())))
+                .forEach(e -> sorted.put(e.getKey(), e.getValue()));
+        return Collections.unmodifiableMap(sorted);
+    }
 
     void add(List<String> segments, int index, PathItem pathItem) {
         if (index >= segments.size()) {

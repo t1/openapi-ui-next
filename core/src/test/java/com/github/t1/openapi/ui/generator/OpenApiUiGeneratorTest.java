@@ -776,6 +776,20 @@ class OpenApiUiGeneratorTest {
         then(new String(files.get("index.html"))).contains("Test API");
     }
 
+    @Test void shouldOrderMethodsAsGetPostPutPatchDelete() throws Exception {
+        generate("/unordered-methods.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("pets/index.html"));
+        var getPos = indexHtml.indexOf("data-method=\"GET\"");
+        var postPos = indexHtml.indexOf("data-method=\"POST\"");
+        var putPos = indexHtml.indexOf("data-method=\"PUT\"");
+        var deletePos = indexHtml.indexOf("data-method=\"DELETE\"");
+        then(getPos).as("GET should appear").isGreaterThan(-1);
+        then(getPos).as("GET before POST").isLessThan(postPos);
+        then(postPos).as("POST before PUT").isLessThan(putPos);
+        then(putPos).as("PUT before DELETE").isLessThan(deletePos);
+    }
+
     @Test void shouldNotCrashOnEmptyContentMediaTypes() throws Exception {
         generate("/empty-content.yaml");
 
