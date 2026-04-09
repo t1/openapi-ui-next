@@ -267,6 +267,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void waitForInput(String name) {page.waitForSelector("#detail input[name='" + name + "']");}
 
+    void waitForFocusedInput(String name) {
+        page.waitForFunction("name => document.activeElement && document.activeElement.getAttribute('name') === name", name);
+    }
+
     void focusSendButton() {page.locator("#detail button[type=submit]").focus();}
 
     void clickSend() {page.locator("#detail button[type=submit]").click();}
@@ -486,6 +490,22 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 .click();
     }
 
+    boolean isInlineLinkFocused(String statusCode, String linkName) {
+        var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
+        return (Boolean) page.evaluate(
+                "([panel, linkName]) => { var links = document.querySelectorAll(panel + ' .schema-link-row a');"
+                        + " for (var i = 0; i < links.length; i++) { if (links[i].textContent.includes(linkName) && links[i] === document.activeElement) return true; } return false; }",
+                new Object[]{panel, linkName});
+    }
+
+    void waitForInlineLinkFocused(String statusCode, String linkName) {
+        var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
+        page.waitForFunction(
+                "([panel, linkName]) => { var links = document.querySelectorAll(panel + ' .schema-link-row a');"
+                        + " for (var i = 0; i < links.length; i++) { if (links[i].textContent.includes(linkName) && links[i] === document.activeElement) return true; } return false; }",
+                new Object[]{panel, linkName});
+    }
+
     void focusInlineLink(String statusCode, String linkName) {
         var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
         page.locator(panel + " .schema-link-row a")
@@ -696,6 +716,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     String activeElementTag() {return (String) page.evaluate("() => document.activeElement.tagName");}
+
+    String focusedInputName() {
+        return (String) page.evaluate("() => document.activeElement.getAttribute('name') || ''");
+    }
 
     String activeElementSelector() {
         return (String) page.evaluate("""

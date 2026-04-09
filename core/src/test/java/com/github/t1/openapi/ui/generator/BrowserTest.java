@@ -2381,6 +2381,32 @@ class BrowserTest {
             app.waitForDetailContent("Get an owner");
         }
 
+        @Test void shouldFocusFirstFieldAfterClickingInlineLink() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            app.expandNestedSchema("owner");
+            app.clickInlineLink("200", "GetOwner");
+            app.waitForDetailContent("Get an owner");
+            app.waitForFocusedInput("ownerId");
+
+            then(app.focusedInputName()).isEqualTo("ownerId");
+        }
+
+        @Test void shouldRestoreFocusOnLinkWhenNavigatingBack() {
+            navigateToPetDetail();
+            app.toggleSchema("response");
+            app.expandNestedSchema("owner");
+            // Navigate away via schema link (pushes history entry)
+            app.clickInlineLink("200", "GetOwner");
+            app.waitForDetailContent("Get an owner");
+            // Navigate back — focus should return to the GetOwner link
+            app.goBack();
+            app.waitForDetailContent("Get a pet");
+            app.waitForInlineLinkFocused("200", "GetOwner");
+
+            then(app.isInlineLinkFocused("200", "GetOwner")).isTrue();
+        }
+
         @Test void shouldShowInlineLinkAsClickable() {
             navigateToPetDetail();
             app.toggleSchema("response");
@@ -2591,6 +2617,16 @@ class BrowserTest {
             app.waitForInputValue("ownerId", "7");
 
             then(app.inputValue("ownerId")).isEqualTo("7");
+        }
+
+        @Test void shouldFocusLastFilledFieldAfterClickingBodyLink() {
+            navigateToPetDetailAndSend();
+            app.clickBodyLink(2); // ownerId=7 → getOwner
+            app.waitForDetailContent("Get an owner");
+            app.waitForInputValue("ownerId", "7");
+            app.waitForFocusedInput("ownerId");
+
+            then(app.focusedInputName()).isEqualTo("ownerId");
         }
 
         @Test void shouldLinkCorrectFieldWhenKeysAreDuplicated() {

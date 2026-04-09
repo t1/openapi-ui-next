@@ -364,9 +364,36 @@ document.addEventListener('DOMContentLoaded', function() {
         const method = pendingMethod;
         pendingMethod = null;
         const tabLinks = detail.querySelectorAll('.tabs li a');
+        var tabClicked = false;
         tabLinks.forEach(function(a) {
-            if (a.textContent.trim() === method) { a.click(); }
+            if (a.textContent.trim() === method) { a.click(); tabClicked = true; }
         });
+        // If no tab was clicked (single-method path), apply pending focus now
+        if (!tabClicked) {
+            if (window._pendingRestoreFocus) {
+                var selector = window._pendingRestoreFocus;
+                window._pendingRestoreFocus = null;
+                var el = document.querySelector('#detail ' + selector);
+                if (el) el.focus({preventScroll: true});
+            } else if (window._pendingFocusFirst) {
+                window._pendingFocusFirst = false;
+                var targetForm = document.querySelector('#detail form[data-path]');
+                if (targetForm) {
+                    var firstInput = targetForm.querySelector('input, select, textarea');
+                    if (firstInput) firstInput.focus();
+                    else {
+                        var sendBtn = targetForm.querySelector('button[type=submit]');
+                        if (sendBtn) sendBtn.focus();
+                    }
+                }
+            }
+        }
+        // Restore scroll position after back navigation
+        if (window._pendingScrollY != null) {
+            var scrollY = window._pendingScrollY;
+            window._pendingScrollY = null;
+            requestAnimationFrame(function() { window.scrollTo(0, scrollY); });
+        }
     });
     document.body.addEventListener('htmx:afterSwap', function(e) {
         const currentMode = modeContainer ? modeContainer.getAttribute('data-mode') : 'try';
@@ -445,13 +472,32 @@ document.addEventListener('DOMContentLoaded', function() {
             var params = window._pendingParams;
             window._pendingParams = null;
             var targetForm = document.querySelector('#detail form[data-path]');
+            var lastFilled = null;
             if (targetForm) {
                 for (var name in params) {
                     var input = targetForm.querySelector('[name="' + name + '"]');
                     if (input) {
                         input.value = params[name];
                         input.dispatchEvent(new Event('input', {bubbles: true}));
+                        lastFilled = input;
                     }
+                }
+            }
+            if (lastFilled) lastFilled.focus();
+        } else if (window._pendingRestoreFocus && !pendingMethod) {
+            var selector = window._pendingRestoreFocus;
+            window._pendingRestoreFocus = null;
+            var el = document.querySelector('#detail ' + selector);
+            if (el) el.focus({preventScroll: true});
+        } else if (window._pendingFocusFirst && !pendingMethod) {
+            window._pendingFocusFirst = false;
+            var targetForm = document.querySelector('#detail form[data-path]');
+            if (targetForm) {
+                var firstInput = targetForm.querySelector('input, select, textarea');
+                if (firstInput) firstInput.focus();
+                else {
+                    var sendBtn = targetForm.querySelector('button[type=submit]');
+                    if (sendBtn) sendBtn.focus();
                 }
             }
         }
@@ -1346,7 +1392,34 @@ document.addEventListener('DOMContentLoaded', function() {
             history.replaceState(null, '', hash);
         }
     }
-    window.addEventListener('popstate', function() { navigateFromHash(); });
+    // Disable browser's automatic scroll restoration — we handle it manually
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+    window.addEventListener('popstate', function(e) {
+        if (e.state && e.state.focusSelector) {
+            window._pendingRestoreFocus = e.state.focusSelector;
+        } else {
+            window._pendingFocusFirst = true;
+        }
+        if (e.state && e.state.scrollY != null) {
+            window._pendingScrollY = e.state.scrollY;
+        }
+        navigateFromHash();
+    });
+
+    // Intercept clicks on hash links (schema links, body links) inside detail
+    if (detail) {
+        detail.addEventListener('click', function(e) {
+            var link = e.target.closest('a[href^="#"]');
+            if (!link) return;
+            e.preventDefault();
+            // Save clicked link and scroll position so back navigation can restore them
+            history.replaceState({focusSelector: 'a[href="' + link.getAttribute('href') + '"]', scrollY: window.scrollY}, '');
+            history.pushState(null, '', link.getAttribute('href'));
+            window._pendingFocusFirst = true;
+            navigateFromHash();
+        });
+    }
 
     // Send button handler (delegated from detail pane)
     if (detail) {
