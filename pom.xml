@@ -4,7 +4,7 @@
 
     <groupId>com.github.t1</groupId>
     <artifactId>openapi-ui</artifactId>
-    <version>1.1</version>
+    <version>1.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>OpenAPI UI Next</name>
@@ -31,7 +31,7 @@
         <connection>scm:git:https://github.com/t1/openapi-ui-next.git</connection>
         <developerConnection>scm:git:https://github.com/t1/openapi-ui-next.git</developerConnection>
         <url>https://github.com/t1/openapi-ui-next</url>
-      <tag>v1.1</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <issueManagement>
