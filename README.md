@@ -270,11 +270,14 @@ output/
 
 ## Release Notes
 
-### 1.0
+We use [semantic versioning](https://semver.org), so 1.0.x versions are pure bugfix releases
+(expept for 1.0.3, which was a mistake ;-).
+
+### 1.0 - 2026-04-04
 
 Initial MVP release
 
-### 1.1
+### 1.1 - 2026-04-10
 
 - **Response links**: schema view shows link annotations with click-to-navigate;
   response bodies get named badges that fill parameters in the target operation;
