@@ -239,7 +239,8 @@ output/
 │   ├── htmx.min.js
 │   ├── highlight.min.js
 │   ├── css/
-│   │   └── all.min.css       # Font Awesome
+│   │   ├── fontawesome.min.css  # Font Awesome core
+│   │   └── solid.min.css       # Font Awesome solid icons
 │   └── webfonts/
 │       └── fa-solid-900.woff2
 ├── owners/

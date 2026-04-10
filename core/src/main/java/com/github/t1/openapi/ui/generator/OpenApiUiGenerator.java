@@ -152,7 +152,8 @@ public class OpenApiUiGenerator {
     private static Renderable htmlDocument(String pageTitle, Renderable body, Map<String, String[]> operationIdMap) {
         return html(pageTitle)
                 .stylesheet("vendor/bulma.min.css")
-                .stylesheet("vendor/css/all.min.css")
+                .stylesheet("vendor/css/fontawesome.min.css")
+                .stylesheet("vendor/css/solid.min.css")
                 .stylesheet("openapi-ui.css")
                 .script("vendor/htmx.min.js")
                 .script("vendor/highlight.min.js")
@@ -191,7 +192,8 @@ public class OpenApiUiGenerator {
         outputWebJarResource("bulma", "css/bulma.min.css", "vendor/bulma.min.css");
         outputWebJarResource("htmx.org", "dist/htmx.min.js", "vendor/htmx.min.js");
         outputWebJarResource("highlightjs", "highlight.min.js", "vendor/highlight.min.js");
-        outputWebJarResource("fortawesome__fontawesome-free", "css/all.min.css", "vendor/css/all.min.css");
+        outputWebJarResource("fortawesome__fontawesome-free", "css/fontawesome.min.css", "vendor/css/fontawesome.min.css");
+        outputWebJarResource("fortawesome__fontawesome-free", "css/solid.min.css", "vendor/css/solid.min.css");
         outputWebJarResource("fortawesome__fontawesome-free", "webfonts/fa-solid-900.woff2", "vendor/webfonts/fa-solid-900.woff2");
     }
 
