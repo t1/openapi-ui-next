@@ -292,6 +292,10 @@ Initial MVP release
   - textarea auto-grow ([#8](https://github.com/t1/openapi-ui-next/issues/8))
   - keyboard navigation ([#21](https://github.com/t1/openapi-ui-next/issues/21), [#23](https://github.com/t1/openapi-ui-next/issues/23))
 
+### 1.2 - not yet released
+
+- Style custom headers like documented parameters: label-above layout with badge and auto-resizing name input
+
 ## Contributing
 
 Even just using the project and leaving a star helps a lot -- it shows there's interest

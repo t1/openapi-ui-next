@@ -137,19 +137,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function createHeaderRow(name, value, persisted) {
         const row = document.createElement('div');
-        row.className = 'custom-header-row';
+        row.className = 'field custom-header-row';
         if (persisted && name) row.setAttribute('data-prev-name', name);
         const escapedName = name ? name.replace(/"/g, '&quot;') : '';
         const escapedValue = value ? value.replace(/"/g, '&quot;') : '';
         const nameAttr = name ? '' : ' name="' + randomName() + '"';
         const valueAttr = name ? '' : ' name="' + randomName() + '"';
+        var placeholder = 'Header name';
+        var nameSize = ' size="' + Math.max(name ? name.length : placeholder.length, 1) + '"';
         row.innerHTML =
-            '<input type="text" class="input is-small custom-header-name"' + nameAttr + ' placeholder="Header name"' + (name ? ' value="' + escapedName + '"' : '') + '>' +
+            '<label class="label custom-header-label">' +
+            '<input type="text" class="custom-header-name"' + nameAttr + nameSize + ' placeholder="Header name"' + (name ? ' value="' + escapedName + '"' : '') + '>' +
+            '<div class="tags has-addons is-inline-flex ml-2"><span class="tag">header</span><span class="tag is-info">custom</span><a class="tag is-delete custom-header-remove"></a></div>' +
+            '</label>' +
             '<div class="control has-icons-right">' +
             '<input type="text" class="input is-small custom-header-value"' + valueAttr + ' placeholder="Value"' + (value ? ' value="' + escapedValue + '"' : '') + '>' +
             '<span class="icon is-small is-right persist-toggle" aria-pressed="' + (persisted ? 'true' : 'false') + '" title="Pin value (' + shortcutMod + '+P)"><i class="fa-solid fa-thumbtack"></i></span>' +
-            '</div>' +
-            '<button type="button" class="delete is-small custom-header-remove"></button>';
+            '</div>';
         return row;
     }
 
@@ -232,6 +236,9 @@ document.addEventListener('DOMContentLoaded', function() {
         globalHeadersPanel.addEventListener('input', function(e) {
             const inp = e.target.closest('.custom-header-name, .custom-header-value');
             if (!inp) return;
+            if (inp.classList.contains('custom-header-name')) {
+                inp.size = Math.max(inp.value.length, inp.placeholder.length, 1);
+            }
             applyGlobalHeaderPlaceholders();
             syncPersistedHeader(inp.closest('.custom-header-row'), globalHeaderKey);
         });
@@ -570,11 +577,11 @@ document.addEventListener('DOMContentLoaded', function() {
     detail.addEventListener('click', function(e) {
         const persistBtn = e.target.closest('#detail .field .persist-toggle');
         if (!persistBtn) return;
-        const pressed = persistBtn.getAttribute('aria-pressed') === 'true';
-        persistBtn.setAttribute('aria-pressed', String(!pressed));
         const fieldEl = persistBtn.closest('.field');
         const el = fieldEl.querySelector('[data-param-in]');
-        if (!el) return;
+        if (!el) return; // not a spec-defined param (e.g. custom header row)
+        const pressed = persistBtn.getAttribute('aria-pressed') === 'true';
+        persistBtn.setAttribute('aria-pressed', String(!pressed));
         const inp = paramControl(el);
         const form = el.closest('form[data-path]');
         const key = paramStorageKey(form, el.getAttribute('data-param-in'), inp.getAttribute('name'));
@@ -621,6 +628,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Per-op custom header input update
         const customInp = e.target.closest('.custom-headers .custom-header-name, .custom-headers .custom-header-value');
         if (customInp) {
+            if (customInp.classList.contains('custom-header-name')) {
+                customInp.size = Math.max(customInp.value.length, customInp.placeholder.length, 1);
+            }
             const row = customInp.closest('.custom-header-row');
             const form = row.closest('form[data-path]');
             syncPersistedHeader(row, function(n) { return customHeaderStorageKey(form, n); });

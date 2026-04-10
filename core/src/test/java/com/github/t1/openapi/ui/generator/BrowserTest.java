@@ -127,6 +127,15 @@ class BrowserTest {
             then(app.isGlobalHeaderPinInsideControl(0)).isTrue();
         }
 
+        @Test void shouldAutoResizeGlobalHeaderNameInput() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            var emptyWidth = app.globalHeaderNameWidth(0);
+            app.fillGlobalHeaderName(0, "X-Very-Long-Global-Header-Name");
+            var filledWidth = app.globalHeaderNameWidth(0);
+            then(filledWidth).isGreaterThan(emptyWidth);
+        }
+
         @Test void shouldToggleGlobalHeaderPersistWithShortcut() {
             app.clickGlobalHeadersToggle();
             app.clickGlobalHeaderButton("+ Add global header");
@@ -1840,6 +1849,27 @@ class BrowserTest {
         @Test void shouldAddCustomHeaderRow() {
             app.clickButton("+ Add custom header");
             then(app.customHeaderRowCount()).isEqualTo(1);
+        }
+
+        @Test void shouldShowHeaderBadgeOnCustomHeaderRow() {
+            app.clickButton("+ Add custom header");
+            then(app.customHeaderHasBadge(0, "custom")).isTrue();
+            then(app.customHeaderHasBadge(0, "header")).isTrue();
+        }
+
+        @Test void shouldRemoveCustomHeaderViaTagDelete() {
+            app.clickButton("+ Add custom header");
+            then(app.customHeaderRowCount()).isEqualTo(1);
+            app.clickCustomHeaderTagDelete(0);
+            then(app.customHeaderRowCount()).isEqualTo(0);
+        }
+
+        @Test void shouldAutoResizeCustomHeaderNameInput() {
+            app.clickButton("+ Add custom header");
+            var emptyWidth = app.customHeaderNameWidth(0);
+            app.fillCustomHeaderName(0, "X-Very-Long-Custom-Header-Name");
+            var filledWidth = app.customHeaderNameWidth(0);
+            then(filledWidth).isGreaterThan(emptyWidth);
         }
 
         @Test void shouldIncludeCustomHeaderInCurlCommand() {

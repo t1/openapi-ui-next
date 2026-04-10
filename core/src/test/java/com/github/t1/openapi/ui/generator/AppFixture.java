@@ -842,6 +842,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-name").fill(name);
     }
 
+    double globalHeaderNameWidth(int index) {
+        var result = page.locator("#global-headers .custom-header-row").nth(index).locator(".custom-header-name")
+                .evaluate("el => el.getBoundingClientRect().width");
+        return ((Number) result).doubleValue();
+    }
+
     int globalHeaderRowCount() {
         return page.locator("#global-headers .custom-header-row").count();
     }
@@ -916,6 +922,20 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     String customHeaderValue(int index) {
         return page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-value").inputValue();
+    }
+
+    boolean customHeaderHasBadge(int index, String text) {
+        return page.locator("#detail .custom-header-row").nth(index).locator(".tag >> text='" + text + "'").count() > 0;
+    }
+
+    void clickCustomHeaderTagDelete(int index) {
+        page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-remove").click();
+    }
+
+    double customHeaderNameWidth(int index) {
+        var result = page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-name")
+                .evaluate("el => el.getBoundingClientRect().width");
+        return ((Number) result).doubleValue();
     }
 
     boolean isErrorBannerVisible() {
