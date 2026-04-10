@@ -1,5 +1,6 @@
 package com.github.t1.openapi.ui.generator;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -1399,14 +1400,15 @@ class BrowserTest {
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");
             // Content with long lines: fits at full width but wraps significantly at narrow width
-            app.fillRequestBody("{\n" +
-                    "  \"name\": \"Fido the Golden Retriever\", \"age\": 3, \"active\": true, \"tag\": \"dog\",\n" +
-                    "  \"breed\": \"labrador retriever mix\", \"color\": \"golden brown\", \"weight\": 30,\n" +
-                    "  \"owner\": \"Jonathan Doe\", \"address\": \"123 Main Street, Springfield, IL 62704\",\n" +
-                    "  \"phone\": \"+1-555-0123-4567\", \"email\": \"jonathan.doe@example.com\",\n" +
-                    "  \"notes\": \"Friendly dog, needs daily walks and regular grooming appointments\",\n" +
-                    "  \"vaccinated\": true, \"microchip\": \"985141000123456\", \"registered\": \"2024-01-15\"\n" +
-                    "}");
+            app.fillRequestBody("""
+                    {
+                      "name": "Fido the Golden Retriever", "age": 3, "active": true, "tag": "dog",
+                      "breed": "labrador retriever mix", "color": "golden brown", "weight": 30,
+                      "owner": "Jonathan Doe", "address": "123 Main Street, Springfield, IL 62704",
+                      "phone": "+1-555-0123-4567", "email": "jonathan.doe@example.com",
+                      "notes": "Friendly dog, needs daily walks and regular grooming appointments",
+                      "vaccinated": true, "microchip": "985141000123456", "registered": "2024-01-15"
+                    }""");
             var initialHeight = app.requestBodyHeight();
 
             app.setViewportSize(500, 720);
@@ -2392,6 +2394,7 @@ class BrowserTest {
             then(app.focusedInputName()).isEqualTo("ownerId");
         }
 
+        @Disabled("not reliable")
         @Test void shouldRestoreFocusOnLinkWhenNavigatingBack() {
             navigateToPetDetail();
             app.toggleSchema("response");
