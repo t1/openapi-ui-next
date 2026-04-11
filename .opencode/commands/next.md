@@ -2,9 +2,13 @@
 description: Process the next GitHub issue (or a specific one)
 ---
 
-If an issue number is given ($ARGUMENTS), process it directly using the `process-issue` skill in interactive mode.
+If an issue number is given (i.e. `$ARGUMENTS` is not empty), process issue **#$ARGUMENTS** directly using the `process-issue` skill in interactive mode. Start immediately — no user confirmation needed. **STOP READING HERE — ignore everything below.**
 
-If no issue number is given, use the output below to determine the next issue:
+---
+
+## Pick Next (only when no issue number is given)
+
+Use the output below to determine the next issue:
 
 !`./process-issues --pick`
 
