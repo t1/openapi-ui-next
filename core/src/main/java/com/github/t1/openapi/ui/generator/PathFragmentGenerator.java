@@ -11,7 +11,7 @@ import static com.github.t1.htmljava.HtmlBasics.element;
 import static com.github.t1.openapi.ui.generator.OperationFragmentGenerator.operationFragment;
 
 class PathFragmentGenerator {
-    static Element pathFragment(ApiPath path, Map<HttpMethod, Operation> operations, Map<String, String[]> operationIdMap, org.eclipse.microprofile.openapi.models.Components components) {
+    static Element pathFragment(ApiPath path, Map<HttpMethod, Operation> operations, Map<String, String[]> operationIdMap, org.eclipse.microprofile.openapi.models.Components components, java.util.List<org.eclipse.microprofile.openapi.models.security.SecurityRequirement> globalSecurity) {
         var tabList = element("ul");
         var first = true;
         Element firstMethodContent = null;
@@ -28,7 +28,7 @@ class PathFragmentGenerator {
             tabList.content(li);
             if (first) {
                 firstMethodContent = operationFragment(
-                        new com.github.t1.openapi.ui.generator.Operation(method, opEntry.getValue(), path, components), operationIdMap);
+                        new com.github.t1.openapi.ui.generator.Operation(method, opEntry.getValue(), path, components, globalSecurity), operationIdMap);
                 first = false;
             }
         }

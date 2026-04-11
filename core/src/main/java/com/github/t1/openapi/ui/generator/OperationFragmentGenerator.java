@@ -62,6 +62,7 @@ class OperationFragmentGenerator {
     private final ApiPath displayPath;
     private final Map<String, String[]> operationIdMap;
     private final Map<String, Schema> schemas;
+    private final java.util.List<org.eclipse.microprofile.openapi.models.security.SecurityRequirement> globalSecurity;
 
     /// Helper to get type as string from MicroProfile's List<SchemaType>
     private static String typeAsString(Schema schema) {
@@ -79,6 +80,7 @@ class OperationFragmentGenerator {
         this.schemas = operation.components() != null && operation.components().getSchemas() != null 
             ? operation.components().getSchemas() 
             : Map.of();
+        this.globalSecurity = operation.globalSecurity();
     }
 
     static Element operationFragment(Operation operation, Map<String, String[]> operationIdMap) {
@@ -108,6 +110,7 @@ class OperationFragmentGenerator {
         if (operation.getOperationId() != null) operationForm.attr("data-operation-id", operation.getOperationId());
         responseLinksData(operationForm);
         parameterFields(operationForm);
+        authSection(operationForm);
         operationForm.content(div().classes("custom-headers")
                 .content(element("button").attr("type", "button").classes("custom-header-add")
                         .content("+ Add custom header")));
@@ -209,6 +212,13 @@ class OperationFragmentGenerator {
             inputField.iconRight("thumbtack");
             parameterHelp(inputField, param);
             operationForm.content(inputField);
+        }
+    }
+
+    private void authSection(Form operationForm) {
+        var effectiveSecurity = operation.getSecurity() != null ? operation.getSecurity() : globalSecurity;
+        if (effectiveSecurity != null && !effectiveSecurity.isEmpty()) {
+            operationForm.content(div().classes("auth-section"));
         }
     }
 

@@ -295,6 +295,7 @@ Initial MVP release
 ### 1.2 - not yet released
 
 - Style custom headers like documented parameters: label-above layout with badge and auto-resizing name input
+- Security schemes infrastructure: resolve effective security requirements per operation ([#34](https://github.com/t1/openapi-ui-next/issues/34))
 
 ## Contributing
 

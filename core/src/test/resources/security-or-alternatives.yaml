@@ -1,0 +1,26 @@
+openapi: 3.0.3
+info:
+  title: Security Test API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+    ApiKeyAuth:
+      type: apiKey
+      name: X-API-Key
+      in: header
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+paths:
+  /pets:
+    get:
+      summary: List pets
+      operationId: listPets
+      responses:
+        '200':
+          description: A list of pets

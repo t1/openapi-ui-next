@@ -814,6 +814,20 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("id");
     }
 
+    @Test void shouldRenderAuthSectionWhenGlobalSecurityDefined() throws Exception {
+        generate("/security-bearer.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("auth-section");
+    }
+
+    @Test void shouldNotRenderAuthSectionWhenSecurityExplicitlyEmpty() throws Exception {
+        generate("/security-empty.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).doesNotContain("auth-section");
+    }
+
     private BiConsumer<String, byte[]> writeToOutputDir() {
         return (name, content) -> {
             try {
