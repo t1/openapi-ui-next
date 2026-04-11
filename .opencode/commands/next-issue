@@ -1,0 +1,45 @@
+#!/usr/bin/env zsh
+# Generates the prompt for the /next command.
+# Called from next.md via !`./next-issue $ARGUMENTS`
+#
+# With an argument:  emits a short "process issue #N" prompt.
+# Without:           runs process-issues --pick and emits the full "pick next" prompt.
+set -euo pipefail
+
+if [[ $# -gt 0 && -n "$1" ]]; then
+    # Direct issue number — emit only the relevant prompt.
+    cat <<EOF
+Process issue **#$1** directly using the \`process-issue\` skill in interactive mode.
+Start immediately — no user confirmation needed.
+EOF
+    exit 0
+fi
+
+# No argument — pick the next issue from the board.
+pick_output=$(./process-issues --pick 2>/dev/null) || {
+    echo "No eligible issues found on the project board."
+    exit 0
+}
+
+blocked_output=$(./process-issues --dry-run 2>/dev/null | grep BLOCKED || echo "(none)")
+
+cat <<EOF
+Use the output below to determine the next issue:
+
+${pick_output}
+
+The output is tab-separated: \`number\\ttitle\\tstatus\` where status is \`blocked\` or \`ready\`.
+
+- If the status is \`blocked\`: the issue was previously blocked by a question, got answered, and is ready to resume. Process it directly using the \`process-issue\` skill in interactive mode.
+- If the status is \`ready\`: this is a fresh issue that the \`process-issues\` harness would normally pick up automatically. Show the issue number and title to the user and ask whether they want to proceed before starting. Also check the blocked issues list below — if there is a blocked issue available, offer it as an alternative for interactive brainstorming.
+
+Blocked issues (available for interactive brainstorming):
+
+${blocked_output}
+
+If there are blocked issues and the next ready issue is shown, present both options to the user:
+1. Process the ready issue autonomously (the default)
+2. Brainstorm the blocked issue interactively (show its number and title)
+
+Use the \`process-issue\` skill. Run in interactive mode.
+EOF
