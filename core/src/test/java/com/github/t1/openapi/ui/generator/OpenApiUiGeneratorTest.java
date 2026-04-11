@@ -864,6 +864,59 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("name=\"Authorization\"");
     }
 
+    @Test void shouldRenderHttpBasicAsInfoOnly() throws Exception {
+        generate("/security-http-basic.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("🔒");
+        then(fragment).contains("basic");
+        then(fragment).contains("Basic authentication (handled by browser)");
+        then(fragment).doesNotContain("<input");
+    }
+
+    @Test void shouldRenderOAuth2AsInfoOnly() throws Exception {
+        generate("/security-oauth2.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("🔒");
+        then(fragment).contains("oauth2");
+        then(fragment).contains("authorizationCode");
+        then(fragment).contains("https://example.com/oauth/authorize");
+        then(fragment).contains("https://example.com/oauth/token");
+        then(fragment).doesNotContain("<input");
+    }
+
+    @Test void shouldRenderOpenIdConnectAsInfoOnly() throws Exception {
+        generate("/security-openidconnect.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("🔒");
+        then(fragment).contains("openIdConnect");
+        then(fragment).contains("https://example.com/.well-known/openid-configuration");
+        then(fragment).doesNotContain("<input");
+    }
+
+    @Test void shouldRenderMutualTlsAsInfoOnly() throws Exception {
+        generate("/security-mutualtls.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("🔒");
+        then(fragment).contains("mutualTLS");
+        then(fragment).contains("Mutual TLS (client certificate required)");
+        then(fragment).doesNotContain("<input");
+    }
+
+    @Test void shouldRenderApiKeyCookieAsInfoOnly() throws Exception {
+        generate("/security-apikey-cookie.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("🔒");
+        then(fragment).contains("apiKey");
+        then(fragment).contains("sessionid");
+        then(fragment).contains("handled by browser");
+        then(fragment).doesNotContain("<input");
+    }
+
     private BiConsumer<String, byte[]> writeToOutputDir() {
         return (name, content) -> {
             try {

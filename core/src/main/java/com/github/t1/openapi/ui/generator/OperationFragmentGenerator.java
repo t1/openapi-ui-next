@@ -230,10 +230,26 @@ class OperationFragmentGenerator {
         var firstRequirement = effectiveSecurity.getFirst();
         for (var schemeName : firstRequirement.getSchemes().keySet()) {
             var scheme = components.getSecuritySchemes().get(schemeName);
-            if (scheme != null && SecurityScheme.Type.APIKEY == scheme.getType()) {
-                authDiv.content(apiKeyAuthField(scheme));
-            } else if (scheme != null && SecurityScheme.Type.HTTP == scheme.getType() && "bearer".equals(scheme.getScheme())) {
-                authDiv.content(bearerAuthField(scheme));
+            if (scheme == null) continue;
+            
+            if (SecurityScheme.Type.APIKEY == scheme.getType()) {
+                if (SecurityScheme.In.COOKIE == scheme.getIn()) {
+                    authDiv.content(cookieApiKeyAuthField(scheme));
+                } else {
+                    authDiv.content(apiKeyAuthField(scheme));
+                }
+            } else if (SecurityScheme.Type.HTTP == scheme.getType()) {
+                if ("bearer".equals(scheme.getScheme())) {
+                    authDiv.content(bearerAuthField(scheme));
+                } else if ("basic".equals(scheme.getScheme())) {
+                    authDiv.content(httpBasicAuthField(scheme));
+                }
+            } else if (SecurityScheme.Type.OAUTH2 == scheme.getType()) {
+                authDiv.content(oauth2AuthField(scheme));
+            } else if (SecurityScheme.Type.OPENIDCONNECT == scheme.getType()) {
+                authDiv.content(openIdConnectAuthField(scheme));
+            } else if (SecurityScheme.Type.MUTUALTLS == scheme.getType()) {
+                authDiv.content(mutualTlsAuthField(scheme));
             }
         }
         
@@ -257,6 +273,56 @@ class OperationFragmentGenerator {
         inp.attr("data-param-in", "auth-header");
         inputField.content(inp);
         inputField.iconRight("thumbtack");
+        return inputField;
+    }
+
+    private com.github.t1.bulmajava.form.Field httpBasicAuthField(SecurityScheme scheme) {
+        var badges = tagsAddon().content(tag("🔒 basic").is(WARNING)).classes("is-inline-flex", "ml-2");
+        var inputField = field().label(span(scheme.getName()), badges);
+        inputField.content(p("Basic authentication (handled by browser)"));
+        return inputField;
+    }
+
+    private com.github.t1.bulmajava.form.Field oauth2AuthField(SecurityScheme scheme) {
+        var badges = tagsAddon().content(tag("🔒 oauth2").is(WARNING)).classes("is-inline-flex", "ml-2");
+        var inputField = field().label(span(scheme.getName()), badges);
+        var flows = scheme.getFlows();
+        if (flows != null) {
+            if (flows.getAuthorizationCode() != null) {
+                var flow = flows.getAuthorizationCode();
+                inputField.content(p("authorizationCode: " + flow.getAuthorizationUrl() + " / " + flow.getTokenUrl()));
+            } else if (flows.getImplicit() != null) {
+                var flow = flows.getImplicit();
+                inputField.content(p("implicit: " + flow.getAuthorizationUrl()));
+            } else if (flows.getPassword() != null) {
+                var flow = flows.getPassword();
+                inputField.content(p("password: " + flow.getTokenUrl()));
+            } else if (flows.getClientCredentials() != null) {
+                var flow = flows.getClientCredentials();
+                inputField.content(p("clientCredentials: " + flow.getTokenUrl()));
+            }
+        }
+        return inputField;
+    }
+
+    private com.github.t1.bulmajava.form.Field openIdConnectAuthField(SecurityScheme scheme) {
+        var badges = tagsAddon().content(tag("🔒 openIdConnect").is(WARNING)).classes("is-inline-flex", "ml-2");
+        var inputField = field().label(span(scheme.getName()), badges);
+        inputField.content(p("Discovery URL: " + scheme.getOpenIdConnectUrl()));
+        return inputField;
+    }
+
+    private com.github.t1.bulmajava.form.Field mutualTlsAuthField(SecurityScheme scheme) {
+        var badges = tagsAddon().content(tag("🔒 mutualTLS").is(WARNING)).classes("is-inline-flex", "ml-2");
+        var inputField = field().label(span(scheme.getName()), badges);
+        inputField.content(p("Mutual TLS (client certificate required)"));
+        return inputField;
+    }
+
+    private com.github.t1.bulmajava.form.Field cookieApiKeyAuthField(SecurityScheme scheme) {
+        var badges = tagsAddon().content(tag("🔒 apiKey").is(WARNING)).classes("is-inline-flex", "ml-2");
+        var inputField = field().label(span(scheme.getName()), badges);
+        inputField.content(p("Cookie: " + scheme.getName() + " (handled by browser)"));
         return inputField;
     }
 

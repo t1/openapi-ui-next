@@ -298,6 +298,7 @@ Initial MVP release
 - Security schemes infrastructure: resolve effective security requirements per operation ([#34](https://github.com/t1/openapi-ui-next/issues/34))
 - apiKey security: header and query parameter input fields with pin support and fetch integration ([#35](https://github.com/t1/openapi-ui-next/issues/35))
 - http bearer security: Authorization header input with pin support and auto-prefix Bearer in fetch ([#36](https://github.com/t1/openapi-ui-next/issues/36))
+- Info-only security schemes: documentation rows for browser-handled auth (http basic, oauth2, openIdConnect, mutualTLS, cookie apiKey) ([#37](https://github.com/t1/openapi-ui-next/issues/37))
 
 ## Contributing
 

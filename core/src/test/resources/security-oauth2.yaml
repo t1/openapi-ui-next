@@ -1,0 +1,28 @@
+openapi: 3.0.3
+info:
+  title: Security Test API - OAuth2
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      description: OAuth2 authentication
+      flows:
+        authorizationCode:
+          authorizationUrl: https://example.com/oauth/authorize
+          tokenUrl: https://example.com/oauth/token
+          scopes:
+            read: Read access
+            write: Write access
+security:
+  - OAuth2: [read, write]
+paths:
+  /pets:
+    get:
+      summary: List pets
+      operationId: listPets
+      responses:
+        '200':
+          description: A list of pets
