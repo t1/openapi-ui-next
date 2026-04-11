@@ -29,6 +29,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirements;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.ArrayList;
@@ -53,6 +55,7 @@ public class PetResource {
     private static long nextId = 4;
 
     @GET @Produces(APPLICATION_JSON)
+    @SecurityRequirement(name = "")
     @Operation(summary = "List all pets", description = "Returns all pets from the system. "
                                                         + "Supports filtering by status via the optional query parameter. "
                                                         + "Results are sorted by ID in ascending order. "
@@ -111,7 +114,9 @@ public class PetResource {
         return new PetResponse(pet.id, pet.name, pet.status, owner, visits);
     }
 
-    @POST @Produces(APPLICATION_JSON) @Operation(summary = "Add a new pet")
+    @POST @Produces(APPLICATION_JSON)
+    @SecurityRequirement(name = "ApiKeyAuth")
+    @Operation(summary = "Add a new pet")
     public Response create(
             @HeaderParam("X-Api-Key") @Parameter(required = true, description = "API key for authentication") String apiKey,
             @RequestBody @Valid Pet pet) {
@@ -164,7 +169,11 @@ public class PetResource {
         OwnerResource.findById(ownerId);
     }
 
-    @DELETE @Path("/{id}") @Operation(summary = "Delete a pet")
+    @DELETE @Path("/{id}")
+    @SecurityRequirements({
+            @SecurityRequirement(name = "BearerAuth"),
+            @SecurityRequirement(name = "ApiKeyAuth")})
+    @Operation(summary = "Delete a pet")
     @Tag(name = "admin")
     public Response delete(@PathParam("id") long id) {
         var removed = PETS.removeIf(p -> p.id == id);
