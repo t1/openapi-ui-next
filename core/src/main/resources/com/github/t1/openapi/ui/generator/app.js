@@ -1464,7 +1464,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (paramIn === 'path' || pathTemplate.includes('{' + name + '}')) {
                     resolvedPath = resolvedPath.replace('{' + name + '}', encodeURIComponent(val));
                 } else if (paramIn === 'header' || paramIn === 'auth-header') {
-                    if (val) requestHeaders[name] = val;
+                    if (val) {
+                        if (name === 'Authorization' && !val.startsWith('Bearer ')) {
+                            requestHeaders[name] = 'Bearer ' + val;
+                        } else {
+                            requestHeaders[name] = val;
+                        }
+                    }
                 } else if (paramIn === 'cookie') {
                     if (val) cookieParts.push(name + '=' + val);
                 } else if (paramIn === 'auth-query') {

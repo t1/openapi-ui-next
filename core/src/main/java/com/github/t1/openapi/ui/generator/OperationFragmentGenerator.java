@@ -232,6 +232,8 @@ class OperationFragmentGenerator {
             var scheme = components.getSecuritySchemes().get(schemeName);
             if (scheme != null && SecurityScheme.Type.APIKEY == scheme.getType()) {
                 authDiv.content(apiKeyAuthField(scheme));
+            } else if (scheme != null && SecurityScheme.Type.HTTP == scheme.getType() && "bearer".equals(scheme.getScheme())) {
+                authDiv.content(bearerAuthField(scheme));
             }
         }
         
@@ -243,6 +245,16 @@ class OperationFragmentGenerator {
         var inputField = field().label(span(scheme.getName()), badges);
         var inp = input(TEXT).attr("name", scheme.getName());
         inp.attr("data-param-in", SecurityScheme.In.HEADER == scheme.getIn() ? "auth-header" : "auth-query");
+        inputField.content(inp);
+        inputField.iconRight("thumbtack");
+        return inputField;
+    }
+
+    private com.github.t1.bulmajava.form.Field bearerAuthField(SecurityScheme scheme) {
+        var badges = tagsAddon().content(tag("🔒 bearer").is(WARNING)).classes("is-inline-flex", "ml-2");
+        var inputField = field().label(span(scheme.getName()), badges);
+        var inp = input(TEXT).attr("name", "Authorization");
+        inp.attr("data-param-in", "auth-header");
         inputField.content(inp);
         inputField.iconRight("thumbtack");
         return inputField;

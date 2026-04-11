@@ -852,6 +852,18 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("name=\"api_key\"");
     }
 
+    @Test void shouldRenderBearerAuthWithLockBadge() throws Exception {
+        generate("/security-bearer.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("🔒");
+        then(fragment).contains("bearer");
+        then(fragment).contains("Authorization");
+        then(fragment).contains("<input");
+        then(fragment).contains("data-param-in=\"auth-header\"");
+        then(fragment).contains("name=\"Authorization\"");
+    }
+
     private BiConsumer<String, byte[]> writeToOutputDir() {
         return (name, content) -> {
             try {
