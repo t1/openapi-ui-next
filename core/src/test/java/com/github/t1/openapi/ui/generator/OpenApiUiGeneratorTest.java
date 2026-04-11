@@ -828,6 +828,30 @@ class OpenApiUiGeneratorTest {
         then(fragment).doesNotContain("auth-section");
     }
 
+    @Test void shouldRenderApiKeyHeaderWithLockBadge() throws Exception {
+        generate("/security-apikey-header.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("🔒");
+        then(fragment).contains("apiKey");
+        then(fragment).contains("X-API-Key");
+        then(fragment).contains("<input");
+        then(fragment).contains("data-param-in=\"auth-header\"");
+        then(fragment).contains("name=\"X-API-Key\"");
+    }
+
+    @Test void shouldRenderApiKeyQueryWithAuthQueryAttribute() throws Exception {
+        generate("/security-apikey-query.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("🔒");
+        then(fragment).contains("apiKey");
+        then(fragment).contains("api_key");
+        then(fragment).contains("<input");
+        then(fragment).contains("data-param-in=\"auth-query\"");
+        then(fragment).contains("name=\"api_key\"");
+    }
+
     private BiConsumer<String, byte[]> writeToOutputDir() {
         return (name, content) -> {
             try {

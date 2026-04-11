@@ -7,6 +7,7 @@ import com.github.t1.bulmajava.elements.Box;
 import com.github.t1.bulmajava.form.Form;
 import com.github.t1.htmljava.Element;
 import com.github.t1.htmljava.Renderable;
+import org.eclipse.microprofile.openapi.models.Components;
 import org.eclipse.microprofile.openapi.models.PathItem.HttpMethod;
 import org.eclipse.microprofile.openapi.models.links.Link;
 import org.eclipse.microprofile.openapi.models.media.MediaType;
@@ -14,6 +15,7 @@ import org.eclipse.microprofile.openapi.models.media.Schema;
 import org.eclipse.microprofile.openapi.models.parameters.Parameter;
 import org.eclipse.microprofile.openapi.models.responses.APIResponse;
 import org.eclipse.microprofile.openapi.models.responses.APIResponses;
+import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
 import org.eclipse.microprofile.openapi.OASFactory;
 
 import java.util.Collections;
@@ -63,6 +65,7 @@ class OperationFragmentGenerator {
     private final Map<String, String[]> operationIdMap;
     private final Map<String, Schema> schemas;
     private final java.util.List<org.eclipse.microprofile.openapi.models.security.SecurityRequirement> globalSecurity;
+    private final Components components;
 
     /// Helper to get type as string from MicroProfile's List<SchemaType>
     private static String typeAsString(Schema schema) {
@@ -77,6 +80,7 @@ class OperationFragmentGenerator {
         this.path = operation.path();
         this.displayPath = path.withResolvedParams(this.operation);
         this.operationIdMap = operationIdMap;
+        this.components = operation.components();
         this.schemas = operation.components() != null && operation.components().getSchemas() != null 
             ? operation.components().getSchemas() 
             : Map.of();
@@ -217,9 +221,31 @@ class OperationFragmentGenerator {
 
     private void authSection(Form operationForm) {
         var effectiveSecurity = operation.getSecurity() != null ? operation.getSecurity() : globalSecurity;
-        if (effectiveSecurity != null && !effectiveSecurity.isEmpty()) {
-            operationForm.content(div().classes("auth-section"));
+        if (effectiveSecurity == null || effectiveSecurity.isEmpty()) return;
+        if (components == null || components.getSecuritySchemes() == null) return;
+        
+        var authDiv = div().classes("auth-section");
+        
+        // Get the first security requirement (OR alternative)
+        var firstRequirement = effectiveSecurity.getFirst();
+        for (var schemeName : firstRequirement.getSchemes().keySet()) {
+            var scheme = components.getSecuritySchemes().get(schemeName);
+            if (scheme != null && SecurityScheme.Type.APIKEY == scheme.getType()) {
+                authDiv.content(apiKeyAuthField(scheme));
+            }
         }
+        
+        operationForm.content(authDiv);
+    }
+    
+    private com.github.t1.bulmajava.form.Field apiKeyAuthField(SecurityScheme scheme) {
+        var badges = tagsAddon().content(tag("🔒 apiKey").is(WARNING)).classes("is-inline-flex", "ml-2");
+        var inputField = field().label(span(scheme.getName()), badges);
+        var inp = input(TEXT).attr("name", scheme.getName());
+        inp.attr("data-param-in", SecurityScheme.In.HEADER == scheme.getIn() ? "auth-header" : "auth-query");
+        inputField.content(inp);
+        inputField.iconRight("thumbtack");
+        return inputField;
     }
 
     private Renderable parameterInput(Parameter param) {

@@ -296,6 +296,7 @@ Initial MVP release
 
 - Style custom headers like documented parameters: label-above layout with badge and auto-resizing name input
 - Security schemes infrastructure: resolve effective security requirements per operation ([#34](https://github.com/t1/openapi-ui-next/issues/34))
+- apiKey security: header and query parameter input fields with pin support and fetch integration ([#35](https://github.com/t1/openapi-ui-next/issues/35))
 
 ## Contributing
 
