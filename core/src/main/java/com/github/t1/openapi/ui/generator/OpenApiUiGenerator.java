@@ -136,7 +136,9 @@ public class OpenApiUiGenerator {
         var dropdownMenu = div().classes("mode-dropdown-menu")
                 .content(
                         div().classes("mode-dropdown-item").attr("data-generator", "httpie").content("HTTPie"),
-                        div().classes("mode-dropdown-item").attr("data-generator", "curl").content("curl")
+                        div().classes("mode-dropdown-item").attr("data-generator", "curl").content("curl"),
+                        div().classes("mode-dropdown-item").attr("data-generator", "JS fetch").content("JS fetch"),
+                        div().classes("mode-dropdown-item").attr("data-generator", "Java HttpClient").content("Java HttpClient")
                 );
         
         return div().classes("mode-selector-container").content(modeToggle, dropdownMenu);

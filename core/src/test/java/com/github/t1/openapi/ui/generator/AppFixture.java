@@ -222,6 +222,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.locator(".mode-dropdown-item[data-generator='" + generator + "']").click();
     }
 
+    void selectDropdownFormat(String generator) {
+        clickDropdownItem(generator);
+    }
+
     void fillInput(String name, String value) {page.locator("#detail input[name='" + name + "']").fill(value);}
 
     boolean isInputDisabled(String name) {return page.locator("#detail input[name='" + name + "']").isDisabled();}

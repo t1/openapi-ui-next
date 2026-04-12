@@ -1600,6 +1600,33 @@ class BrowserTest {
                     .contains("echo '{\"name\": \"Fido\"}'");
         }
 
+        @Test void shouldIncludeRequestBodyInJsFetchMode() {
+            app.clickModeButton("overflow");
+            app.selectDropdownFormat("JS fetch");
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+            app.fillRequestBody("{\"name\": \"Fido\"}");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .contains("fetch(")
+                    .contains("method: 'POST'")
+                    .contains("JSON.stringify({\"name\": \"Fido\"})");
+        }
+
+        @Test void shouldIncludeRequestBodyInJavaHttpClientMode() {
+            app.clickModeButton("overflow");
+            app.selectDropdownFormat("Java HttpClient");
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+            app.fillRequestBody("{\"name\": \"Fido\"}");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .contains("HttpRequest.newBuilder()")
+                    .contains(".POST(HttpRequest.BodyPublishers.ofString(\"{\\\"name\\\": \\\"Fido\\\"}\"))");
+        }
+
         @Test void shouldShowBodyBoxWithSchemaToggle() {
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");

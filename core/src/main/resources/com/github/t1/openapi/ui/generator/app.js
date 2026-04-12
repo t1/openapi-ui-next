@@ -60,6 +60,48 @@ document.addEventListener('DOMContentLoaded', function() {
             if (headerArgs) cmd += ' ' + headerArgs;
             if (cookieParts.length > 0) cmd += ' Cookie:' + cookieParts.join('\\; ');
             return cmd;
+        },
+        'JS fetch': function(params) {
+            const headersObj = {};
+            Object.keys(params.headers).forEach(function(h) {
+                headersObj[h] = params.headers[h];
+            });
+            if (params.body && params.contentType) {
+                headersObj['Content-Type'] = params.contentType;
+            }
+            
+            const headersStr = JSON.stringify(headersObj, null, 4);
+            let code = "const response = await fetch('" + params.url + "', {\n" +
+                       "    method: '" + params.method + "'";
+            if (Object.keys(headersObj).length > 0) {
+                code += ",\n    headers: " + headersStr;
+            }
+            if (params.body) {
+                code += ",\n    body: JSON.stringify(" + params.body + ")";
+            }
+            code += "\n});\nconst data = await response.json();";
+            return code;
+        },
+        'Java HttpClient': function(params) {
+            let code = "HttpRequest request = HttpRequest.newBuilder()\n" +
+                       "    .uri(URI.create(\"" + params.url + "\"))";
+            
+            Object.keys(params.headers).forEach(function(h) {
+                code += "\n    .header(\"" + h + "\", \"" + params.headers[h] + "\")";
+            });
+            
+            if (params.body) {
+                code += "\n    .header(\"Content-Type\", \"" + (params.contentType || 'application/json') + "\")";
+                code += "\n    ." + params.method + "(HttpRequest.BodyPublishers.ofString(\"" + 
+                        params.body.replace(/"/g, '\\"') + "\"))";
+            } else {
+                code += "\n    ." + params.method + "(HttpRequest.BodyPublishers.noBody())";
+            }
+            
+            code += "\n    .build();\n" +
+                    "HttpResponse<String> response = HttpClient.newHttpClient()\n" +
+                    "    .send(request, HttpResponse.BodyHandlers.ofString());";
+            return code;
         }
     };
 
@@ -239,8 +281,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 item.addEventListener('click', function() {
                     const generator = item.getAttribute('data-generator');
                     updateRecentFormats(generator);
+                    modeContainer.setAttribute('data-mode', generator);
                     modeContainer._select(generator);
                     dropdownMenu.classList.remove('is-active');
+                    // Update send button text
+                    const sendBtns = document.querySelectorAll('#detail button[type=submit]');
+                    sendBtns.forEach(function(b) { b.textContent = 'Copy'; });
                 });
             });
         }
@@ -1941,21 +1987,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Use generator registry for copy modes
-            if (mode === 'curl' || mode === 'httpie') {
-                const generator = generators[mode];
-                if (generator) {
-                    const params = {
-                        method: method,
-                        url: url,
-                        headers: requestHeaders,
-                        body: bodyValue,
-                        contentType: 'application/json',
-                        schema: schema
-                    };
-                    const cmd = generator(params);
-                    navigator.clipboard.writeText(cmd);
-                    showCopied(sendBtn);
-                }
+            const generator = generators[mode];
+            if (generator) {
+                const params = {
+                    method: method,
+                    url: url,
+                    headers: requestHeaders,
+                    body: bodyValue,
+                    contentType: 'application/json',
+                    schema: schema
+                };
+                const cmd = generator(params);
+                navigator.clipboard.writeText(cmd);
+                showCopied(sendBtn);
             } else if (mode === 'try') {
                 sendBtn.disabled = true;
                 sendBtn.textContent = 'Sending...';
