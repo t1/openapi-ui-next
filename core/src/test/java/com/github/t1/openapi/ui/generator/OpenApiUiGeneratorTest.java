@@ -296,6 +296,7 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("&quot;name&quot;");
         then(fragment).contains("&quot;age&quot;: 0");
         then(fragment).contains("&quot;active&quot;: false");
+        then(fragment).as("required request body should have required attribute").contains("required");
     }
 
     @Test void shouldResolveRefSchemaInRequestBody() throws Exception {

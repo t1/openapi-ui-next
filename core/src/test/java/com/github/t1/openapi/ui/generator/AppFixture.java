@@ -253,6 +253,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void fillRequestBody(String body) {page.locator("#detail textarea[data-request-body]").fill(body);}
 
+    void clearRequestBody() {page.locator("#detail textarea[data-request-body]").clear();}
+
+    boolean requestBodyHasRequiredAttribute() {
+        return page.locator("#detail textarea[data-request-body][required]").count() > 0;
+    }
+
     double requestBodyHeight() {return page.locator("#detail textarea[data-request-body]").boundingBox().height;}
 
     void focusRequestBody() {page.locator("#detail textarea[data-request-body]").focus();}
@@ -278,6 +284,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     String sendButtonText() {return page.locator("#detail button[type=submit]").textContent();}
 
     void waitForResponse() {page.waitForSelector("#detail .response-status");}
+
+    void waitForTimeout(double milliseconds) {page.waitForTimeout(milliseconds);}
 
     /// Clicks Send and waits for the request cycle to complete.
     /// Robust against missing the intermediate "Sending..." label.

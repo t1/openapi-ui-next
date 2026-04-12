@@ -434,7 +434,27 @@ class OperationFragmentGenerator {
         var textareaEl = textarea()
                 .attr("data-request-body", "true")
                 .classes("is-family-code");
-        if (TRUE == operation.getRequestBody().getRequired()) textareaEl.attr("required", "");
+        var requestBody = operation.getRequestBody();
+        // RequestBody.getRequired() returns null in Smallrye 4.3.0 even when required=true in YAML
+        // Workaround: access the internal properties Map in BaseModel via reflection
+        Boolean required = null;
+        if (requestBody != null) {
+            try {
+                // Navigate to BaseModel class (4 levels up from RequestBody)
+                var baseModelClass = requestBody.getClass().getSuperclass() // AbstractRequestBody
+                        .getSuperclass() // BaseExtensibleModel
+                        .getSuperclass(); // BaseModel
+                var propertiesField = baseModelClass.getDeclaredField("properties");
+                propertiesField.setAccessible(true);
+                @SuppressWarnings("unchecked")
+                var properties = (java.util.Map<String, Object>) propertiesField.get(requestBody);
+                required = (Boolean) properties.get("required");
+            } catch (Exception e) {
+                // Fall back to getRequired() if reflection fails
+                required = requestBody.getRequired();
+            }
+        }
+        if (TRUE == required) textareaEl.attr("required", "");
         textareaEl.content(skeleton);
         var hasProperties = schema.getProperties() != null && !schema.getProperties().isEmpty();
         if (hasProperties) {

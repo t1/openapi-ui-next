@@ -1310,9 +1310,15 @@ class BrowserTest {
         @Test void shouldPreventSendWhenRequiredBodyIsEmpty() {
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");
-            app.fillRequestBody("");
+            
+            // Verify textarea has required attribute
+            then(app.requestBodyHasRequiredAttribute()).as("textarea should have required attribute").isTrue();
+            
+            app.clearRequestBody();
             app.clickSend();
 
+            // Wait briefly to ensure form validation blocks submission (no response should appear)
+            app.waitForTimeout(500);
             then(app.hasResponseStatus()).isFalse();
         }
 
