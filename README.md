@@ -306,6 +306,7 @@ Initial MVP release
 - Custom server URLs: add arbitrary base URLs via "+ Add custom URL" button with editable text inputs, delete functionality, and localStorage persistence ([#41](https://github.com/t1/openapi-ui-next/issues/41))
 - Cross-origin security integration: automatic security input visibility based on selected server origin; browser-handled auth fields (basic, oauth2, openIdConnect, mutualTLS, cookie apiKey) show for cross-origin servers and hide for same-origin servers ([#43](https://github.com/t1/openapi-ui-next/issues/43))
 - Tag filter CSS classes: add tag-{name} CSS classes to path-tree items and method badges; generate per-tag CSS filter rules for tree items and badges; render filter icon and pill panel when API has 2+ tags ([#47](https://github.com/t1/openapi-ui-next/issues/47))
+- Tag filter JS interaction: pill selection with single-select toggle, filter icon active state, status line showing filtered operation count, localStorage persistence for panel state and selected tag, view toggle integration to restore filter panel when switching back to path view ([#48](https://github.com/t1/openapi-ui-next/issues/48))
 
 ## Contributing
 

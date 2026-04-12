@@ -1113,7 +1113,7 @@ class OpenApiUiGeneratorTest {
         generate("/tagged-nested.yaml");
 
         var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
-        then(pathTree).contains("<i class=\"fa-solid fa-filter\"");
+        then(pathTree).contains("<i class=\"fa-solid fa-filter filter-icon\"");
     }
 
     @Test void shouldNotRenderFilterIconWhenApiHasOneTag() throws Exception {

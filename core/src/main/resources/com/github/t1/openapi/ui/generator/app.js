@@ -609,6 +609,7 @@ document.addEventListener('DOMContentLoaded', function() {
         viewToggle.addEventListener('toggle', function(e) {
             const btn = viewToggle.querySelector('[data-toggle-value=' + e.detail.value + ']');
             htmx.ajax('GET', btn.getAttribute('hx-get'), {target: '#tree-container', swap: 'innerHTML'}).then(function() {
+                initFilterIcon();
                 viewToggle.focus();
             });
         });
@@ -678,6 +679,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.body.addEventListener('htmx:afterSettle', function(e) {
         if (e.detail.target && e.detail.target.id === 'tree-container') {
+            initFilterIcon();
             if (window._hashNavPending) {
                 window._hashNavPending = false;
                 navigateFromHash();
@@ -1983,6 +1985,82 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    function updateFilterStatusLine() {
+        const tree = document.querySelector('[role="tree"]');
+        const statusLine = document.querySelector('.filter-status-line');
+        if (!tree || !statusLine) return;
+        
+        const filterClass = Array.from(tree.classList).find(cls => cls.startsWith('filter-'));
+        if (!filterClass) {
+            statusLine.textContent = '';
+            return;
+        }
+        
+        const allOperations = tree.querySelectorAll('[role="treeitem"]').length;
+        const visibleOperations = tree.querySelectorAll('[role="treeitem"]:not([style*="display: none"])').length;
+        statusLine.textContent = 'Showing ' + visibleOperations + ' of ' + allOperations + ' operations';
+    }
+    
+    function initFilterIcon() {
+        const filterIcon = document.querySelector('.filter-icon');
+        if (!filterIcon) return;
+        if (filterIcon.dataset.initialized) return;
+        filterIcon.dataset.initialized = 'true';
+        
+        const filterPanel = document.querySelector('.filter-pill-panel');
+        const tree = document.querySelector('[role="tree"]');
+        if (!filterPanel || !tree) return;
+        
+        // Restore panel state from localStorage
+        const panelOpen = localStorage.getItem('openapi-ui-tag-filter-open') === 'true';
+        if (panelOpen) {
+            filterPanel.classList.add('is-active');
+        }
+        
+        // Restore selected tag from localStorage
+        const savedTag = localStorage.getItem('openapi-ui-tag-filter');
+        if (savedTag) {
+            tree.classList.add('filter-' + savedTag);
+            filterIcon.classList.add('is-active');
+            updateFilterStatusLine();
+        }
+        
+        filterIcon.addEventListener('click', function() {
+            filterPanel.classList.toggle('is-active');
+            localStorage.setItem('openapi-ui-tag-filter-open', filterPanel.classList.contains('is-active'));
+        });
+        
+        // Pill click handlers
+        filterPanel.querySelectorAll('.tag').forEach(function(pill) {
+            pill.addEventListener('click', function() {
+                const tagClass = Array.from(pill.classList).find(cls => cls.startsWith('tag-'));
+                if (!tagClass) return;
+                
+                const tagName = tagClass.substring(4);
+                const filterClass = 'filter-' + tagName;
+                
+                // Single-select: if this filter is already active, deselect it
+                if (tree.classList.contains(filterClass)) {
+                    tree.classList.remove(filterClass);
+                    filterIcon.classList.remove('is-active');
+                    localStorage.setItem('openapi-ui-tag-filter', '');
+                } else {
+                    // Remove any existing filter
+                    tree.className = tree.className.replace(/\bfilter-\S+/g, '').trim();
+                    // Add new filter
+                    tree.classList.add(filterClass);
+                    filterIcon.classList.add('is-active');
+                    localStorage.setItem('openapi-ui-tag-filter', tagName);
+                }
+                
+                updateFilterStatusLine();
+            });
+        });
+    }
+
+    initFilterIcon();
+
     document.body.addEventListener('htmx:sendError', function(e) {
         const url = htmxErrorUrl(e);
         if (!url) return;

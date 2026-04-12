@@ -371,10 +371,10 @@ public class OpenApiUiGenerator {
         
         // Filter icon + pill panel + tree
         var wrapper = div();
-        var filterIcon = element("i").classes("fa-solid", "fa-filter");
+        var filterIcon = element("i").classes("fa-solid", "fa-filter", "filter-icon");
         wrapper.content(filterIcon);
         
-        var pillPanel = div();
+        var pillPanel = div().classes("filter-pill-panel");
         for (var tag : tags) {
             var sanitized = sanitizeTagName(tag);
             var pill = span(tag).classes("tag", "tag-" + sanitized);
@@ -382,6 +382,9 @@ public class OpenApiUiGenerator {
         }
         wrapper.content(pillPanel);
         wrapper.content(t);
+        
+        var statusLine = div().classes("filter-status-line");
+        wrapper.content(statusLine);
         
         return wrapper;
     }

@@ -1027,6 +1027,44 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.waitForSelector("#tree-container :text('" + text + "')");
     }
 
+    // Tag filter methods
+    boolean hasFilterIcon() {
+        return page.locator("#tree-container .fa-filter").count() > 0;
+    }
+
+    boolean isFilterPanelVisible() {
+        return page.locator(".filter-pill-panel").isVisible();
+    }
+
+    void clickFilterIcon() {
+        page.locator(".filter-icon").click();
+    }
+
+    void clickPill(String tagName) {
+        page.locator(".filter-pill-panel .tag-" + sanitizeTagName(tagName)).click();
+    }
+
+    boolean isFilterActive(String tagName) {
+        var tree = page.locator("[role=\"tree\"]");
+        return tree.evaluate("el => el.classList.contains('filter-" + sanitizeTagName(tagName) + "')").toString().equals("true");
+    }
+
+    boolean isFilterIconActive() {
+        var icon = page.locator(".filter-icon");
+        return icon.evaluate("el => el.classList.contains('is-active')").toString().equals("true");
+    }
+
+    String getFilterStatusLine() {
+        var statusLine = page.locator(".filter-status-line");
+        if (statusLine.count() == 0) return null;
+        var text = statusLine.textContent();
+        return text.isEmpty() ? null : text;
+    }
+
+    private String sanitizeTagName(String tag) {
+        return tag.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-+|-+$", "");
+    }
+
     void setViewportSize(int width, int height) {page.setViewportSize(width, height);}
 
     void waitMs(double ms) {page.waitForTimeout(ms);}
