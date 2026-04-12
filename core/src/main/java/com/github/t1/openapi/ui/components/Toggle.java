@@ -92,7 +92,7 @@ public class Toggle extends AbstractElement<Toggle> {
     private static final String JS = """
             document.addEventListener('DOMContentLoaded', function() {
                 function initToggle(container) {
-                    var values = Array.from(container.querySelectorAll('[data-toggle-value]')).map(function(el) {
+                    var values = Array.from(container.querySelectorAll('[data-toggle-value]:not([data-overflow])')).map(function(el) {
                         return el.getAttribute('data-toggle-value');
                     });
                     function select(value) {

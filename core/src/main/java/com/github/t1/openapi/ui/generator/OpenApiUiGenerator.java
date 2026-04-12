@@ -93,11 +93,11 @@ public class OpenApiUiGenerator {
         var treeContainer = div().id("tree-container").content(defaultTree);
 
         var baseUrl = resolveBaseUrl(openApi);
-        var modeToggle = modeToggle(baseUrl);
+        var modeSelector = modeSelector(baseUrl);
 
         var pageTitle = openApi.getInfo().getTitle();
         var detail = div().id("detail").attr("tabindex", "0");
-        var detailHeader = div().classes("detail-header").content(title(pageTitle), modeToggle);
+        var detailHeader = div().classes("detail-header").content(title(pageTitle), modeSelector);
         var splitLayout = splitPane()
                 .first(box().content(viewToggle, treeContainer))
                 .second(detail)
@@ -125,12 +125,21 @@ public class OpenApiUiGenerator {
         return (servers != null && !servers.isEmpty()) ? servers.getFirst().getUrl() : "/";
     }
 
-    private static Renderable modeToggle(String baseUrl) {
-        return toggle("mode")
+    private static Renderable modeSelector(String baseUrl) {
+        var modeToggle = toggle("mode")
                 .activeOption("try", o -> o.attr("title", "Send requests directly from the browser"))
                 .option("httpie", o -> o.attr("title", "Copy as HTTPie command"))
                 .option("curl", o -> o.attr("title", "Copy as curl command"))
+                .option("overflow", "▾", o -> o.attr("title", "More formats").attr("data-overflow", "true"))
                 .attr("data-mode", "try").attr("data-base-url", baseUrl);
+        
+        var dropdownMenu = div().classes("mode-dropdown-menu")
+                .content(
+                        div().classes("mode-dropdown-item").attr("data-generator", "httpie").content("HTTPie"),
+                        div().classes("mode-dropdown-item").attr("data-generator", "curl").content("curl")
+                );
+        
+        return div().classes("mode-selector-container").content(modeToggle, dropdownMenu);
     }
 
     private static Element serverSelector(OpenAPI openApi) {

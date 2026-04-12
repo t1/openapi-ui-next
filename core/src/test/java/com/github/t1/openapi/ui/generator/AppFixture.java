@@ -210,6 +210,18 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return (String) page.evaluate("() => document.querySelector('[data-toggle=mode]').getAttribute('data-mode')");
     }
 
+    boolean isDropdownMenuVisible() {
+        return page.locator(".mode-dropdown-menu").isVisible();
+    }
+
+    boolean dropdownContainsItem(String generator) {
+        return page.locator(".mode-dropdown-item[data-generator='" + generator + "']").count() > 0;
+    }
+
+    void clickDropdownItem(String generator) {
+        page.locator(".mode-dropdown-item[data-generator='" + generator + "']").click();
+    }
+
     void fillInput(String name, String value) {page.locator("#detail input[name='" + name + "']").fill(value);}
 
     boolean isInputDisabled(String name) {return page.locator("#detail input[name='" + name + "']").isDisabled();}

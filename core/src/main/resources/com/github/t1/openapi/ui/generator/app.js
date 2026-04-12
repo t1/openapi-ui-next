@@ -208,15 +208,52 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         document.addEventListener('keydown', function(e) {
             const mod = /Mac/.test(navigator.platform) ? e.ctrlKey : e.altKey;
-            const digit = mod && e.code >= 'Digit1' && e.code <= 'Digit3' ? parseInt(e.code.charAt(5)) : 0;
+            const digit = mod && e.code >= 'Digit1' && e.code <= 'Digit4' ? parseInt(e.code.charAt(5)) : 0;
             if (digit) {
                 e.preventDefault();
-                const values = Array.from(modeContainer.querySelectorAll('[data-toggle-value]')).map(function(el) {
-                    return el.getAttribute('data-toggle-value');
-                });
-                modeContainer._select(values[digit - 1]);
+                if (digit === 4) {
+                    const dropdownMenu = document.querySelector('.mode-dropdown-menu');
+                    if (dropdownMenu) dropdownMenu.classList.toggle('is-active');
+                } else {
+                    const values = Array.from(modeContainer.querySelectorAll('[data-toggle-value]:not([data-overflow])')).map(function(el) {
+                        return el.getAttribute('data-toggle-value');
+                    });
+                    modeContainer._select(values[digit - 1]);
+                }
             }
         });
+
+        // Dropdown menu toggle and recently used tracking
+        const overflowBtn = modeContainer.querySelector('[data-overflow]');
+        const dropdownMenu = document.querySelector('.mode-dropdown-menu');
+        if (overflowBtn && dropdownMenu) {
+            overflowBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle('is-active');
+            });
+            document.addEventListener('click', function() {
+                dropdownMenu.classList.remove('is-active');
+            });
+            // Dropdown item selection
+            dropdownMenu.querySelectorAll('.mode-dropdown-item').forEach(function(item) {
+                item.addEventListener('click', function() {
+                    const generator = item.getAttribute('data-generator');
+                    updateRecentFormats(generator);
+                    modeContainer._select(generator);
+                    dropdownMenu.classList.remove('is-active');
+                });
+            });
+        }
+        
+        // Track recently used formats (excluding 'try' which is always first)
+        function updateRecentFormats(format) {
+            if (format === 'try') return;
+            var recent = JSON.parse(localStorage.getItem('openapi-ui-recent-formats') || '[]');
+            recent = recent.filter(function(f) { return f !== format; });
+            recent.unshift(format);
+            if (recent.length > 2) recent = recent.slice(0, 2);
+            localStorage.setItem('openapi-ui-recent-formats', JSON.stringify(recent));
+        }
     }
 
     function createHeaderRow(name, value, persisted) {

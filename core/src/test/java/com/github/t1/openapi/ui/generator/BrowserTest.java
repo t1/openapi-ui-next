@@ -225,11 +225,7 @@ class BrowserTest {
             then(app.isSegmentActive("try")).isTrue();
         }
 
-        @Test void shouldHaveThreeOptionsAndSwitchInModeToggle() {
-            then(app.isModeButtonVisible("try")).isTrue();
-            then(app.isModeButtonVisible("httpie")).isTrue();
-            then(app.isModeButtonVisible("curl")).isTrue();
-
+        @Test void shouldSwitchModeByClicking() {
             app.clickModeButton("curl");
 
             then(app.currentMode()).isEqualTo("curl");
@@ -267,6 +263,7 @@ class BrowserTest {
             app.pressKey("ArrowRight");
 
             then(app.currentMode()).isEqualTo("curl");
+            then(app.isSegmentActive("curl")).isTrue();
         }
 
         @Test void shouldNotWrapLeftWhenOnFirstMode() {
@@ -292,6 +289,7 @@ class BrowserTest {
             app.pressKey("End");
 
             then(app.currentMode()).isEqualTo("curl");
+            then(app.isSegmentActive("curl")).isTrue();
         }
 
         @Test void shouldSwitchModeOnShortcutKey() {
@@ -313,6 +311,43 @@ class BrowserTest {
             app.pressKey(MOD + "+2");
 
             then(app.currentMode()).isEqualTo("httpie");
+        }
+
+        @Test void shouldRenderFourSegmentsInitially() {
+            then(app.isModeButtonVisible("try")).isTrue();
+            then(app.isModeButtonVisible("httpie")).isTrue();
+            then(app.isModeButtonVisible("curl")).isTrue();
+            then(app.isModeButtonVisible("overflow")).isTrue();
+        }
+
+        @Test void shouldOpenDropdownMenuOnOverflowClick() {
+            then(app.isDropdownMenuVisible()).isFalse();
+
+            app.clickModeButton("overflow");
+
+            then(app.isDropdownMenuVisible()).isTrue();
+        }
+
+        @Test void shouldListAllGeneratorsInDropdown() {
+            app.clickModeButton("overflow");
+
+            then(app.dropdownContainsItem("httpie")).isTrue();
+            then(app.dropdownContainsItem("curl")).isTrue();
+        }
+
+        @Test void shouldSelectFromDropdownAndCloseMenu() {
+            app.clickModeButton("overflow");
+
+            app.clickDropdownItem("httpie");
+
+            then(app.isDropdownMenuVisible()).isFalse();
+            then(app.currentMode()).isEqualTo("httpie");
+        }
+
+        @Test void shouldOpenDropdownOnCtrlPlus4() {
+            app.pressKey(MOD + "+4");
+
+            then(app.isDropdownMenuVisible()).isTrue();
         }
 
         @Test void shouldFocusViewToggleOnShiftTabFromTree() {
