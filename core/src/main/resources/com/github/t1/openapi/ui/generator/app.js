@@ -221,6 +221,23 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('openapi-ui-custom-urls', JSON.stringify(urls));
     }
 
+    function templatePresetsStorageKey(urlTemplate) {
+        return 'openapi-ui-template-presets:' + encodeURIComponent(urlTemplate);
+    }
+
+    function createTemplatePresetLabel(serverIndex, presetIndex, resolvedUrl, isDeletable) {
+        const presetId = 'server-' + serverIndex + '-preset-' + presetIndex;
+        const label = document.createElement('label');
+        label.className = 'template-preset-label';
+        label.setAttribute('for', presetId);
+        const deleteBtn = isDeletable ? '<button type="button" class="template-preset-delete">×</button>' : '';
+        label.innerHTML =
+            '<input type="radio" name="server" id="' + presetId + '" value="' + resolvedUrl + '">' +
+            '<span>' + resolvedUrl + '</span>' +
+            deleteBtn;
+        return label;
+    }
+
     function restoreCustomUrls() {
         const serverSelector = document.getElementById('server-selector');
         if (!serverSelector) return;
@@ -238,6 +255,40 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             console.error('Failed to restore custom URLs:', e);
         }
+    }
+
+    function restoreTemplatePresets() {
+        const serverSelector = document.getElementById('server-selector');
+        if (!serverSelector) return;
+        
+        // Find all "Add preset" buttons (one per template server)
+        const addPresetButtons = serverSelector.querySelectorAll('.template-preset-add');
+        addPresetButtons.forEach(function(addBtn) {
+            const serverIndex = addBtn.getAttribute('data-server-index');
+            const urlTemplate = addBtn.getAttribute('data-url-template');
+            const storageKey = templatePresetsStorageKey(urlTemplate);
+            const stored = localStorage.getItem(storageKey);
+            if (!stored) return;
+            
+            try {
+                const presets = JSON.parse(stored);
+                const serverBody = addBtn.closest('.server-body');
+                
+                // Count existing presets to calculate next index
+                const existingPresets = serverSelector.querySelectorAll("input[id^='server-" + serverIndex + "-preset-']");
+                let nextIndex = existingPresets.length;
+                
+                presets.forEach(function(preset) {
+                    const label = createTemplatePresetLabel(serverIndex, nextIndex, preset.resolvedUrl, true);
+                    
+                    // Insert before the "Add preset" button
+                    serverBody.insertBefore(label, addBtn);
+                    nextIndex++;
+                });
+            } catch (e) {
+                console.error('Failed to restore template presets for ' + urlTemplate + ':', e);
+            }
+        });
     }
 
     // Server selector panel toggle
@@ -285,10 +336,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Read form values and resolve template
                 const inputs = form.querySelectorAll('input, select');
+                const variables = {};
                 let resolvedUrl = urlTemplate;
                 inputs.forEach(function(input) {
                     const varName = input.getAttribute('name');
                     const varValue = input.value;
+                    variables[varName] = varValue;
                     resolvedUrl = resolvedUrl.replace('{' + varName + '}', varValue);
                 });
                 
@@ -296,17 +349,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 const existingPresets = serverSelector.querySelectorAll("input[id^='server-" + serverIndex + "-preset-']");
                 const newPresetIndex = existingPresets.length;
                 
-                // Create new preset radio
-                const presetId = 'server-' + serverIndex + '-preset-' + newPresetIndex;
-                const label = document.createElement('label');
-                label.className = 'template-preset-label';
-                label.setAttribute('for', presetId);
-                label.innerHTML =
-                    '<input type="radio" name="server" id="' + presetId + '" value="' + resolvedUrl + '">' +
-                    '<span>' + resolvedUrl + '</span>';
+                // Create new preset radio (user-created presets are deletable)
+                const label = createTemplatePresetLabel(serverIndex, newPresetIndex, resolvedUrl, true);
                 
                 // Insert new preset before the form
                 form.parentNode.insertBefore(label, form);
+                
+                // Save preset to localStorage
+                const storageKey = templatePresetsStorageKey(urlTemplate);
+                const stored = localStorage.getItem(storageKey);
+                const presets = stored ? JSON.parse(stored) : [];
+                presets.push({variables: variables, resolvedUrl: resolvedUrl});
+                localStorage.setItem(storageKey, JSON.stringify(presets));
                 
                 // Remove the form
                 form.remove();
@@ -316,6 +370,38 @@ document.addEventListener('DOMContentLoaded', function() {
             if (cancelBtn) {
                 const form = cancelBtn.closest('.template-preset-form');
                 form.remove();
+                return;
+            }
+            const deleteBtn = e.target.closest('.template-preset-delete');
+            if (deleteBtn) {
+                const label = deleteBtn.closest('.template-preset-label');
+                const radio = label.querySelector('input[type="radio"]');
+                const resolvedUrl = radio.value;
+                
+                // Find the template server this preset belongs to
+                const serverBody = label.closest('.server-body');
+                const addPresetBtn = serverBody.querySelector('.template-preset-add');
+                const urlTemplate = addPresetBtn.getAttribute('data-url-template');
+                
+                // Remove from DOM
+                label.remove();
+                
+                // Remove from localStorage
+                const storageKey = templatePresetsStorageKey(urlTemplate);
+                const stored = localStorage.getItem(storageKey);
+                if (stored) {
+                    try {
+                        let presets = JSON.parse(stored);
+                        presets = presets.filter(function(p) { return p.resolvedUrl !== resolvedUrl; });
+                        if (presets.length > 0) {
+                            localStorage.setItem(storageKey, JSON.stringify(presets));
+                        } else {
+                            localStorage.removeItem(storageKey);
+                        }
+                    } catch (e) {
+                        console.error('Failed to update template presets in localStorage:', e);
+                    }
+                }
                 return;
             }
         });
@@ -347,6 +433,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Restore custom URLs from localStorage
         restoreCustomUrls();
+
+        // Restore template presets from localStorage
+        restoreTemplatePresets();
 
         // Restore selected server from localStorage
         const savedServer = localStorage.getItem('openapi-ui-server');

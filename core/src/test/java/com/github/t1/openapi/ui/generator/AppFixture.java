@@ -774,6 +774,13 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.locator("#server-selector input[id='" + presetId + "']").click();
     }
 
+    void deleteTemplatePreset(int serverIndex, int presetIndex) {
+        var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
+        var label = page.locator("#server-selector label[for='" + presetId + "']");
+        var deleteBtn = label.locator(".template-preset-delete");
+        deleteBtn.click();
+    }
+
     boolean hasCustomUrlButton() {
         return page.locator("#server-selector .custom-url-add").count() > 0;
     }

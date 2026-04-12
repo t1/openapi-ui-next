@@ -3028,5 +3028,31 @@ class BrowserTest {
         @Disabled("TODO") @Test void shouldDeleteUserCreatedPreset() {}
 
         @Disabled("TODO") @Test void shouldNotDeleteDefaultPreset() {}
+
+        @Test void shouldPersistCreatedPresetInLocalStorage() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            app.setTemplatePresetFormValue(0, "environment", "staging");
+            app.clickTemplatePresetSave(0);
+
+            app.reload();
+
+            then(app.templateServerPresetCount(0)).isEqualTo(2);
+            then(app.templateServerPresetLabel(0, 1)).isEqualTo("https://staging.example.com");
+        }
+
+        @Test void shouldNotRestoreDeletedPresetAfterReload() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            app.setTemplatePresetFormValue(0, "environment", "staging");
+            app.clickTemplatePresetSave(0);
+            then(app.templateServerPresetCount(0)).isEqualTo(2);
+
+            app.deleteTemplatePreset(0, 1);
+
+            app.reload();
+
+            then(app.templateServerPresetCount(0)).isEqualTo(1);
+        }
     }
 }
