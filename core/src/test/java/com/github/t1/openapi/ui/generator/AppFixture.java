@@ -863,6 +863,36 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("[data-toggle='mode']").getAttribute("data-base-url");
     }
 
+    void selectServer(int index) {
+        page.locator("#server-selector input[type='radio'][name='server']").nth(index).click();
+        page.waitForTimeout(100); // Wait for JavaScript updateAuthFieldVisibility to execute
+    }
+
+    boolean isBrowserHandledAuthFieldVisible(String schemeName) {
+        var selector = "#detail .field[data-browser-handled='true']";
+        var fields = page.locator(selector).all();
+        for (var field : fields) {
+            var text = field.textContent();
+            if (text != null && text.contains(schemeName)) {
+                var style = field.getAttribute("style");
+                return style == null || !style.contains("display: none");
+            }
+        }
+        return false;
+    }
+
+    boolean isTokenAuthFieldVisible(String schemeName) {
+        var selector = "#detail .field:not([data-browser-handled])";
+        var fields = page.locator(selector).all();
+        for (var field : fields) {
+            var text = field.textContent();
+            if (text != null && text.contains(schemeName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     boolean hasElement(String selector) {
         return page.locator(selector).count() > 0;
     }

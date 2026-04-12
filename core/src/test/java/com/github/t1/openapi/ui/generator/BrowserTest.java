@@ -3114,4 +3114,108 @@ class BrowserTest {
             then(app.getBaseUrl()).isEqualTo("https://api.example.com");
         }
     }
+
+    @ResourceLock("cross-origin-security") @Nested class CrossOriginSecurityIntegration {
+        @RegisterExtension static AppFixture app = launch("cross-origin-security.yaml");
+
+        @Test void shouldHideBasicAuthFieldForSameOriginServer() {
+            app.expandFirstNode();
+            app.clickTreeNode("secure/index.html");
+            app.waitForDetailContent("Secure endpoint");
+            app.clickServerToggle();
+            app.selectServer(0);
+
+            then(app.isBrowserHandledAuthFieldVisible("basicAuth")).isFalse();
+        }
+
+        @Test void shouldHideCookieAuthFieldForSameOriginServer() {
+            app.expandFirstNode();
+            app.clickTreeNode("secure/index.html");
+            app.waitForDetailContent("Secure endpoint");
+            app.clickServerToggle();
+            app.selectServer(0);
+
+            then(app.isBrowserHandledAuthFieldVisible("cookieAuth")).isFalse();
+        }
+
+        @Test void shouldShowBasicAuthFieldForCrossOriginServer() {
+            app.expandFirstNode();
+            app.clickTreeNode("secure/index.html");
+            app.waitForDetailContent("Secure endpoint");
+            app.clickServerToggle();
+            app.selectServer(1);
+
+            then(app.isBrowserHandledAuthFieldVisible("basicAuth")).isTrue();
+        }
+
+        @Test void shouldShowCookieAuthFieldForCrossOriginServer() {
+            app.expandFirstNode();
+            app.clickTreeNode("secure/index.html");
+            app.waitForDetailContent("Secure endpoint");
+            app.clickServerToggle();
+            app.selectServer(1);
+
+            then(app.isBrowserHandledAuthFieldVisible("cookieAuth")).isTrue();
+        }
+
+        @Test void shouldAlwaysShowApiKeyFieldRegardlessOfOrigin() {
+            app.expandFirstNode();
+            app.clickTreeNode("secure/index.html");
+            app.waitForDetailContent("Secure endpoint");
+            app.clickServerToggle();
+            app.selectServer(0);
+            var sameOriginVisible = app.isTokenAuthFieldVisible("apiKeyAuth");
+
+            app.selectServer(1);
+            var crossOriginVisible = app.isTokenAuthFieldVisible("apiKeyAuth");
+
+            then(sameOriginVisible).isTrue();
+            then(crossOriginVisible).isTrue();
+        }
+
+        @Test void shouldAlwaysShowBearerFieldRegardlessOfOrigin() {
+            app.expandFirstNode();
+            app.clickTreeNode("secure/index.html");
+            app.waitForDetailContent("Secure endpoint");
+            app.clickServerToggle();
+            app.selectServer(0);
+            var sameOriginVisible = app.isTokenAuthFieldVisible("bearerAuth");
+
+            app.selectServer(1);
+            var crossOriginVisible = app.isTokenAuthFieldVisible("bearerAuth");
+
+            then(sameOriginVisible).isTrue();
+            then(crossOriginVisible).isTrue();
+        }
+
+        @Test void shouldShowBrowserHandledFieldsWhenSwitchingToCrossOrigin() {
+            app.expandFirstNode();
+            app.clickTreeNode("secure/index.html");
+            app.waitForDetailContent("Secure endpoint");
+            app.clickServerToggle();
+            app.selectServer(0);
+            var hiddenOnSameOrigin = app.isBrowserHandledAuthFieldVisible("basicAuth");
+
+            app.selectServer(1);
+            var shownOnCrossOrigin = app.isBrowserHandledAuthFieldVisible("basicAuth");
+
+            then(hiddenOnSameOrigin).isFalse();
+            then(shownOnCrossOrigin).isTrue();
+        }
+
+        @Test void shouldHideBrowserHandledFieldsWhenSwitchingToSameOrigin() {
+            app.expandFirstNode();
+            app.clickTreeNode("secure/index.html");
+            app.waitForDetailContent("Secure endpoint");
+            app.clickServerToggle();
+            app.selectServer(1);
+            var shownOnCrossOrigin = app.isBrowserHandledAuthFieldVisible("basicAuth");
+
+            app.selectServer(0);
+            var hiddenOnSameOrigin = app.isBrowserHandledAuthFieldVisible("basicAuth");
+
+            then(shownOnCrossOrigin).isTrue();
+            then(hiddenOnSameOrigin).isFalse();
+        }
+    }
 }

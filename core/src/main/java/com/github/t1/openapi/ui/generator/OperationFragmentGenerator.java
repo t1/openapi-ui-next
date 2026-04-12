@@ -281,31 +281,31 @@ class OperationFragmentGenerator {
             
             if (SecurityScheme.Type.APIKEY == scheme.getType()) {
                 if (SecurityScheme.In.COOKIE == scheme.getIn()) {
-                    authDiv.content(cookieApiKeyAuthField(scheme));
+                    authDiv.content(cookieApiKeyAuthField(schemeName, scheme));
                 } else {
-                    authDiv.content(apiKeyAuthField(scheme));
+                    authDiv.content(apiKeyAuthField(schemeName, scheme));
                 }
             } else if (SecurityScheme.Type.HTTP == scheme.getType()) {
                 if ("bearer".equals(scheme.getScheme())) {
-                    authDiv.content(bearerAuthField(scheme));
+                    authDiv.content(bearerAuthField(schemeName, scheme));
                 } else if ("basic".equals(scheme.getScheme())) {
-                    authDiv.content(httpBasicAuthField(scheme));
+                    authDiv.content(httpBasicAuthField(schemeName, scheme));
                 }
             } else if (SecurityScheme.Type.OAUTH2 == scheme.getType()) {
-                authDiv.content(oauth2AuthField(scheme));
+                authDiv.content(oauth2AuthField(schemeName, scheme));
             } else if (SecurityScheme.Type.OPENIDCONNECT == scheme.getType()) {
-                authDiv.content(openIdConnectAuthField(scheme));
+                authDiv.content(openIdConnectAuthField(schemeName, scheme));
             } else if (SecurityScheme.Type.MUTUALTLS == scheme.getType()) {
-                authDiv.content(mutualTlsAuthField(scheme));
+                authDiv.content(mutualTlsAuthField(schemeName, scheme));
             }
         }
         
         operationForm.content(authDiv);
     }
     
-    private com.github.t1.bulmajava.form.Field apiKeyAuthField(SecurityScheme scheme) {
+    private com.github.t1.bulmajava.form.Field apiKeyAuthField(String schemeName, SecurityScheme scheme) {
         var badges = tagsAddon().content(tag("🔒 apiKey").is(WARNING)).classes("is-inline-flex", "ml-2");
-        var inputField = field().label(span(scheme.getName()), badges);
+        var inputField = field().label(span(schemeName), badges);
         var inp = input(TEXT).attr("name", scheme.getName());
         inp.attr("data-param-in", SecurityScheme.In.HEADER == scheme.getIn() ? "auth-header" : "auth-query");
         inputField.content(inp);
@@ -313,9 +313,9 @@ class OperationFragmentGenerator {
         return inputField;
     }
 
-    private com.github.t1.bulmajava.form.Field bearerAuthField(SecurityScheme scheme) {
+    private com.github.t1.bulmajava.form.Field bearerAuthField(String schemeName, SecurityScheme scheme) {
         var badges = tagsAddon().content(tag("🔒 bearer").is(WARNING)).classes("is-inline-flex", "ml-2");
-        var inputField = field().label(span(scheme.getName()), badges);
+        var inputField = field().label(span(schemeName), badges);
         var inp = input(TEXT).attr("name", "Authorization");
         inp.attr("data-param-in", "auth-header");
         inputField.content(inp);
@@ -323,16 +323,18 @@ class OperationFragmentGenerator {
         return inputField;
     }
 
-    private com.github.t1.bulmajava.form.Field httpBasicAuthField(SecurityScheme scheme) {
+    private com.github.t1.bulmajava.form.Field httpBasicAuthField(String schemeName, SecurityScheme scheme) {
         var badges = tagsAddon().content(tag("🔒 basic").is(WARNING)).classes("is-inline-flex", "ml-2");
-        var inputField = field().label(span(scheme.getName()), badges);
+        var inputField = field().label(span(schemeName), badges);
+        inputField.attr("data-browser-handled", "true");
         inputField.content(p("Basic authentication (handled by browser)"));
         return inputField;
     }
 
-    private com.github.t1.bulmajava.form.Field oauth2AuthField(SecurityScheme scheme) {
+    private com.github.t1.bulmajava.form.Field oauth2AuthField(String schemeName, SecurityScheme scheme) {
         var badges = tagsAddon().content(tag("🔒 oauth2").is(WARNING)).classes("is-inline-flex", "ml-2");
-        var inputField = field().label(span(scheme.getName()), badges);
+        var inputField = field().label(span(schemeName), badges);
+        inputField.attr("data-browser-handled", "true");
         var flows = scheme.getFlows();
         if (flows != null) {
             if (flows.getAuthorizationCode() != null) {
@@ -352,23 +354,26 @@ class OperationFragmentGenerator {
         return inputField;
     }
 
-    private com.github.t1.bulmajava.form.Field openIdConnectAuthField(SecurityScheme scheme) {
+    private com.github.t1.bulmajava.form.Field openIdConnectAuthField(String schemeName, SecurityScheme scheme) {
         var badges = tagsAddon().content(tag("🔒 openIdConnect").is(WARNING)).classes("is-inline-flex", "ml-2");
-        var inputField = field().label(span(scheme.getName()), badges);
+        var inputField = field().label(span(schemeName), badges);
+        inputField.attr("data-browser-handled", "true");
         inputField.content(p("Discovery URL: " + scheme.getOpenIdConnectUrl()));
         return inputField;
     }
 
-    private com.github.t1.bulmajava.form.Field mutualTlsAuthField(SecurityScheme scheme) {
+    private com.github.t1.bulmajava.form.Field mutualTlsAuthField(String schemeName, SecurityScheme scheme) {
         var badges = tagsAddon().content(tag("🔒 mutualTLS").is(WARNING)).classes("is-inline-flex", "ml-2");
-        var inputField = field().label(span(scheme.getName()), badges);
+        var inputField = field().label(span(schemeName), badges);
+        inputField.attr("data-browser-handled", "true");
         inputField.content(p("Mutual TLS (client certificate required)"));
         return inputField;
     }
 
-    private com.github.t1.bulmajava.form.Field cookieApiKeyAuthField(SecurityScheme scheme) {
+    private com.github.t1.bulmajava.form.Field cookieApiKeyAuthField(String schemeName, SecurityScheme scheme) {
         var badges = tagsAddon().content(tag("🔒 apiKey").is(WARNING)).classes("is-inline-flex", "ml-2");
-        var inputField = field().label(span(scheme.getName()), badges);
+        var inputField = field().label(span(schemeName), badges);
+        inputField.attr("data-browser-handled", "true");
         inputField.content(p("Cookie: " + scheme.getName() + " (handled by browser)"));
         return inputField;
     }

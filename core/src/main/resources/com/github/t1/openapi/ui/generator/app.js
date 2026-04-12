@@ -23,6 +23,29 @@ document.addEventListener('DOMContentLoaded', function() {
         if (modeToggle) {
             modeToggle.setAttribute('data-base-url', url);
         }
+        updateAuthFieldVisibility(url);
+    }
+
+    function updateAuthFieldVisibility(serverUrl) {
+        if (!serverUrl) return;
+        
+        try {
+            const serverOrigin = new URL(serverUrl, window.location.href).origin;
+            const currentOrigin = window.location.origin;
+            const isCrossOrigin = serverOrigin !== currentOrigin;
+            
+            // Toggle visibility of browser-handled auth fields
+            const browserHandledFields = document.querySelectorAll('[data-browser-handled="true"]');
+            browserHandledFields.forEach(function(field) {
+                if (isCrossOrigin) {
+                    field.style.display = '';
+                } else {
+                    field.style.display = 'none';
+                }
+            });
+        } catch (e) {
+            // Invalid URL - ignore
+        }
     }
 
     function saveFields(form) {
@@ -707,6 +730,11 @@ document.addEventListener('DOMContentLoaded', function() {
             sendBtns.forEach(function(b) { b.textContent = 'Copy'; });
         }
         detail.querySelectorAll('[data-param-in="cookie"]').forEach(function(inp) { inp.disabled = isTry; });
+        // Update auth field visibility based on current server
+        const modeToggle = document.querySelector('[data-toggle="mode"]');
+        if (modeToggle) {
+            updateAuthFieldVisibility(modeToggle.getAttribute('data-base-url'));
+        }
         initDescriptionToggle();
         // Initialize persist toggle icons on server-rendered param fields
         detail.querySelectorAll('.field .icon.is-right').forEach(function(icon) {

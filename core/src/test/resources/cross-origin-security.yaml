@@ -1,0 +1,42 @@
+openapi: 3.0.0
+info:
+  title: Cross-Origin Security Test
+  version: 1.0.0
+servers:
+  - url: /
+    description: Same-origin server (relative URL)
+  - url: https://api.example.com
+    description: Cross-origin server
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: HTTP Basic authentication
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Bearer token
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key in header
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionId
+      description: Session cookie
+paths:
+  /secure:
+    get:
+      operationId: getSecure
+      summary: Secure endpoint
+      security:
+        - basicAuth: []
+          bearerAuth: []
+          apiKeyAuth: []
+          cookieAuth: []
+      responses:
+        '200':
+          description: Success

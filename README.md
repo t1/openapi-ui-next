@@ -304,6 +304,7 @@ Initial MVP release
 - Template server presets: JavaScript runtime for creating and selecting template variable presets with "+ Add preset" form, variable resolution, and base URL updates ([#45](https://github.com/t1/openapi-ui-next/issues/45))
 - Template preset persistence: localStorage persistence for user-created template server presets with delete functionality; presets survive page reloads and persist independently per template server ([#46](https://github.com/t1/openapi-ui-next/issues/46))
 - Custom server URLs: add arbitrary base URLs via "+ Add custom URL" button with editable text inputs, delete functionality, and localStorage persistence ([#41](https://github.com/t1/openapi-ui-next/issues/41))
+- Cross-origin security integration: automatic security input visibility based on selected server origin; browser-handled auth fields (basic, oauth2, openIdConnect, mutualTLS, cookie apiKey) show for cross-origin servers and hide for same-origin servers ([#43](https://github.com/t1/openapi-ui-next/issues/43))
 
 ## Contributing
 
