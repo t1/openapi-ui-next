@@ -714,7 +714,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     void clickServerToggle() {
-        page.locator("#server-selector .server-toggle").click();
+        page.locator("#server-selector > .panel-heading").click();
     }
 
     boolean isServerPanelExpanded() {
@@ -748,7 +748,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     String templateServerUrlPattern(int index) {
-        var heading = page.locator("#server-selector .template-server-heading").nth(index);
+        var heading = page.locator("#server-selector .template-group-heading").nth(index);
         var urlSpan = heading.locator("span").first();
         return urlSpan.textContent().trim();
     }
@@ -1149,7 +1149,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     void clickGlobalHeadersToggle() {
-        page.locator(".global-headers-toggle").click();
+        page.locator("#global-headers > .panel-heading").click();
     }
 
     void clickGlobalHeaderButton(String text) {
@@ -1460,5 +1460,13 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    boolean hasFormField(String name) {
+        return page.locator("#detail input[name='" + name + "'], #detail select[name='" + name + "']").count() > 0;
+    }
+
+    boolean hasRequestBodyTextarea() {
+        return page.locator("#detail textarea[data-request-body]").count() > 0;
     }
 }

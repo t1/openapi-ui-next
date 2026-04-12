@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.PATCH;
@@ -179,5 +180,18 @@ public class PetResource {
         var removed = PETS.removeIf(p -> p.id == id);
         if (!removed) throw new PetNotFoundException(id);
         return Response.noContent().build();
+    }
+
+    @POST @Path("/search") @Consumes("application/x-www-form-urlencoded") @Produces(APPLICATION_JSON)
+    @Operation(summary = "Search pets by form", description = "Search for pets using form-encoded parameters")
+    public List<Pet> searchForm(
+            @FormParam("name") String name,
+            @FormParam("status") PetStatus status,
+            @FormParam("includeAdopted") Boolean includeAdopted) {
+        return PETS.stream()
+                .filter(p -> name == null || p.name.toLowerCase().contains(name.toLowerCase()))
+                .filter(p -> status == null || p.status == status)
+                .filter(p -> includeAdopted == null || !includeAdopted || p.status == adopted)
+                .toList();
     }
 }

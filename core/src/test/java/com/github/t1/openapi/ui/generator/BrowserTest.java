@@ -1754,6 +1754,21 @@ class BrowserTest {
         }
     }
 
+    @ResourceLock("form-encoded") @Nested class GivenAppWithFormEncodedRequestBody {
+        @RegisterExtension static AppFixture app = launch("form-encoded.yaml").withBaseUrlOverride();
+
+        @Test void shouldRenderFormFieldsInsteadOfTextarea() {
+            app.clickTreeNode("login/index.html");
+            app.waitForDetailContent("User login");
+
+            then(app.hasFormField("username")).isTrue();
+            then(app.hasFormField("password")).isTrue();
+            then(app.hasFormField("remember")).isTrue();
+            then(app.hasRequestBodyTextarea()).isFalse();
+            app.screenshot("form-encoded-fields");
+        }
+    }
+
     @ResourceLock("nested-paths") @Nested class GivenAppWithNestedPaths {
         @RegisterExtension static AppFixture app = launch("nested-paths.yaml");
 

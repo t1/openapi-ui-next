@@ -504,6 +504,12 @@ class OperationFragmentGenerator {
     }
 
     private void requestBodySection(Form operationForm) {
+        var formEncodedContent = resolveFormEncodedContent();
+        if (formEncodedContent != null) {
+            renderFormFields(operationForm, formEncodedContent);
+            return;
+        }
+        
         var jsonContent = resolveJsonContent();
         if (jsonContent == null) return;
         var skeleton = skeleton(jsonContent);
@@ -514,6 +520,14 @@ class OperationFragmentGenerator {
         bodyBox.content(requestBodyHeader(jsonContent));
         bodyBox.content(requestBodyEditor(skeleton, jsonContent.getSchema()));
         operationForm.content(bodyBox);
+    }
+
+    private MediaType resolveFormEncodedContent() {
+        if (operation.getRequestBody() == null || operation.getRequestBody().getContent() == null) return null;
+        var content = operation.getRequestBody().getContent();
+        var formContent = content.getMediaTypes().get("application/x-www-form-urlencoded");
+        if (formContent == null || formContent.getSchema() == null) return null;
+        return formContent;
     }
 
     private MediaType resolveJsonContent() {
@@ -593,6 +607,28 @@ class OperationFragmentGenerator {
             return splitPane().ratio(1, 1).first(textareaEl).second(tree);
         }
         return textareaEl;
+    }
+
+    private void renderFormFields(Form operationForm, MediaType formContent) {
+        var schema = SchemaResolver.resolve(formContent.getSchema(), schemas);
+        if (schema.getProperties() == null || schema.getProperties().isEmpty()) return;
+        
+        for (var entry : schema.getProperties().entrySet()) {
+            var name = entry.getKey();
+            var propSchema = SchemaResolver.resolve(entry.getValue(), schemas);
+            var type = typeAsString(propSchema);
+            
+            var inputField = field().label(span(name));
+            if ("boolean".equals(type)) {
+                var checkbox = input(com.github.t1.bulmajava.form.InputType.CHECKBOX)
+                        .attr("name", name);
+                inputField.content(checkbox);
+            } else {
+                var inputEl = input(TEXT).attr("name", name);
+                inputField.content(inputEl);
+            }
+            operationForm.content(inputField);
+        }
     }
 
     private Map<String, String> responseFragmentFiles() {

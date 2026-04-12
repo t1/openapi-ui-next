@@ -584,10 +584,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const urls = JSON.parse(stored);
             const addBtn = serverSelector.querySelector('.custom-url-add');
             if (!addBtn) return;
-            const serverBody = addBtn.closest('.server-body');
+            const customUrlBlock = addBtn.closest('.custom-url-block');
             urls.forEach(url => {
                 const row = createCustomUrlRow(url);
-                serverBody.insertBefore(row, addBtn);
+                customUrlBlock.insertBefore(row, addBtn);
             });
         } catch (e) {
             console.error('Failed to restore custom URLs:', e);
@@ -609,7 +609,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             try {
                 const presets = JSON.parse(stored);
-                const serverBody = addBtn.closest('.server-body');
+                const templateGroup = addBtn.closest('.template-group');
                 
                 // Count existing presets to calculate next index
                 const existingPresets = serverSelector.querySelectorAll("input[id^='server-" + serverIndex + "-preset-']");
@@ -619,7 +619,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const label = createTemplatePresetLabel(serverIndex, nextIndex, preset.resolvedUrl, true);
                     
                     // Insert before the "Add preset" button
-                    serverBody.insertBefore(label, addBtn);
+                    templateGroup.insertBefore(label, addBtn);
                     nextIndex++;
                 });
             } catch (e) {
@@ -642,9 +642,9 @@ document.addEventListener('DOMContentLoaded', function() {
         serverSelector.addEventListener('click', function(e) {
             const addBtn = e.target.closest('.custom-url-add');
             if (addBtn) {
-                const serverBody = addBtn.closest('.server-body');
+                const customUrlBlock = addBtn.closest('.custom-url-block');
                 const row = createCustomUrlRow('');
-                serverBody.insertBefore(row, addBtn);
+                customUrlBlock.insertBefore(row, addBtn);
                 row.querySelector('.custom-url-input').focus();
                 return;
             }
@@ -661,8 +661,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const urlTemplate = addPresetBtn.getAttribute('data-url-template');
                 const variables = JSON.parse(addPresetBtn.getAttribute('data-variables'));
                 const form = createTemplatePresetForm(serverIndex, urlTemplate, variables);
-                const serverBody = addPresetBtn.closest('.server-body');
-                serverBody.insertBefore(form, addPresetBtn);
+                const templateGroup = addPresetBtn.closest('.template-group');
+                templateGroup.insertBefore(form, addPresetBtn);
                 return;
             }
             const saveBtn = e.target.closest('.template-preset-save');
@@ -716,8 +716,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const resolvedUrl = radio.value;
                 
                 // Find the template server this preset belongs to
-                const serverBody = label.closest('.server-body');
-                const addPresetBtn = serverBody.querySelector('.template-preset-add');
+                const templateGroup = label.closest('.template-group');
+                const addPresetBtn = templateGroup.querySelector('.template-preset-add');
                 const urlTemplate = addPresetBtn.getAttribute('data-url-template');
                 
                 // Remove from DOM
@@ -2144,6 +2144,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const bodyTextarea = sendForm.querySelector('textarea[data-request-body]');
             const bodyValue = bodyTextarea ? bodyTextarea.value : '';
+            
+            // Check for form-encoded fields (exclude parameter inputs by checking for data-param-in attribute)
+            const allNamedInputs = sendForm.querySelectorAll('input[name]');
+            const formFields = Array.from(allNamedInputs).filter(function(field) {
+                // Exclude parameter inputs (they have data-param-in attribute)
+                if (field.hasAttribute('data-param-in')) return false;
+                // Include non-checkbox inputs
+                if (field.type !== 'checkbox') return true;
+                // Include only checked checkboxes
+                return field.checked;
+            });
+            const hasFormFields = formFields.length > 0;
+            let formEncodedBody = '';
+            let contentType = 'application/json';
+            
+            if (hasFormFields) {
+                const params = new URLSearchParams();
+                formFields.forEach(function(field) {
+                    if (field.type === 'checkbox') {
+                        params.append(field.name, 'true');
+                    } else {
+                        params.append(field.name, field.value);
+                    }
+                });
+                formEncodedBody = params.toString();
+                contentType = 'application/x-www-form-urlencoded';
+            }
 
             // Parse embedded schema JSON
             let schema = null;
@@ -2163,8 +2190,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     method: method,
                     url: url,
                     headers: requestHeaders,
-                    body: bodyValue,
-                    contentType: 'application/json',
+                    body: hasFormFields ? formEncodedBody : bodyValue,
+                    contentType: contentType,
                     schema: schema
                 };
                 const cmd = generator(params);
@@ -2174,9 +2201,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 sendBtn.disabled = true;
                 sendBtn.textContent = 'Sending...';
                 const fetchOptions = { method: method, headers: {} };
-                if (bodyValue) {
+                if (hasFormFields) {
+                    fetchOptions.body = formEncodedBody;
+                    fetchOptions.headers['Content-Type'] = contentType;
+                } else if (bodyValue) {
                     fetchOptions.body = bodyValue;
-                    fetchOptions.headers['Content-Type'] = 'application/json';
+                    fetchOptions.headers['Content-Type'] = contentType;
                 }
                 const acceptSelect = detail.querySelector('[data-accept] select');
                 if (acceptSelect && acceptSelect.value) {
