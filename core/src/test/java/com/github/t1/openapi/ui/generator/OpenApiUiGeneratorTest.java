@@ -918,6 +918,34 @@ class OpenApiUiGeneratorTest {
         then(fragment).doesNotContain("<input");
     }
 
+    @Test void shouldIncludeServerOverrideOobForPerOperationServers() throws Exception {
+        generate("/per-operation-servers.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/POST.html"));
+        then(fragment).contains("<div hx-swap-oob=\"innerHTML:#server-override\">");
+        then(fragment).contains("The operation selected below uses different servers");
+        then(fragment).contains("https://write-api.example.com");
+        then(fragment).contains("Write-only server");
+    }
+
+    @Test void shouldIncludeEmptyServerOverrideOobForOperationsWithoutOverrides() throws Exception {
+        generate("/per-operation-servers.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("<div hx-swap-oob=\"innerHTML:#server-override\"></div>");
+        then(fragment).doesNotContain("The operation selected below uses different servers");
+    }
+
+    @Test void shouldIncludeServerOverrideOobForPerPathServers() throws Exception {
+        generate("/per-operation-servers.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("owners/GET.html"));
+        then(fragment).contains("<div hx-swap-oob=\"innerHTML:#server-override\">");
+        then(fragment).contains("The operation selected below uses different servers");
+        then(fragment).contains("https://owners-api.example.com");
+        then(fragment).contains("Owners service");
+    }
+
     private BiConsumer<String, byte[]> writeToOutputDir() {
         return (name, content) -> {
             try {

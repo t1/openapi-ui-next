@@ -3055,4 +3055,63 @@ class BrowserTest {
             then(app.templateServerPresetCount(0)).isEqualTo(1);
         }
     }
+
+    @ResourceLock("per-operation-servers") @Nested class PerOperationServers {
+        @RegisterExtension static AppFixture app = launch("per-operation-servers.yaml");
+
+        @Test void shouldShowOverrideWarningForOperationWithServers() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/index.html");
+            app.clickMethodTab(2);
+            app.waitForDetailContent("Create a pet");
+
+            then(app.serverOverrideWarning()).isEqualTo("The operation selected below uses different servers");
+            then(app.serverOverrideServerCount()).isEqualTo(2);
+            then(app.serverOverrideServerUrl(0)).isEqualTo("https://write-api.example.com");
+            then(app.serverOverrideServerUrl(1)).isEqualTo("https://write-staging.example.com");
+        }
+
+        @Test void shouldDisableGlobalServersWhenOverrideIsActive() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/index.html");
+            app.clickMethodTab(2);
+            app.waitForDetailContent("Create a pet");
+
+            then(app.isGlobalServerDisabled(0)).isTrue();
+            then(app.isGlobalServerDisabled(1)).isTrue();
+        }
+
+        @Test void shouldReEnableGlobalServersWhenSwitchingToNonOverrideOperation() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/index.html");
+            app.clickMethodTab(2);
+            app.waitForDetailContent("Create a pet");
+
+            then(app.isGlobalServerDisabled(0)).isTrue();
+
+            app.clickMethodTab(1);
+            app.waitForDetailContent("List all pets");
+
+            then(app.isGlobalServerDisabled(0)).isFalse();
+            then(app.isGlobalServerDisabled(1)).isFalse();
+        }
+
+        @Test void shouldUseOverrideServerUrlForRequests() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/index.html");
+            app.clickMethodTab(2);
+            app.waitForDetailContent("Create a pet");
+
+            then(app.getBaseUrl()).isEqualTo("https://write-api.example.com");
+        }
+
+        @Test void shouldUseGlobalServerUrlWhenNoOverride() {
+            app.expandFirstNode();
+            app.clickTreeNode("pets/index.html");
+            app.clickMethodTab(1);
+            app.waitForDetailContent("List all pets");
+
+            then(app.getBaseUrl()).isEqualTo("https://api.example.com");
+        }
+    }
 }

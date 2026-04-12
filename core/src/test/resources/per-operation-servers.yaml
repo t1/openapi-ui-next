@@ -1,0 +1,38 @@
+openapi: 3.0.0
+info:
+  title: Per-Operation Server Test
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+    description: Production server
+  - url: http://localhost:8080
+    description: Local dev server
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      summary: List all pets
+      responses:
+        '200':
+          description: Success
+    post:
+      operationId: createPet
+      summary: Create a pet
+      servers:
+        - url: https://write-api.example.com
+          description: Write-only server
+        - url: https://write-staging.example.com
+          description: Write staging server
+      responses:
+        '201':
+          description: Created
+  /owners:
+    servers:
+      - url: https://owners-api.example.com
+        description: Owners service
+    get:
+      operationId: listOwners
+      summary: List all owners
+      responses:
+        '200':
+          description: Success

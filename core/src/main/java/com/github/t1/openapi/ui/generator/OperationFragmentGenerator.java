@@ -58,6 +58,7 @@ import static com.github.t1.openapi.ui.generator.OpenApiUiGenerator.methodColor;
 import static java.lang.Boolean.TRUE;
 
 class OperationFragmentGenerator {
+    private final Operation operationRecord;
     private final HttpMethod method;
     private final org.eclipse.microprofile.openapi.models.Operation operation;
     private final ApiPath path;
@@ -75,6 +76,7 @@ class OperationFragmentGenerator {
     }
 
     private OperationFragmentGenerator(Operation operation, Map<String, String[]> operationIdMap) {
+        this.operationRecord = operation;
         this.method = operation.method();
         this.operation = operation.spec();
         this.path = operation.path();
@@ -106,7 +108,52 @@ class OperationFragmentGenerator {
                             .content("External docs")));
         }
         fragment.content(operationForm());
+        fragment.content(serverOverrideOob());
         return fragment;
+    }
+
+    private Element serverOverrideOob() {
+        var oob = div().attr("hx-swap-oob", "innerHTML:#server-override");
+        
+        // Resolve server inheritance: operation -> path -> global
+        var effectiveServers = operation.getServers();
+        if (effectiveServers == null || effectiveServers.isEmpty()) {
+            var pathItem = operationRecord.pathItem();
+            if (pathItem != null) {
+                effectiveServers = pathItem.getServers();
+            }
+        }
+        
+        // If operation/path has no servers, use global (no override)
+        if (effectiveServers == null || effectiveServers.isEmpty()) {
+            return oob; // Empty OOB swap clears the override slot
+        }
+        
+        // Operation has server override - populate the slot
+        oob.content(
+            messageBody().is(WARNING).classes("server-override-warning").content(
+                p("The operation selected below uses different servers")
+            )
+        );
+        
+        for (var i = 0; i < effectiveServers.size(); i++) {
+            var server = effectiveServers.get(i);
+            var radioId = "server-override-" + i;
+            var label = element("label").classes("radio-label").attr("for", radioId);
+            var radio = element("input").attr("type", "radio").attr("name", "server-override")
+                .attr("id", radioId).attr("value", server.getUrl());
+            if (i == 0) radio.attr("checked", "checked");
+            
+            label.content(radio);
+            label.content(span(server.getUrl()));
+            if (server.getDescription() != null && !server.getDescription().isEmpty()) {
+                label.content(span(" - " + server.getDescription()).classes("has-text-grey"));
+            }
+            
+            oob.content(div().classes("control").content(label));
+        }
+        
+        return oob;
     }
 
     private Form operationForm() {

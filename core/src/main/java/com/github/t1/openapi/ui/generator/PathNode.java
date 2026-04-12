@@ -25,6 +25,7 @@ class PathNode {
 
     private final Map<String, PathNode> children = new LinkedHashMap<>();
     private final Map<HttpMethod, Operation> operations = new LinkedHashMap<>();
+    private PathItem pathItem;
 
     Map<String, PathNode> children() { return Collections.unmodifiableMap(children); }
 
@@ -36,8 +37,11 @@ class PathNode {
         return Collections.unmodifiableMap(sorted);
     }
 
+    PathItem pathItem() { return pathItem; }
+
     void add(List<String> segments, int index, PathItem pathItem) {
         if (index >= segments.size()) {
+            this.pathItem = pathItem;
             operations.putAll(pathItem.getOperations());
             return;
         }

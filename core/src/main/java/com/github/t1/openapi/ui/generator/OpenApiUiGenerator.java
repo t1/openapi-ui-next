@@ -73,7 +73,7 @@ public class OpenApiUiGenerator {
         var tagTree = TagTreeGenerator.tagTree(openApi, root);
 
         var page = pageLayout(openApi, pathTree, tagTree, shouldDefaultToTagView(openApi, pathCount), operationIdMap);
-        generateOutput(page, root, tagTree, pathTree, operationIdMap, openApi.getComponents(), openApi.getSecurity());
+        generateOutput(page, root, tagTree, pathTree, operationIdMap, openApi.getServers(), openApi.getComponents(), openApi.getSecurity());
     }
 
     private boolean shouldDefaultToTagView(OpenAPI openApi, int pathCount) {
@@ -305,12 +305,12 @@ public class OpenApiUiGenerator {
         return sb.toString();
     }
 
-    private void generateOutput(Renderable page, PathNode root, Renderable tagTree, Renderable pathTree, Map<String, String[]> operationIdMap, Components components, List<org.eclipse.microprofile.openapi.models.security.SecurityRequirement> globalSecurity) throws IOException {
+    private void generateOutput(Renderable page, PathNode root, Renderable tagTree, Renderable pathTree, Map<String, String[]> operationIdMap, List<org.eclipse.microprofile.openapi.models.servers.Server> globalServers, Components components, List<org.eclipse.microprofile.openapi.models.security.SecurityRequirement> globalSecurity) throws IOException {
         output.accept("index.html", page.render().getBytes());
         output.accept("tag-tree.html", tagTree.render().getBytes());
         output.accept("path-tree.html", pathTree.render().getBytes());
         output.accept("openapi-ui.css", (Toggle.css() + Tree.css() + SplitPane.css() + loadResource("app.css")).getBytes());
-        generateFragments(root, ApiPath.ROOT, operationIdMap, components, globalSecurity);
+        generateFragments(root, ApiPath.ROOT, operationIdMap, globalServers, components, globalSecurity);
         outputVendorResources();
         log.info("Done");
     }
@@ -401,13 +401,13 @@ public class OpenApiUiGenerator {
         return PathNode.isPathParam(segment) ? "tree-param" : "tree-segment";
     }
 
-    private void generateFragments(PathNode node, ApiPath path, Map<String, String[]> operationIdMap, Components components, List<org.eclipse.microprofile.openapi.models.security.SecurityRequirement> globalSecurity) {
+    private void generateFragments(PathNode node, ApiPath path, Map<String, String[]> operationIdMap, List<org.eclipse.microprofile.openapi.models.servers.Server> globalServers, Components components, List<org.eclipse.microprofile.openapi.models.security.SecurityRequirement> globalSecurity) {
         for (var entry : node.children().entrySet()) {
             var segment = entry.getKey();
             var child = entry.getValue();
             var childPath = path.resolve(segment);
             for (var opEntry : child.operations().entrySet()) {
-                var operation = new Operation(opEntry.getKey(), opEntry.getValue(), childPath, components, globalSecurity);
+                var operation = new Operation(opEntry.getKey(), opEntry.getValue(), childPath, child.pathItem(), globalServers, components, globalSecurity);
                 var fragment = operationFragment(operation, operationIdMap);
                 output.accept(childPath + "/" + opEntry.getKey().name() + ".html", fragment.render().getBytes());
                 for (var responseEntry : responseFragments(operation, operationIdMap).entrySet()) {
@@ -415,10 +415,10 @@ public class OpenApiUiGenerator {
                 }
             }
             if (!child.operations().isEmpty()) {
-                var pathFrag = pathFragment(childPath, child.operations(), operationIdMap, components, globalSecurity);
+                var pathFrag = pathFragment(childPath, child.operations(), operationIdMap, child.pathItem(), globalServers, components, globalSecurity);
                 output.accept(childPath + "/index.html", pathFrag.render().getBytes());
             }
-            generateFragments(child, childPath, operationIdMap, components, globalSecurity);
+            generateFragments(child, childPath, operationIdMap, globalServers, components, globalSecurity);
         }
     }
 

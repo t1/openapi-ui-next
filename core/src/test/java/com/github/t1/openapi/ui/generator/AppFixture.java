@@ -705,6 +705,32 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return !page.locator("#server-selector").getAttribute("class").contains("is-collapsed");
     }
 
+    boolean hasServerOverrideOobElement() {
+        return page.locator("[hx-swap-oob]").count() > 0;
+    }
+
+    String serverOverrideWarning() {
+        return page.locator("#server-override .server-override-warning").textContent().trim();
+    }
+
+    int serverOverrideServerCount() {
+        return (int) page.locator("#server-override input[type='radio']").count();
+    }
+
+    String serverOverrideServerUrl(int index) {
+        var label = page.locator("#server-override label").nth(index);
+        var urlSpan = label.locator("span").first();
+        return urlSpan.textContent().trim();
+    }
+
+    boolean isGlobalServerDisabled(int index) {
+        return page.locator("#server-selector input[type='radio']:not([name='server-override'])").nth(index).isDisabled();
+    }
+
+    String getHtml(String selector) {
+        return page.locator(selector).innerHTML();
+    }
+
     String templateServerUrlPattern(int index) {
         var heading = page.locator("#server-selector .template-server-heading").nth(index);
         var urlSpan = heading.locator("span").first();

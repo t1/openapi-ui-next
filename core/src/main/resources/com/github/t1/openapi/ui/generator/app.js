@@ -18,6 +18,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return form.getAttribute('data-method') + ':' + form.getAttribute('data-path');
     }
 
+    function updateBaseUrl(url) {
+        const modeToggle = document.querySelector('[data-toggle="mode"]');
+        if (modeToggle) {
+            modeToggle.setAttribute('data-base-url', url);
+        }
+    }
+
     function saveFields(form) {
         const key = opKey(form);
         const fields = {};
@@ -421,11 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
         serverSelector.addEventListener('change', function(e) {
             if (e.target.type === 'radio' && e.target.name === 'server') {
                 const selectedUrl = e.target.value;
-                // Update the base URL in the mode toggle
-                const modeToggle = document.querySelector('[data-toggle="mode"]');
-                if (modeToggle) {
-                    modeToggle.setAttribute('data-base-url', selectedUrl);
-                }
+                updateBaseUrl(selectedUrl);
                 // Persist selection
                 localStorage.setItem('openapi-ui-server', selectedUrl);
             }
@@ -444,10 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
             for (const radio of radios) {
                 if (radio.value === savedServer) {
                     radio.checked = true;
-                    const modeToggle = document.querySelector('[data-toggle="mode"]');
-                    if (modeToggle) {
-                        modeToggle.setAttribute('data-base-url', savedServer);
-                    }
+                    updateBaseUrl(savedServer);
                     break;
                 }
             }
@@ -1924,6 +1924,37 @@ document.addEventListener('DOMContentLoaded', function() {
         return (e.detail.pathInfo && e.detail.pathInfo.requestPath)
             || (e.detail.elt && e.detail.elt.getAttribute('hx-get'));
     }
+    document.body.addEventListener('htmx:oobAfterSwap', function(e) {
+        const target = e.detail.target;
+        if (target && target.id === 'server-override') {
+            const serverSelector = document.getElementById('server-selector');
+            if (!serverSelector) return;
+            
+            const hasOverride = target.children.length > 0;
+            const globalInputs = serverSelector.querySelectorAll('input[type="radio"]:not([name="server-override"])');
+            globalInputs.forEach(function(input) {
+                input.disabled = hasOverride;
+            });
+            
+            if (hasOverride) {
+                const overrideRadios = target.querySelectorAll('input[type="radio"]');
+                const selectedOverride = target.querySelector('input[type="radio"]:checked');
+                if (selectedOverride) {
+                    updateBaseUrl(selectedOverride.value);
+                }
+                overrideRadios.forEach(function(radio) {
+                    radio.addEventListener('change', function() {
+                        updateBaseUrl(radio.value);
+                    });
+                });
+            } else {
+                const selectedGlobal = serverSelector.querySelector('input[type="radio"]:checked');
+                if (selectedGlobal) {
+                    updateBaseUrl(selectedGlobal.value);
+                }
+            }
+        }
+    });
     document.body.addEventListener('htmx:sendError', function(e) {
         const url = htmxErrorUrl(e);
         if (!url) return;
