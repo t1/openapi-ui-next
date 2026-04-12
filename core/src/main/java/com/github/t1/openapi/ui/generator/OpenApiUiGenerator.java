@@ -104,6 +104,7 @@ public class OpenApiUiGenerator {
                 .persistAs("openapi-ui-tree-width");
         var body = section().content(container().content(
                 detailHeader,
+                serverSelector(openApi),
                 globalHeaders(),
                 splitLayout
         ), errorBanner());
@@ -130,6 +131,52 @@ public class OpenApiUiGenerator {
                 .option("httpie", o -> o.attr("title", "Copy as HTTPie command"))
                 .option("curl", o -> o.attr("title", "Copy as curl command"))
                 .attr("data-mode", "try").attr("data-base-url", baseUrl);
+    }
+
+    private static Element serverSelector(OpenAPI openApi) {
+        var servers = openApi.getServers();
+        if (servers == null || servers.isEmpty()) {
+            return div().id("server-selector").classes("is-collapsed")
+                    .content(
+                            element("button").attr("type", "button").classes("server-toggle")
+                                    .content(span("▶ Server"), span("(resolved from origin)").classes("server-url")),
+                            div().classes("server-body")
+                                    .content(div().id("server-override"))
+                    );
+        }
+
+        var serverBody = div().classes("server-body");
+        for (var i = 0; i < servers.size(); i++) {
+            var server = servers.get(i);
+            var url = server.getUrl();
+            var description = server.getDescription();
+            var radioId = "server-" + i;
+            var checked = (i == 0);
+
+            var radio = element("input").attr("type", "radio").attr("name", "server").attr("id", radioId)
+                    .attr("value", url);
+            if (checked) {
+                radio.attr("checked", "");
+            }
+
+            var label = element("label").attr("for", radioId).classes("server-radio-label");
+            label.content(radio, span(url));
+            if (description != null && !description.isEmpty()) {
+                label.content(span(" — "), span(description).classes("server-description"));
+            }
+
+            serverBody.content(label);
+        }
+
+        serverBody.content(div().id("server-override"));
+
+        var firstServerUrl = servers.getFirst().getUrl();
+        return div().id("server-selector").classes("is-collapsed")
+                .content(
+                        element("button").attr("type", "button").classes("server-toggle")
+                                .content(span("▶ Server"), span(firstServerUrl).classes("server-url")),
+                        serverBody
+                );
     }
 
     private static Element globalHeaders() {

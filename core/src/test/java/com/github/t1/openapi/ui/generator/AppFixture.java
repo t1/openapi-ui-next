@@ -664,6 +664,43 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator(".split-layout").count() == 1;
     }
 
+    boolean hasServerPanel() {
+        return page.locator("#server-selector").count() > 0;
+    }
+
+    int serverRadioCount() {
+        return (int) page.locator("#server-selector input[type='radio']").count();
+    }
+
+    String serverRadioLabel(int index) {
+        var label = page.locator("#server-selector label").nth(index);
+        var urlSpan = label.locator("span").first();
+        return urlSpan.textContent().trim();
+    }
+
+    String serverDescription(int index) {
+        var label = page.locator("#server-selector label").nth(index);
+        var descSpan = label.locator(".server-description");
+        if (descSpan.count() == 0) return "";
+        return descSpan.textContent().trim();
+    }
+
+    boolean isServerSelected(int index) {
+        return page.locator("#server-selector input[type='radio']").nth(index).isChecked();
+    }
+
+    void clickServerToggle() {
+        page.locator("#server-selector .server-toggle").click();
+    }
+
+    boolean isServerPanelExpanded() {
+        return !page.locator("#server-selector").getAttribute("class").contains("is-collapsed");
+    }
+
+    boolean hasElement(String selector) {
+        return page.locator(selector).count() > 0;
+    }
+
     double treeWidth() {
         return page.locator(".split-first").boundingBox().width;
     }

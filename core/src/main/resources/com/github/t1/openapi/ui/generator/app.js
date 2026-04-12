@@ -157,6 +157,47 @@ document.addEventListener('DOMContentLoaded', function() {
         return row;
     }
 
+    // Server selector panel toggle
+    const serverSelector = document.getElementById('server-selector');
+    if (serverSelector) {
+        const serverToggle = serverSelector.querySelector('.server-toggle');
+        if (serverToggle) {
+            serverToggle.addEventListener('click', function() {
+                serverSelector.classList.toggle('is-collapsed');
+            });
+        }
+
+        // Handle server radio selection
+        serverSelector.addEventListener('change', function(e) {
+            if (e.target.type === 'radio' && e.target.name === 'server') {
+                const selectedUrl = e.target.value;
+                // Update the base URL in the mode toggle
+                const modeToggle = document.querySelector('[data-toggle="mode"]');
+                if (modeToggle) {
+                    modeToggle.setAttribute('data-base-url', selectedUrl);
+                }
+                // Persist selection
+                localStorage.setItem('openapi-ui-server', selectedUrl);
+            }
+        });
+
+        // Restore selected server from localStorage
+        const savedServer = localStorage.getItem('openapi-ui-server');
+        if (savedServer) {
+            const radios = serverSelector.querySelectorAll('input[type="radio"][name="server"]');
+            for (const radio of radios) {
+                if (radio.value === savedServer) {
+                    radio.checked = true;
+                    const modeToggle = document.querySelector('[data-toggle="mode"]');
+                    if (modeToggle) {
+                        modeToggle.setAttribute('data-base-url', savedServer);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     // Global headers panel toggle
     const globalHeadersPanel = document.getElementById('global-headers');
     if (globalHeadersPanel) {

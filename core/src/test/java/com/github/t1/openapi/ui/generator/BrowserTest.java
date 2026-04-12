@@ -2835,4 +2835,42 @@ class BrowserTest {
             then(app.inputValue("id")).isEqualTo("1");
         }
     }
+
+    @ResourceLock("multiple-servers") @Nested class GivenAppWithMultipleServers {
+        @RegisterExtension static AppFixture app = launch("multiple-servers.yaml");
+
+        @Test void shouldHaveServerPanel() {
+            then(app.hasServerPanel()).isTrue();
+        }
+
+        @Test void shouldShowServerRadioButtons() {
+            then(app.serverRadioCount()).isEqualTo(3);
+        }
+
+        @Test void shouldLabelFirstRadioWithUrl() {
+            then(app.serverRadioLabel(0)).isEqualTo("https://api.example.com");
+        }
+
+        @Test void shouldShowServerDescriptions() {
+            then(app.serverDescription(0)).isEqualTo("Production server");
+        }
+
+        @Test void shouldSelectFirstServerByDefault() {
+            then(app.isServerSelected(0)).isTrue();
+        }
+
+        @Test void shouldToggleServerPanel() {
+            app.clickServerToggle();
+
+            then(app.isServerPanelExpanded()).isTrue();
+        }
+
+        @Test void shouldStartCollapsed() {
+            then(app.isServerPanelExpanded()).isFalse();
+        }
+
+        @Test void shouldHaveServerOverrideSlot() {
+            then(app.hasElement("#server-override")).isTrue();
+        }
+    }
 }

@@ -519,6 +519,45 @@ pre.response code.hljs {
     border-color: var(--bulma-link);
     color: var(--bulma-link);
 }
+/* server selector panel */
+#server-selector {
+    margin-bottom: 1rem;
+    border: 1px solid var(--bulma-border);
+    border-radius: 6px;
+}
+.server-toggle {
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    background: var(--bulma-scheme-main-bis);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8125rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.server-url {
+    font-family: monospace;
+    font-size: 0.75rem;
+}
+.server-body {
+    padding: 0.75rem;
+    border-top: 1px solid var(--bulma-border);
+}
+#server-selector.is-collapsed .server-body {
+    display: none;
+}
+.server-radio-label {
+    display: block;
+    padding: 0.25rem 0;
+    cursor: pointer;
+}
+.server-description {
+    color: var(--bulma-text-light);
+    font-size: 0.875rem;
+}
 /* global headers panel */
 .global-headers {
     margin-bottom: 1rem;

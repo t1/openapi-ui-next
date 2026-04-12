@@ -1,0 +1,19 @@
+openapi: 3.0.3
+info:
+  title: Multi-Server API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+    description: Production server
+  - url: https://staging.example.com
+    description: Staging server
+  - url: http://localhost:8080
+    description: Local development
+paths:
+  /pets:
+    get:
+      summary: List pets
+      operationId: listPets
+      responses:
+        '200':
+          description: A list of pets
