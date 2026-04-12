@@ -172,6 +172,106 @@ document.addEventListener('DOMContentLoaded', function() {
             code += "resp, _ := http.DefaultClient.Do(req)";
             
             return code;
+        },
+        'MP Rest Client': function(params) {
+            // Extract path parts for interface name and method path
+            const urlObj = new URL(params.url);
+            const pathParts = urlObj.pathname.split('/').filter(function(p) { return p; });
+            const lastPart = pathParts.length > 0 ? pathParts[pathParts.length - 1] : 'Resource';
+            const resourceName = lastPart.charAt(0).toUpperCase() + lastPart.slice(1);
+            const interfaceName = resourceName + 'Client';
+            
+            // Generate record DTOs from schema if available
+            let requestRecord = '';
+            let responseRecord = '';
+            
+            if (params.schema && params.schema.requestBody && params.schema.requestBody.properties) {
+                const reqProps = params.schema.requestBody.properties;
+                const reqFields = Object.keys(reqProps).map(function(key) {
+                    const prop = reqProps[key];
+                    const javaType = prop.type === 'integer' ? 'int' : 
+                                   prop.type === 'number' ? 'double' :
+                                   prop.type === 'boolean' ? 'boolean' : 'String';
+                    return javaType + ' ' + key;
+                }).join(', ');
+                if (reqFields) {
+                    requestRecord = '\nrecord ' + resourceName + 'Request(' + reqFields + ') {}';
+                }
+            }
+            
+            if (params.schema && params.schema.responses && params.schema.responses['200'] && params.schema.responses['200'].properties) {
+                const respProps = params.schema.responses['200'].properties;
+                const respFields = Object.keys(respProps).map(function(key) {
+                    const prop = respProps[key];
+                    const javaType = prop.type === 'integer' ? 'long' : 
+                                   prop.type === 'number' ? 'double' :
+                                   prop.type === 'boolean' ? 'boolean' : 'String';
+                    return javaType + ' ' + key;
+                }).join(', ');
+                if (respFields) {
+                    responseRecord = '\nrecord ' + resourceName + 'Response(' + respFields + ') {}';
+                }
+            }
+            
+            const baseUrl = urlObj.origin;
+            const path = urlObj.pathname;
+            
+            let code = '@RegisterRestClient(baseUri = "' + baseUrl + '")\n';
+            code += 'public interface ' + interfaceName + ' {\n';
+            code += '    @' + params.method + ' @Path("' + path + '")\n';
+            code += '    @Consumes(MediaType.APPLICATION_JSON)\n';
+            
+            const returnType = responseRecord ? resourceName + 'Response' : 'String';
+            const paramType = requestRecord ? resourceName + 'Request' : 'String';
+            const methodName = params.method.toLowerCase() + resourceName;
+            
+            code += '    ' + returnType + ' ' + methodName + '(' + paramType + ' body);\n';
+            code += '}';
+            
+            if (requestRecord) code += requestRecord;
+            if (responseRecord) code += responseRecord;
+            
+            return code;
+        },
+        'Spring WebClient': function(params) {
+            const urlObj = new URL(params.url);
+            const baseUrl = urlObj.origin;
+            const path = urlObj.pathname + urlObj.search;
+            
+            let code = 'String result = WebClient.create("' + baseUrl + '")\n';
+            code += '    .' + params.method.toLowerCase() + '().uri("' + path + '")';
+            
+            Object.keys(params.headers).forEach(function(h) {
+                code += '\n    .header("' + h + '", "' + params.headers[h] + '")';
+            });
+            
+            if (params.body) {
+                code += '\n    .contentType(MediaType.APPLICATION_JSON)';
+                code += '\n    .bodyValue(' + params.body + ')';
+            }
+            
+            code += '\n    .retrieve().bodyToMono(String.class).block();';
+            
+            return code;
+        },
+        'Spring RestTemplate': function(params) {
+            let code = 'HttpHeaders headers = new HttpHeaders();\n';
+            
+            Object.keys(params.headers).forEach(function(h) {
+                code += 'headers.set("' + h + '", "' + params.headers[h] + '");\n';
+            });
+            
+            if (params.body) {
+                code += 'headers.setContentType(MediaType.APPLICATION_JSON);\n';
+                code += 'HttpEntity<String> entity = new HttpEntity<>(' + params.body + ', headers);\n';
+            } else {
+                code += 'HttpEntity<String> entity = new HttpEntity<>(headers);\n';
+            }
+            
+            code += 'ResponseEntity<String> response = new RestTemplate()\n';
+            code += '    .exchange("' + params.url + '", HttpMethod.' + params.method + ', entity, String.class);';
+            
+            return code;
         }
     };
 

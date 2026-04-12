@@ -1669,6 +1669,49 @@ class BrowserTest {
                     .contains("strings.NewReader(");
         }
 
+        @Test void shouldIncludeRequestBodyInMpRestClientMode() {
+            app.clickModeButton("overflow");
+            app.selectDropdownFormat("MP Rest Client");
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+            app.fillRequestBody("{\"name\": \"Fido\"}");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .contains("@RegisterRestClient")
+                    .contains("interface PetsClient")
+                    .contains("@POST")
+                    .contains("@Consumes(MediaType.APPLICATION_JSON)");
+        }
+
+        @Test void shouldIncludeRequestBodyInSpringWebClientMode() {
+            app.clickModeButton("overflow");
+            app.selectDropdownFormat("Spring WebClient");
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+            app.fillRequestBody("{\"name\": \"Fido\"}");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .contains("WebClient.create(")
+                    .contains(".post()")
+                    .contains(".bodyValue(");
+        }
+
+        @Test void shouldIncludeRequestBodyInSpringRestTemplateMode() {
+            app.clickModeButton("overflow");
+            app.selectDropdownFormat("Spring RestTemplate");
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+            app.fillRequestBody("{\"name\": \"Fido\"}");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .contains("HttpHeaders headers")
+                    .contains("HttpEntity<String>")
+                    .contains("new RestTemplate()");
+        }
+
         @Test void shouldShowBodyBoxWithSchemaToggle() {
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");

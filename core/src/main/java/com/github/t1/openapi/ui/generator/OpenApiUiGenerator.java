@@ -141,7 +141,10 @@ public class OpenApiUiGenerator {
                         div().classes("mode-dropdown-item").attr("data-generator", "Java HttpClient").content("Java HttpClient"),
                         div().classes("mode-dropdown-item").attr("data-generator", "JAX-RS").content("JAX-RS"),
                         div().classes("mode-dropdown-item").attr("data-generator", "Python").content("Python"),
-                        div().classes("mode-dropdown-item").attr("data-generator", "Go").content("Go")
+                        div().classes("mode-dropdown-item").attr("data-generator", "Go").content("Go"),
+                        div().classes("mode-dropdown-item").attr("data-generator", "MP Rest Client").content("MP Rest Client"),
+                        div().classes("mode-dropdown-item").attr("data-generator", "Spring WebClient").content("Spring WebClient"),
+                        div().classes("mode-dropdown-item").attr("data-generator", "Spring RestTemplate").content("Spring RestTemplate")
                 );
         
         return div().classes("mode-selector-container").content(modeToggle, dropdownMenu);
