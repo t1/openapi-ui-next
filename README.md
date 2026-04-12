@@ -301,6 +301,7 @@ Initial MVP release
 - Info-only security schemes: documentation rows for browser-handled auth (http basic, oauth2, openIdConnect, mutualTLS, cookie apiKey) ([#37](https://github.com/t1/openapi-ui-next/issues/37))
 - Global server selector: collapsible panel with radio buttons for each server URL and description; persists selection in localStorage; foundation for multi-server support ([#39](https://github.com/t1/openapi-ui-next/issues/39))
 - Template server variables: HTML generation for servers with {variable} placeholders; displays URL pattern as heading with nested default preset; foundation for template variable support ([#44](https://github.com/t1/openapi-ui-next/issues/44))
+- Template server presets: JavaScript runtime for creating and selecting template variable presets with "+ Add preset" form, variable resolution, and base URL updates ([#45](https://github.com/t1/openapi-ui-next/issues/45))
 - Custom server URLs: add arbitrary base URLs via "+ Add custom URL" button with editable text inputs, delete functionality, and localStorage persistence ([#41](https://github.com/t1/openapi-ui-next/issues/41))
 
 ## Contributing

@@ -2978,6 +2978,55 @@ class BrowserTest {
 
         @Disabled("TODO") @Test void shouldShowNonTemplateServerAsRadio() {}
 
-        @Disabled("TODO") @Test void shouldHaveAddPresetButton() {}
+        @Test void shouldHaveAddPresetButton() {
+            then(app.templateServerHasAddPresetButton(0)).isTrue();
+        }
+
+        @Test void shouldOpenFormOnAddPresetClick() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            
+            then(app.hasTemplateServerPresetForm(0)).isTrue();
+        }
+
+        @Test void shouldCreateFormInputsFromVariableMetadata() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            
+            // First template server has one variable: "environment" with enum values
+            then(app.templatePresetFormHasInput(0, "environment")).isTrue();
+            then(app.templatePresetFormInputIsSelect(0, "environment")).isTrue();
+        }
+
+        @Test void shouldCreatePresetWithResolvedUrl() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            
+            // Keep default value "api" for environment variable, click Save
+            app.clickTemplatePresetSave(0);
+            
+            // Should create a new preset with resolved URL
+            then(app.templateServerPresetCount(0)).isEqualTo(2); // default + new one
+            then(app.templateServerPresetLabel(0, 1)).isEqualTo("https://api.example.com");
+        }
+
+        @Test void shouldUpdateBaseUrlOnPresetSelection() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            
+            // Change environment to "staging" and save
+            app.setTemplatePresetFormValue(0, "environment", "staging");
+            app.clickTemplatePresetSave(0);
+            
+            // Select the new preset
+            app.selectTemplatePreset(0, 1);
+            
+            // Base URL should be updated
+            then(app.getBaseUrl()).isEqualTo("https://staging.example.com");
+        }
+
+        @Disabled("TODO") @Test void shouldDeleteUserCreatedPreset() {}
+
+        @Disabled("TODO") @Test void shouldNotDeleteDefaultPreset() {}
     }
 }

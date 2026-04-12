@@ -170,6 +170,49 @@ document.addEventListener('DOMContentLoaded', function() {
         return row;
     }
 
+    function createTemplatePresetForm(serverIndex, urlTemplate, variables) {
+        const form = document.createElement('div');
+        form.className = 'template-preset-form';
+        form.setAttribute('data-server-index', serverIndex);
+        form.setAttribute('data-url-template', urlTemplate);
+        
+        let html = '<div class="template-preset-form-fields">';
+        variables.forEach(function(variable) {
+            html += '<div class="field">';
+            html += '<label class="label is-small">' + variable.name + '</label>';
+            html += '<div class="control">';
+            
+            if (variable.enum && variable.enum.length > 0) {
+                // Dropdown for enum-constrained variables
+                html += '<div class="select is-small is-fullwidth">';
+                html += '<select name="' + variable.name + '">';
+                variable.enum.forEach(function(value) {
+                    const selected = (value === variable.default) ? ' selected' : '';
+                    html += '<option value="' + value + '"' + selected + '>' + value + '</option>';
+                });
+                html += '</select>';
+                html += '</div>';
+            } else {
+                // Text input for free-form variables
+                html += '<input type="text" class="input is-small" name="' + variable.name + '" value="' + (variable.default || '') + '" placeholder="' + variable.name + '">';
+            }
+            
+            html += '</div>';
+            if (variable.description) {
+                html += '<p class="help">' + variable.description + '</p>';
+            }
+            html += '</div>';
+        });
+        html += '</div>';
+        html += '<div class="buttons">';
+        html += '<button type="button" class="button is-small is-primary template-preset-save">Save</button>';
+        html += '<button type="button" class="button is-small template-preset-cancel">Cancel</button>';
+        html += '</div>';
+        
+        form.innerHTML = html;
+        return form;
+    }
+
     function saveCustomUrls() {
         const serverSelector = document.getElementById('server-selector');
         if (!serverSelector) return;
@@ -222,6 +265,57 @@ document.addEventListener('DOMContentLoaded', function() {
                 const row = removeBtn.closest('.custom-url-row');
                 row.remove();
                 saveCustomUrls();
+                return;
+            }
+            const addPresetBtn = e.target.closest('.template-preset-add');
+            if (addPresetBtn) {
+                const serverIndex = addPresetBtn.getAttribute('data-server-index');
+                const urlTemplate = addPresetBtn.getAttribute('data-url-template');
+                const variables = JSON.parse(addPresetBtn.getAttribute('data-variables'));
+                const form = createTemplatePresetForm(serverIndex, urlTemplate, variables);
+                const serverBody = addPresetBtn.closest('.server-body');
+                serverBody.insertBefore(form, addPresetBtn);
+                return;
+            }
+            const saveBtn = e.target.closest('.template-preset-save');
+            if (saveBtn) {
+                const form = saveBtn.closest('.template-preset-form');
+                const serverIndex = form.getAttribute('data-server-index');
+                const urlTemplate = form.getAttribute('data-url-template');
+                
+                // Read form values and resolve template
+                const inputs = form.querySelectorAll('input, select');
+                let resolvedUrl = urlTemplate;
+                inputs.forEach(function(input) {
+                    const varName = input.getAttribute('name');
+                    const varValue = input.value;
+                    resolvedUrl = resolvedUrl.replace('{' + varName + '}', varValue);
+                });
+                
+                // Count existing presets for this server to determine the new preset index
+                const existingPresets = serverSelector.querySelectorAll("input[id^='server-" + serverIndex + "-preset-']");
+                const newPresetIndex = existingPresets.length;
+                
+                // Create new preset radio
+                const presetId = 'server-' + serverIndex + '-preset-' + newPresetIndex;
+                const label = document.createElement('label');
+                label.className = 'template-preset-label';
+                label.setAttribute('for', presetId);
+                label.innerHTML =
+                    '<input type="radio" name="server" id="' + presetId + '" value="' + resolvedUrl + '">' +
+                    '<span>' + resolvedUrl + '</span>';
+                
+                // Insert new preset before the form
+                form.parentNode.insertBefore(label, form);
+                
+                // Remove the form
+                form.remove();
+                return;
+            }
+            const cancelBtn = e.target.closest('.template-preset-cancel');
+            if (cancelBtn) {
+                const form = cancelBtn.closest('.template-preset-form');
+                form.remove();
                 return;
             }
         });

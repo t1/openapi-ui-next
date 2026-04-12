@@ -181,6 +181,39 @@ public class OpenApiUiGenerator {
                     label.content(radio, span(resolvedUrl));
 
                     serverBody.content(label);
+
+                    // Add "+ Add preset" button for this template server with variable metadata
+                    var addPresetBtn = element("button").attr("type", "button")
+                            .classes("template-preset-add")
+                            .attr("data-server-index", String.valueOf(i))
+                            .attr("data-url-template", url);
+                    
+                    // Serialize variable metadata as JSON for JavaScript consumption
+                    var variablesJson = new StringBuilder("[");
+                    var first = true;
+                    for (var entry : server.getVariables().entrySet()) {
+                        if (!first) variablesJson.append(",");
+                        first = false;
+                        var variable = entry.getValue();
+                        variablesJson.append("{")
+                                .append("\"name\":\"").append(entry.getKey()).append("\",")
+                                .append("\"default\":\"").append(variable.getDefaultValue() != null ? variable.getDefaultValue() : "").append("\"");
+                        if (variable.getEnumeration() != null && !variable.getEnumeration().isEmpty()) {
+                            variablesJson.append(",\"enum\":[");
+                            variablesJson.append(String.join(",", variable.getEnumeration().stream()
+                                    .map(v -> "\"" + v + "\"").toList()));
+                            variablesJson.append("]");
+                        }
+                        if (variable.getDescription() != null) {
+                            variablesJson.append(",\"description\":\"").append(variable.getDescription()).append("\"");
+                        }
+                        variablesJson.append("}");
+                    }
+                    variablesJson.append("]");
+                    addPresetBtn.attr("data-variables", variablesJson.toString());
+                    
+                    addPresetBtn.content("+ Add preset");
+                    serverBody.content(addPresetBtn);
                 }
             } else {
                 // Non-template server - show as radio button

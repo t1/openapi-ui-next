@@ -725,6 +725,55 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return urlSpan.textContent().trim();
     }
 
+    boolean templateServerHasAddPresetButton(int serverIndex) {
+        var selector = "#server-selector .template-preset-add[data-server-index='" + serverIndex + "']";
+        return page.locator(selector).count() > 0;
+    }
+
+    void clickTemplateServerAddPreset(int serverIndex) {
+        var selector = "#server-selector .template-preset-add[data-server-index='" + serverIndex + "']";
+        page.locator(selector).click();
+    }
+
+    boolean hasTemplateServerPresetForm(int serverIndex) {
+        var selector = "#server-selector .template-preset-form[data-server-index='" + serverIndex + "']";
+        return page.locator(selector).count() > 0;
+    }
+
+    boolean templatePresetFormHasInput(int serverIndex, String variableName) {
+        var formSelector = "#server-selector .template-preset-form[data-server-index='" + serverIndex + "']";
+        var inputSelector = formSelector + " [name='" + variableName + "']";
+        return page.locator(inputSelector).count() > 0;
+    }
+
+    boolean templatePresetFormInputIsSelect(int serverIndex, String variableName) {
+        var formSelector = "#server-selector .template-preset-form[data-server-index='" + serverIndex + "']";
+        var selectSelector = formSelector + " select[name='" + variableName + "']";
+        return page.locator(selectSelector).count() > 0;
+    }
+
+    void clickTemplatePresetSave(int serverIndex) {
+        var formSelector = "#server-selector .template-preset-form[data-server-index='" + serverIndex + "']";
+        var saveButtonSelector = formSelector + " .template-preset-save";
+        page.locator(saveButtonSelector).click();
+    }
+
+    void setTemplatePresetFormValue(int serverIndex, String variableName, String value) {
+        var formSelector = "#server-selector .template-preset-form[data-server-index='" + serverIndex + "']";
+        var inputSelector = formSelector + " [name='" + variableName + "']";
+        var input = page.locator(inputSelector);
+        if (input.evaluate("el => el.tagName").toString().equalsIgnoreCase("SELECT")) {
+            input.selectOption(value);
+        } else {
+            input.fill(value);
+        }
+    }
+
+    void selectTemplatePreset(int serverIndex, int presetIndex) {
+        var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
+        page.locator("#server-selector input[id='" + presetId + "']").click();
+    }
+
     boolean hasCustomUrlButton() {
         return page.locator("#server-selector .custom-url-add").count() > 0;
     }
