@@ -1892,6 +1892,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const bodyTextarea = sendForm.querySelector('textarea[data-request-body]');
             const bodyValue = bodyTextarea ? bodyTextarea.value : '';
 
+            // Parse embedded schema JSON
+            let schema = null;
+            const schemaScript = sendForm.querySelector('script.operation-schema');
+            if (schemaScript && schemaScript.textContent) {
+                try {
+                    schema = JSON.parse(schemaScript.textContent);
+                } catch (e) {
+                    console.warn('Failed to parse operation schema JSON:', e);
+                }
+            }
+
             // Use generator registry for copy modes
             if (mode === 'curl' || mode === 'httpie') {
                 const generator = generators[mode];
@@ -1902,7 +1913,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         headers: requestHeaders,
                         body: bodyValue,
                         contentType: 'application/json',
-                        schema: null // Will be populated in future issues
+                        schema: schema
                     };
                     const cmd = generator(params);
                     navigator.clipboard.writeText(cmd);

@@ -159,6 +159,7 @@ class OperationFragmentGenerator {
     private Form operationForm() {
         var operationForm = form().attr("data-path", displayPath.display()).attr("data-fragment-path", path.toString()).attr("data-method", method.name());
         if (operation.getOperationId() != null) operationForm.attr("data-operation-id", operation.getOperationId());
+        embeddedSchemaJson(operationForm);
         responseLinksData(operationForm);
         parameterFields(operationForm);
         authSection(operationForm);
@@ -177,6 +178,82 @@ class OperationFragmentGenerator {
                 column().classes("has-text-right")));
         operationForm.content(responseArea);
         return operationForm;
+    }
+
+    /// Embeds operation schema as a JSON blob in a script tag for use by code generators
+    private void embeddedSchemaJson(Form form) {
+        var schemaMap = new LinkedHashMap<String, Object>();
+        
+        // Add operationId if present
+        if (operation.getOperationId() != null) {
+            schemaMap.put("operationId", operation.getOperationId());
+        }
+        
+        // Add request body schema if present
+        if (operation.getRequestBody() != null && operation.getRequestBody().getContent() != null) {
+            var content = operation.getRequestBody().getContent();
+            var jsonMediaType = content.getMediaType("application/json");
+            if (jsonMediaType != null && jsonMediaType.getSchema() != null) {
+                schemaMap.put("requestBody", schemaToJsonNode(jsonMediaType.getSchema()));
+            }
+        }
+        
+        // Add response schemas if present
+        if (operation.getResponses() != null) {
+            var responsesMap = new LinkedHashMap<String, Object>();
+            for (var entry : operation.getResponses().getAPIResponses().entrySet()) {
+                var response = entry.getValue();
+                if (response.getContent() != null) {
+                    var jsonMediaType = response.getContent().getMediaType("application/json");
+                    if (jsonMediaType != null && jsonMediaType.getSchema() != null) {
+                        responsesMap.put(entry.getKey(), schemaToJsonNode(jsonMediaType.getSchema()));
+                    }
+                }
+            }
+            if (!responsesMap.isEmpty()) {
+                schemaMap.put("responses", responsesMap);
+            }
+        }
+        
+        // Only embed if we have something
+        if (!schemaMap.isEmpty()) {
+            try {
+                var json = new ObjectMapper().writeValueAsString(schemaMap);
+                var scriptTag = element("script")
+                        .attr("type", "application/json")
+                        .classes("operation-schema")
+                        .content(json);
+                form.content(scriptTag);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("could not write schema as JSON", e);
+            }
+        }
+    }
+    
+    /// Converts a Schema object to a JsonNode representation for embedding
+    private Object schemaToJsonNode(Schema schema) {
+        var mapper = new ObjectMapper();
+        var node = mapper.createObjectNode();
+        
+        var type = typeAsString(schema);
+        if (type != null) {
+            node.put("type", type);
+        }
+        
+        if (schema.getProperties() != null && !schema.getProperties().isEmpty()) {
+            var propsNode = mapper.createObjectNode();
+            for (var entry : schema.getProperties().entrySet()) {
+                var propSchema = (Schema) entry.getValue();
+                propsNode.set(entry.getKey(), (JsonNode) schemaToJsonNode(propSchema));
+            }
+            node.set("properties", propsNode);
+        }
+        
+        if (schema.getItems() != null) {
+            node.set("items", (JsonNode) schemaToJsonNode(schema.getItems()));
+        }
+        
+        return node;
     }
 
     /// Embeds link metadata as a JSON `data-response-links` attribute on the form,
