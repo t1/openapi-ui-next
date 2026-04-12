@@ -312,6 +312,7 @@ Initial MVP release
 - Operation schema embedding: embed JSON schema for request body and responses in each operation fragment; JavaScript runtime parses and passes schema to generators for future use ([#51](https://github.com/t1/openapi-ui-next/issues/51))
 - Mode selector UX overhaul: replace 3-segment toggle with scalable mode selector (Try + 2 recent formats + overflow dropdown); dropdown menu lists all registered generators; Ctrl/Alt+4 opens dropdown; localStorage persistence for recently-used formats; foundation for extensible output format selection ([#52](https://github.com/t1/openapi-ui-next/issues/52))
 - JS fetch and Java HttpClient generators: add two new code snippet generators to dropdown menu; JS fetch produces async/await browser fetch code, Java HttpClient produces java.net.http builder pattern code ([#53](https://github.com/t1/openapi-ui-next/issues/53))
+- JAX-RS, Python, and Go generators: add three additional code snippet generators to dropdown menu; JAX-RS produces ClientBuilder fluent API code, Python produces requests library code, Go produces net/http code ([#54](https://github.com/t1/openapi-ui-next/issues/54))
 
 ## Contributing
 

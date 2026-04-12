@@ -1627,6 +1627,48 @@ class BrowserTest {
                     .contains(".POST(HttpRequest.BodyPublishers.ofString(\"{\\\"name\\\": \\\"Fido\\\"}\"))");
         }
 
+        @Test void shouldIncludeRequestBodyInJaxRsMode() {
+            app.clickModeButton("overflow");
+            app.selectDropdownFormat("JAX-RS");
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+            app.fillRequestBody("{\"name\": \"Fido\"}");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .contains("ClientBuilder.newClient()")
+                    .contains(".post(Entity.json(")
+                    .contains("{\"name\": \"Fido\"}");
+        }
+
+        @Test void shouldIncludeRequestBodyInPythonMode() {
+            app.clickModeButton("overflow");
+            app.selectDropdownFormat("Python");
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+            app.fillRequestBody("{\"name\": \"Fido\"}");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .contains("import requests")
+                    .contains("requests.post(")
+                    .contains("json={\"name\": \"Fido\"}");
+        }
+
+        @Test void shouldIncludeRequestBodyInGoMode() {
+            app.clickModeButton("overflow");
+            app.selectDropdownFormat("Go");
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+            app.fillRequestBody("{\"name\": \"Fido\"}");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .contains("http.NewRequest(")
+                    .contains("\"POST\"")
+                    .contains("strings.NewReader(");
+        }
+
         @Test void shouldShowBodyBoxWithSchemaToggle() {
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");

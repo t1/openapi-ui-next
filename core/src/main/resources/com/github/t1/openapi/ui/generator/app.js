@@ -102,6 +102,76 @@ document.addEventListener('DOMContentLoaded', function() {
                     "HttpResponse<String> response = HttpClient.newHttpClient()\n" +
                     "    .send(request, HttpResponse.BodyHandlers.ofString());";
             return code;
+        },
+        'JAX-RS': function(params) {
+            const pathOnly = params.url.replace(/^https?:\/\/[^/]+/, '');
+            const baseUrl = params.url.substring(0, params.url.length - pathOnly.length);
+            
+            let code = "Response response = ClientBuilder.newClient()\n" +
+                       "    .target(\"" + baseUrl + "\").path(\"" + pathOnly + "\")\n" +
+                       "    .request(MediaType.APPLICATION_JSON)";
+            
+            Object.keys(params.headers).forEach(function(h) {
+                code += "\n    .header(\"" + h + "\", \"" + params.headers[h] + "\")";
+            });
+            
+            if (params.body) {
+                code += "\n    ." + params.method.toLowerCase() + "(Entity.json(" + params.body + "));";
+            } else {
+                code += "\n    ." + params.method.toLowerCase() + "(Entity.json(null));";
+            }
+            
+            return code;
+        },
+        'Python': function(params) {
+            let code = "import requests\n";
+            
+            const headersObj = {};
+            Object.keys(params.headers).forEach(function(h) {
+                headersObj[h] = params.headers[h];
+            });
+            
+            const headersStr = Object.keys(headersObj).length > 0 
+                ? JSON.stringify(headersObj) 
+                : '{}';
+            
+            code += "response = requests." + params.method.toLowerCase() + "(";
+            code += "\"" + params.url + "\"";
+            
+            if (Object.keys(headersObj).length > 0) {
+                code += ", headers=" + headersStr;
+            }
+            
+            if (params.body) {
+                code += ", json=" + params.body;
+            }
+            
+            code += ")";
+            
+            return code;
+        },
+        'Go': function(params) {
+            let code = "";
+            
+            if (params.body) {
+                code += "jsonBody := `" + params.body + "`\n";
+                code += "body := strings.NewReader(jsonBody)\n";
+                code += "req, _ := http.NewRequest(\"" + params.method + "\", \"" + params.url + "\", body)\n";
+            } else {
+                code += "req, _ := http.NewRequest(\"" + params.method + "\", \"" + params.url + "\", nil)\n";
+            }
+            
+            Object.keys(params.headers).forEach(function(h) {
+                code += "req.Header.Set(\"" + h + "\", \"" + params.headers[h] + "\")\n";
+            });
+            
+            if (params.body) {
+                code += "req.Header.Set(\"Content-Type\", \"" + (params.contentType || 'application/json') + "\")\n";
+            }
+            
+            code += "resp, _ := http.DefaultClient.Do(req)";
+            
+            return code;
         }
     };
 
