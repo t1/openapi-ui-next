@@ -519,6 +519,46 @@ pre.response code.hljs {
     border-color: var(--bulma-link);
     color: var(--bulma-link);
 }
+.custom-url-add {
+    border: 1px dashed var(--bulma-border);
+    border-radius: 4px;
+    background: none;
+    padding: 0.375rem 0.75rem;
+    color: var(--bulma-text-weak);
+    cursor: pointer;
+    width: 100%;
+    font-size: 0.8125rem;
+    margin-top: 0.5rem;
+}
+.custom-url-add:hover {
+    border-color: var(--bulma-link);
+    color: var(--bulma-link);
+}
+.custom-url-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+.custom-url-input {
+    flex: 1;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--bulma-border);
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+.custom-url-remove {
+    background: none;
+    border: none;
+    color: var(--bulma-danger);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+}
+.custom-url-remove:hover {
+    color: var(--bulma-danger-dark);
+}
 /* server selector panel */
 #server-selector {
     margin-bottom: 1rem;

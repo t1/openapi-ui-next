@@ -157,6 +157,46 @@ document.addEventListener('DOMContentLoaded', function() {
         return row;
     }
 
+    function createCustomUrlRow(url) {
+        const row = document.createElement('label');
+        row.className = 'custom-url-row server-radio-label';
+        const escapedUrl = url ? url.replace(/"/g, '&quot;') : '';
+        const radioId = 'custom-url-' + randomName();
+        row.setAttribute('for', radioId);
+        row.innerHTML =
+            '<input type="radio" name="server" id="' + radioId + '" value="' + escapedUrl + '">' +
+            '<input type="text" class="custom-url-input" placeholder="Server URL" value="' + escapedUrl + '">' +
+            '<button type="button" class="custom-url-remove">×</button>';
+        return row;
+    }
+
+    function saveCustomUrls() {
+        const serverSelector = document.getElementById('server-selector');
+        if (!serverSelector) return;
+        const rows = serverSelector.querySelectorAll('.custom-url-row');
+        const urls = Array.from(rows).map(row => row.querySelector('.custom-url-input').value).filter(url => url);
+        localStorage.setItem('openapi-ui-custom-urls', JSON.stringify(urls));
+    }
+
+    function restoreCustomUrls() {
+        const serverSelector = document.getElementById('server-selector');
+        if (!serverSelector) return;
+        const stored = localStorage.getItem('openapi-ui-custom-urls');
+        if (!stored) return;
+        try {
+            const urls = JSON.parse(stored);
+            const addBtn = serverSelector.querySelector('.custom-url-add');
+            if (!addBtn) return;
+            const serverBody = addBtn.closest('.server-body');
+            urls.forEach(url => {
+                const row = createCustomUrlRow(url);
+                serverBody.insertBefore(row, addBtn);
+            });
+        } catch (e) {
+            console.error('Failed to restore custom URLs:', e);
+        }
+    }
+
     // Server selector panel toggle
     const serverSelector = document.getElementById('server-selector');
     if (serverSelector) {
@@ -166,6 +206,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 serverSelector.classList.toggle('is-collapsed');
             });
         }
+
+        // Handle custom URL button click
+        serverSelector.addEventListener('click', function(e) {
+            const addBtn = e.target.closest('.custom-url-add');
+            if (addBtn) {
+                const serverBody = addBtn.closest('.server-body');
+                const row = createCustomUrlRow('');
+                serverBody.insertBefore(row, addBtn);
+                row.querySelector('.custom-url-input').focus();
+                return;
+            }
+            const removeBtn = e.target.closest('.custom-url-remove');
+            if (removeBtn) {
+                const row = removeBtn.closest('.custom-url-row');
+                row.remove();
+                saveCustomUrls();
+                return;
+            }
+        });
+
+        // Handle custom URL input changes
+        serverSelector.addEventListener('input', function(e) {
+            if (e.target.classList.contains('custom-url-input')) {
+                const url = e.target.value;
+                const row = e.target.closest('.custom-url-row');
+                const radio = row.querySelector('input[type="radio"]');
+                radio.value = url;
+                saveCustomUrls();
+            }
+        });
 
         // Handle server radio selection
         serverSelector.addEventListener('change', function(e) {
@@ -180,6 +250,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('openapi-ui-server', selectedUrl);
             }
         });
+
+        // Restore custom URLs from localStorage
+        restoreCustomUrls();
 
         // Restore selected server from localStorage
         const savedServer = localStorage.getItem('openapi-ui-server');

@@ -136,12 +136,13 @@ public class OpenApiUiGenerator {
     private static Element serverSelector(OpenAPI openApi) {
         var servers = openApi.getServers();
         if (servers == null || servers.isEmpty()) {
+            var serverBody = div().classes("server-body");
+            addServerBodyFooter(serverBody);
             return div().id("server-selector").classes("is-collapsed")
                     .content(
                             element("button").attr("type", "button").classes("server-toggle")
                                     .content(span("▶ Server"), span("(resolved from origin)").classes("server-url")),
-                            div().classes("server-body")
-                                    .content(div().id("server-override"))
+                            serverBody
                     );
         }
 
@@ -151,11 +152,11 @@ public class OpenApiUiGenerator {
             var url = server.getUrl();
             var description = server.getDescription();
             var radioId = "server-" + i;
-            var checked = (i == 0);
+            var isFirstServer = (i == 0);
 
             var radio = element("input").attr("type", "radio").attr("name", "server").attr("id", radioId)
                     .attr("value", url);
-            if (checked) {
+            if (isFirstServer) {
                 radio.attr("checked", "");
             }
 
@@ -168,7 +169,7 @@ public class OpenApiUiGenerator {
             serverBody.content(label);
         }
 
-        serverBody.content(div().id("server-override"));
+        addServerBodyFooter(serverBody);
 
         var firstServerUrl = servers.getFirst().getUrl();
         return div().id("server-selector").classes("is-collapsed")
@@ -177,6 +178,12 @@ public class OpenApiUiGenerator {
                                 .content(span("▶ Server"), span(firstServerUrl).classes("server-url")),
                         serverBody
                 );
+    }
+
+    private static void addServerBodyFooter(Element serverBody) {
+        serverBody.content(div().id("server-override"));
+        serverBody.content(element("button").attr("type", "button").classes("custom-url-add")
+                .content("+ Add custom URL"));
     }
 
     private static Element globalHeaders() {

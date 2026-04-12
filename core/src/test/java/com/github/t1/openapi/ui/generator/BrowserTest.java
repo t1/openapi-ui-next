@@ -2873,4 +2873,101 @@ class BrowserTest {
             then(app.hasElement("#server-override")).isTrue();
         }
     }
+
+    @ResourceLock("custom-server-urls") @Nested class CustomServerUrls {
+        @RegisterExtension static AppFixture app = launch("multiple-servers.yaml");
+
+        @Test void shouldHaveAddCustomUrlButton() {
+            app.clickServerToggle();
+
+            then(app.hasCustomUrlButton()).isTrue();
+        }
+
+        @Test void shouldAddCustomUrlRow() {
+            app.clickServerToggle();
+
+            app.clickCustomUrlButton();
+
+            then(app.customUrlRowCount()).isEqualTo(1);
+        }
+
+        @Test void shouldShowCustomUrlTextInput() {
+            app.clickServerToggle();
+            app.clickCustomUrlButton();
+
+            then(app.hasCustomUrlInput()).isTrue();
+        }
+
+        @Test void shouldHaveDeleteButtonOnCustomUrl() {
+            app.clickServerToggle();
+            app.clickCustomUrlButton();
+
+            then(app.hasCustomUrlDeleteButton()).isTrue();
+        }
+
+        @Test void shouldDeleteCustomUrl() {
+            app.clickServerToggle();
+            app.clickCustomUrlButton();
+
+            app.clickCustomUrlDelete(0);
+
+            then(app.customUrlRowCount()).isEqualTo(0);
+        }
+
+        @Test void shouldPersistCustomUrlsInLocalStorage() {
+            app.clickServerToggle();
+            app.clickCustomUrlButton();
+            app.setCustomUrlValue(0, "https://custom.example.com");
+
+            var stored = app.getLocalStorageItem("openapi-ui-custom-urls");
+            then(stored).isNotNull();
+            then(stored).contains("https://custom.example.com");
+        }
+
+        @Test void shouldRestoreCustomUrlsOnReload() {
+            app.setLocalStorageItem("openapi-ui-custom-urls", "[\"https://custom.example.com\"]");
+
+            app.reload();
+            app.clickServerToggle();
+
+            then(app.customUrlRowCount()).isEqualTo(1);
+            then(app.getCustomUrlValue(0)).isEqualTo("https://custom.example.com");
+        }
+
+        @Test void shouldSelectCustomUrl() {
+            app.clickServerToggle();
+            app.clickCustomUrlButton();
+            app.setCustomUrlValue(0, "https://custom.example.com");
+
+            app.selectCustomUrl(0);
+
+            then(app.isCustomUrlSelected(0)).isTrue();
+        }
+
+        @Test void shouldUpdateBaseUrlWhenCustomUrlSelected() {
+            app.clickServerToggle();
+            app.clickCustomUrlButton();
+            app.setCustomUrlValue(0, "https://custom.example.com");
+
+            app.selectCustomUrl(0);
+
+            then(app.getBaseUrl()).isEqualTo("https://custom.example.com");
+        }
+    }
+
+    @ResourceLock("template-servers") @Nested class GivenAppWithTemplateServers {
+        @RegisterExtension static AppFixture app = launch("template-servers.yaml");
+
+        @Test void shouldShowTemplateUrlPattern() {
+            then(app.templateServerUrlPattern(0)).isEqualTo("https://{environment}.example.com");
+        }
+
+        @Disabled("TODO") @Test void shouldShowDefaultPreset() {}
+
+        @Disabled("TODO") @Test void shouldLabelDefaultPresetWithResolvedUrl() {}
+
+        @Disabled("TODO") @Test void shouldShowNonTemplateServerAsRadio() {}
+
+        @Disabled("TODO") @Test void shouldHaveAddPresetButton() {}
+    }
 }

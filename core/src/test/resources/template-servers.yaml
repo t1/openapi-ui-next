@@ -1,0 +1,42 @@
+openapi: 3.0.3
+info:
+  title: Template Server API
+  version: 1.0.0
+servers:
+  - url: https://{environment}.example.com
+    description: Template server with environment variable
+    variables:
+      environment:
+        default: api
+        enum:
+          - api
+          - staging
+          - dev
+        description: Environment name
+  - url: https://{protocol}://{host}:{port}/v{version}
+    description: Complex template server
+    variables:
+      protocol:
+        default: https
+        enum:
+          - http
+          - https
+      host:
+        default: api.example.com
+      port:
+        default: "443"
+      version:
+        default: "1"
+        enum:
+          - "1"
+          - "2"
+  - url: https://static.example.com
+    description: Non-template server
+paths:
+  /pets:
+    get:
+      summary: List pets
+      operationId: listPets
+      responses:
+        '200':
+          description: A list of pets

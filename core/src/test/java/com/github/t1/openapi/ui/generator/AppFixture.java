@@ -697,6 +697,73 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return !page.locator("#server-selector").getAttribute("class").contains("is-collapsed");
     }
 
+    String templateServerUrlPattern(int index) {
+        var label = page.locator("#server-selector label").nth(index);
+        var urlSpan = label.locator("span").first();
+        var url = urlSpan.textContent().trim();
+        // Return only if it contains template variables
+        if (url.contains("{") && url.contains("}")) {
+            return url;
+        }
+        return null;
+    }
+
+    boolean hasCustomUrlButton() {
+        return page.locator("#server-selector .custom-url-add").count() > 0;
+    }
+
+    void clickCustomUrlButton() {
+        page.locator("#server-selector .custom-url-add").click();
+    }
+
+    int customUrlRowCount() {
+        return (int) page.locator("#server-selector .custom-url-row").count();
+    }
+
+    boolean hasCustomUrlInput() {
+        return page.locator("#server-selector .custom-url-input").count() > 0;
+    }
+
+    boolean hasCustomUrlDeleteButton() {
+        return page.locator("#server-selector .custom-url-remove").count() > 0;
+    }
+
+    void clickCustomUrlDelete(int index) {
+        page.locator("#server-selector .custom-url-remove").nth(index).click();
+    }
+
+    void setCustomUrlValue(int index, String url) {
+        page.locator("#server-selector .custom-url-input").nth(index).fill(url);
+    }
+
+    String getCustomUrlValue(int index) {
+        return page.locator("#server-selector .custom-url-input").nth(index).inputValue();
+    }
+
+    void selectCustomUrl(int index) {
+        page.locator("#server-selector .custom-url-row input[type='radio']").nth(index).click();
+    }
+
+    boolean isCustomUrlSelected(int index) {
+        return page.locator("#server-selector .custom-url-row input[type='radio']").nth(index).isChecked();
+    }
+
+    String getLocalStorageItem(String key) {
+        return (String) page.evaluate("key => localStorage.getItem(key)", key);
+    }
+
+    void setLocalStorageItem(String key, String value) {
+        page.evaluate("({key, value}) => localStorage.setItem(key, value)", Map.of("key", key, "value", value));
+    }
+
+    void reload() {
+        page.reload();
+    }
+
+    String getBaseUrl() {
+        return page.locator("[data-toggle='mode']").getAttribute("data-base-url");
+    }
+
     boolean hasElement(String selector) {
         return page.locator(selector).count() > 0;
     }
