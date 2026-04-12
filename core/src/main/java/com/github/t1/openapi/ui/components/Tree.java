@@ -31,9 +31,9 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
 
     public Tree item(Renderable label, Consumer<Element> customizer) {
         var treeLabel = span().classes("tree-label").content(label);
-        customizer.accept(treeLabel);
         var item = li().attr("role", "treeitem").content(treeLabel);
         markFirstItem(item);
+        customizer.accept(item);
         content(item);
         return this;
     }
@@ -73,6 +73,12 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
         /// Add content as a sibling on the node's `<li>` (before the subtree)
         public Node content(Renderable content) {
             treeLabel.content(content);
+            return this;
+        }
+
+        /// Customize the node's `<li>` element
+        public Node customizeItem(Consumer<Element> customizer) {
+            customizer.accept(item);
             return this;
         }
 

@@ -309,7 +309,8 @@ public class OpenApiUiGenerator {
         output.accept("index.html", page.render().getBytes());
         output.accept("tag-tree.html", tagTree.render().getBytes());
         output.accept("path-tree.html", pathTree.render().getBytes());
-        output.accept("openapi-ui.css", (Toggle.css() + Tree.css() + SplitPane.css() + loadResource("app.css")).getBytes());
+        var tagFilterCss = generateTagFilterCss();
+        output.accept("openapi-ui.css", (Toggle.css() + Tree.css() + SplitPane.css() + loadResource("app.css") + tagFilterCss).getBytes());
         generateFragments(root, ApiPath.ROOT, operationIdMap, globalServers, components, globalSecurity);
         outputVendorResources();
         log.info("Done");
@@ -359,10 +360,30 @@ public class OpenApiUiGenerator {
         }
     }
 
-    private Tree pathTree(PathNode root) {
+    private Renderable pathTree(PathNode root) {
         var t = tree();
         addTreeItems(t, root, ApiPath.ROOT);
-        return t;
+        
+        var tags = collectUniqueTags();
+        if (tags.size() < 2) {
+            return t;
+        }
+        
+        // Filter icon + pill panel + tree
+        var wrapper = div();
+        var filterIcon = element("i").classes("fa-solid", "fa-filter");
+        wrapper.content(filterIcon);
+        
+        var pillPanel = div();
+        for (var tag : tags) {
+            var sanitized = sanitizeTagName(tag);
+            var pill = span(tag).classes("tag", "tag-" + sanitized);
+            pillPanel.content(pill);
+        }
+        wrapper.content(pillPanel);
+        wrapper.content(t);
+        
+        return wrapper;
     }
 
     private void addTreeItems(TreeContainer tree, PathNode node, ApiPath path) {
@@ -371,10 +392,19 @@ public class OpenApiUiGenerator {
             var child = entry.getValue();
             var childPath = path.resolve(segment);
             var label = span().content(span(segment).classes(segmentClass(segment)));
+            var tagClasses = collectTagClasses(child);
             if (!child.operations().isEmpty()) {
                 var group = tagsAddon();
-                for (var method : child.operations().keySet()) {
-                    group.content(tag(method.name()).is(methodColor(method)));
+                for (var methodEntry : child.operations().entrySet()) {
+                    var method = methodEntry.getKey();
+                    var operation = methodEntry.getValue();
+                    var badge = tag(method.name()).is(methodColor(method));
+                    if (operation.getTags() != null && !operation.getTags().isEmpty()) {
+                        for (var tagName : operation.getTags()) {
+                            badge.classes("tag-" + sanitizeTagName(tagName));
+                        }
+                    }
+                    group.content(badge);
                 }
                 label.content(group);
             }
@@ -384,17 +414,73 @@ public class OpenApiUiGenerator {
                             .attr("hx-target", "#detail")
                             .attr("hx-swap", "innerHTML");
                 }
-                tree.node(label, sub -> addTreeItems(sub, child, childPath));
+                tree.node(label, sub -> {
+                    if (!tagClasses.isEmpty()) {
+                        sub.customizeItem(item -> item.classes(tagClasses.toArray(new String[0])));
+                    }
+                    addTreeItems(sub, child, childPath);
+                });
             } else {
                 tree.item(label, item -> {
+                    if (!tagClasses.isEmpty()) {
+                        item.classes(tagClasses.toArray(new String[0]));
+                    }
                     if (!child.operations().isEmpty()) {
-                        item.attr("hx-get", childPath + "/index.html")
+                        var treeLabel = item.findElement("tree-label")
+                                .orElseThrow(() -> new IllegalStateException("tree-label not found in item"));
+                        treeLabel.attr("hx-get", childPath + "/index.html")
                                 .attr("hx-target", "#detail")
                                 .attr("hx-swap", "innerHTML");
                     }
                 });
             }
         }
+    }
+
+    private List<String> collectTagClasses(PathNode node) {
+        return node.operations().values().stream()
+                .filter(op -> op.getTags() != null)
+                .flatMap(op -> op.getTags().stream())
+                .distinct()
+                .map(this::sanitizeTagName)
+                .map(tag -> "tag-" + tag)
+                .toList();
+    }
+
+    private String sanitizeTagName(String tagName) {
+        return tagName.toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("-+", "-")
+                .replaceAll("^-|-$", "");
+    }
+
+    private List<String> collectUniqueTags() {
+        return openApi.getPaths().getPathItems().values().stream()
+                .flatMap(p -> p.getOperations().values().stream())
+                .filter(op -> op.getTags() != null)
+                .flatMap(op -> op.getTags().stream())
+                .distinct()
+                .toList();
+    }
+
+    private String generateTagFilterCss() {
+        var tags = collectUniqueTags();
+        if (tags.isEmpty()) {
+            return "";
+        }
+        var css = new StringBuilder();
+        for (var tag : tags) {
+            var sanitized = sanitizeTagName(tag);
+            // Hide tree items that don't match the filter AND don't contain matching descendants
+            css.append(".filter-").append(sanitized).append(" [role=\"treeitem\"]:not(.tag-").append(sanitized).append("):not(:has(.tag-").append(sanitized).append(")) {\n");
+            css.append("    display: none;\n");
+            css.append("}\n");
+            // Hide method badges that don't match the filter
+            css.append(".filter-").append(sanitized).append(" .tags > :not(.tag-").append(sanitized).append(") {\n");
+            css.append("    display: none;\n");
+            css.append("}\n");
+        }
+        return css.toString();
     }
 
     private static String segmentClass(String segment) {

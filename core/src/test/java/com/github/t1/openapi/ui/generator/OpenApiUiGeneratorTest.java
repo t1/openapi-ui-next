@@ -957,4 +957,227 @@ class OpenApiUiGeneratorTest {
             }
         };
     }
+
+    // Tag Filter Tests (Issue #47)
+
+    @Test void shouldSanitizeTagNameToLowercase() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("tag-admin");
+        then(indexHtml).contains("tag-pets");
+        then(indexHtml).contains("tag-owners");
+    }
+    @Test void shouldReplaceNonAlphanumericCharactersWithHyphens() throws Exception {
+        // Create a temp spec file with special chars in tag names
+        var specYaml = """
+                openapi: 3.0.3
+                info:
+                  title: Test API
+                  version: "1.0"
+                paths:
+                  /test:
+                    get:
+                      summary: Test operation
+                      tags: ["My Tag!", "user@service"]
+                      responses:
+                        "200":
+                          description: OK
+                """;
+        var specPath = outputDir.resolve("test-spec.yaml");
+        Files.writeString(specPath, specYaml);
+        new OpenApiUiFileGenerator(specPath, outputDir).generate();
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        then(pathTree).contains("tag-my-tag");
+        then(pathTree).contains("tag-user-service");
+    }
+
+    @Test void shouldCollapseConsecutiveHyphens() throws Exception {
+        var specYaml = """
+                openapi: 3.0.3
+                info:
+                  title: Test API
+                  version: "1.0"
+                paths:
+                  /test:
+                    get:
+                      summary: Test operation
+                      tags: ["tag  with  spaces"]
+                      responses:
+                        "200":
+                          description: OK
+                """;
+        var specPath = outputDir.resolve("test-spec.yaml");
+        Files.writeString(specPath, specYaml);
+        new OpenApiUiFileGenerator(specPath, outputDir).generate();
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("tag-tag-with-spaces");
+        then(indexHtml).doesNotContain("tag-tag--with");
+    }
+
+    @Test void shouldTrimLeadingAndTrailingHyphens() throws Exception {
+        var specYaml = """
+                openapi: 3.0.3
+                info:
+                  title: Test API
+                  version: "1.0"
+                paths:
+                  /test:
+                    get:
+                      summary: Test operation
+                      tags: ["-leading", "trailing-", "-both-"]
+                      responses:
+                        "200":
+                          description: OK
+                """;
+        var specPath = outputDir.resolve("test-spec.yaml");
+        Files.writeString(specPath, specYaml);
+        new OpenApiUiFileGenerator(specPath, outputDir).generate();
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        then(pathTree).contains("tag-leading");
+        then(pathTree).contains("tag-trailing");
+        then(pathTree).contains("tag-both");
+        then(pathTree).doesNotContain("tag--leading");
+        then(pathTree).doesNotContain("tag-trailing-");
+    }
+    @Test void shouldAddTagClassToTreeItemsWithTaggedOperations() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        then(pathTree).contains("role=\"treeitem\"");
+        then(pathTree).contains("class=\"tag-pets");
+    }
+    @Test void shouldAddMultipleTagClassesWhenItemHasMultipleTaggedOperations() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        // The /pets/{petId} node has both GET (pets tag) and DELETE (admin tag)
+        then(pathTree).contains("class=\"tag-pets tag-admin\"");
+        then(pathTree).contains("role=\"treeitem\"");
+    }
+
+    @Test void shouldNotAddTagClassToTreeItemsWithNoTaggedOperations() throws Exception {
+        var specYaml = """
+                openapi: 3.0.3
+                info:
+                  title: Test API
+                  version: "1.0"
+                paths:
+                  /untagged:
+                    get:
+                      summary: Untagged operation
+                      responses:
+                        "200":
+                          description: OK
+                """;
+        var specPath = outputDir.resolve("test-spec.yaml");
+        Files.writeString(specPath, specYaml);
+        new OpenApiUiFileGenerator(specPath, outputDir).generate();
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        then(pathTree).contains("<li role=\"treeitem\"");
+        then(pathTree).doesNotContain("class=\"tag-");
+    }
+
+    @Test void shouldAddTagClassToMethodBadges() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        then(pathTree).contains("<span class=\"tag is-success tag-pets\">GET</span>");
+        then(pathTree).contains("<span class=\"tag is-danger tag-admin\">DELETE</span>");
+        then(pathTree).contains("<span class=\"tag is-success tag-owners\">GET</span>");
+    }
+
+    @Test void shouldGeneratePerTagCssFilterRulesForTreeItems() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var css = Files.readString(outputDir.resolve("openapi-ui.css"));
+        then(css).contains(".filter-pets [role=\"treeitem\"]:not(.tag-pets):not(:has(.tag-pets)) {");
+        then(css).contains("display: none;");
+        then(css).contains(".filter-admin [role=\"treeitem\"]:not(.tag-admin):not(:has(.tag-admin)) {");
+        then(css).contains(".filter-owners [role=\"treeitem\"]:not(.tag-owners):not(:has(.tag-owners)) {");
+    }
+
+    @Test void shouldGeneratePerTagCssFilterRulesForMethodBadges() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var css = Files.readString(outputDir.resolve("openapi-ui.css"));
+        then(css).contains(".filter-pets .tags > :not(.tag-pets) {");
+        then(css).contains(".filter-admin .tags > :not(.tag-admin) {");
+        then(css).contains(".filter-owners .tags > :not(.tag-owners) {");
+    }
+    @Test void shouldRenderFilterIconWhenApiHasTwoOrMoreTags() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        then(pathTree).contains("<i class=\"fa-solid fa-filter\"");
+    }
+
+    @Test void shouldNotRenderFilterIconWhenApiHasOneTag() throws Exception {
+        var specYaml = """
+                openapi: 3.0.3
+                info:
+                  title: Test API
+                  version: "1.0"
+                paths:
+                  /test:
+                    get:
+                      summary: Test operation
+                      tags: ["single-tag"]
+                      responses:
+                        "200":
+                          description: OK
+                """;
+        var specPath = outputDir.resolve("test-spec.yaml");
+        Files.writeString(specPath, specYaml);
+        new OpenApiUiFileGenerator(specPath, outputDir).generate();
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        then(pathTree).doesNotContain("fa-filter");
+    }
+
+    @Test void shouldNotRenderFilterIconWhenApiHasZeroTags() throws Exception {
+        var specYaml = """
+                openapi: 3.0.3
+                info:
+                  title: Test API
+                  version: "1.0"
+                paths:
+                  /test:
+                    get:
+                      summary: Test operation
+                      responses:
+                        "200":
+                          description: OK
+                """;
+        var specPath = outputDir.resolve("test-spec.yaml");
+        Files.writeString(specPath, specYaml);
+        new OpenApiUiFileGenerator(specPath, outputDir).generate();
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        then(pathTree).doesNotContain("fa-filter");
+    }
+
+    @Test void shouldRenderPillPanelWithPillsForEachTag() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        then(pathTree).contains("<span class=\"tag tag-pets\">pets</span>");
+        then(pathTree).contains("<span class=\"tag tag-admin\">admin</span>");
+        then(pathTree).contains("<span class=\"tag tag-owners\">owners</span>");
+    }
+
+    @Test void shouldRenderPillsInSpecDeclarationOrder() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        var petsIndex = pathTree.indexOf("<span class=\"tag tag-pets\">pets</span>");
+        var adminIndex = pathTree.indexOf("<span class=\"tag tag-admin\">admin</span>");
+        var ownersIndex = pathTree.indexOf("<span class=\"tag tag-owners\">owners</span>");
+        then(petsIndex).as("pets should come before admin").isLessThan(adminIndex);
+        then(adminIndex).as("admin should come before owners").isLessThan(ownersIndex);
+    }
 }
