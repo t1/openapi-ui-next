@@ -1031,6 +1031,42 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     boolean hasFilterIcon() {
         return page.locator("#tree-container .fa-filter").count() > 0;
     }
+    
+    boolean isFilterIconFocused() {
+        var filterIcon = page.locator(".filter-icon");
+        return filterIcon.evaluate("el => el === document.activeElement").toString().equals("true");
+    }
+    
+    void focusFilterIcon() {
+        page.locator(".filter-icon").focus();
+    }
+    
+    void pressEnterOnFilterIcon() {
+        page.evaluate("() => {" +
+                "const icon = document.querySelector('.filter-icon');" +
+                "const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });" +
+                "icon.dispatchEvent(event);" +
+                "}");
+    }
+    
+    void pressSpaceOnFilterIcon() {
+        // Dispatch Space keydown event directly to the filter icon
+        page.evaluate("() => {" +
+                "const icon = document.querySelector('.filter-icon');" +
+                "const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true });" +
+                "icon.dispatchEvent(event);" +
+                "}");
+    }
+    
+    boolean hasFilterPanelActiveClass() {
+        var panel = page.locator(".filter-pill-panel");
+        return panel.evaluate("el => el.classList.contains('is-active')").toString().equals("true");
+    }
+    
+    boolean isPillFocused(String tagName) {
+        var pill = page.locator(".filter-pill-panel .tag-" + sanitizeTagName(tagName));
+        return pill.evaluate("el => el === document.activeElement").toString().equals("true");
+    }
 
     boolean isFilterPanelVisible() {
         return page.locator(".filter-pill-panel").isVisible();

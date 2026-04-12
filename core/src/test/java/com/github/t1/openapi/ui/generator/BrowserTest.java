@@ -866,6 +866,45 @@ class BrowserTest {
         }
         @Disabled("todo") @Test void shouldClearFilterWhenNavigatingToFilteredOutItem() {}
         @Disabled("todo") @Test void shouldClearDetailPanelWhenSelectedItemFilteredOut() {}
+        
+        // Keyboard navigation tests
+        @Test void shouldFocusFilterIconWithTab() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.focusViewToggle();
+            
+            app.pressKey("Tab");
+            
+            then(app.isFilterIconFocused()).isTrue();
+        }
+        @Test void shouldOpenPanelWithEnterOnFilterIcon() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            
+            then(app.isFilterPanelVisible()).isFalse();
+            
+            app.pressEnterOnFilterIcon();
+            
+            then(app.isFilterPanelVisible()).isTrue();
+        }
+        @Test void shouldFocusFirstPillWhenOpeningPanel() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            
+            app.pressEnterOnFilterIcon();
+            
+            then(app.isPillFocused("billing")).isTrue();
+        }
+        @Test void shouldTogglePanelWithSpaceOnFilterIcon() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            
+            then(app.isFilterPanelVisible()).isFalse();
+            
+            app.pressSpaceOnFilterIcon();
+            
+            then(app.isFilterPanelVisible()).isTrue();
+        }
     }
 
     @ResourceLock("deep-paths") @Nested class GivenAppWithDeepPaths {

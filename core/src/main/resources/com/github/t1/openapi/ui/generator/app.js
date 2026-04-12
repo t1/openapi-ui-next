@@ -628,8 +628,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     const modeToggle = document.querySelector('[data-toggle="mode"]');
                     if (modeToggle) modeToggle.focus();
                 } else {
-                    const tree = document.querySelector('[role="tree"]');
-                    if (tree) tree.focus();
+                    const filterIcon = document.querySelector('.filter-icon');
+                    if (filterIcon) {
+                        filterIcon.focus();
+                    } else {
+                        const tree = document.querySelector('[role="tree"]');
+                        if (tree) tree.focus();
+                    }
                 }
             }
         });
@@ -2031,8 +2036,55 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('openapi-ui-tag-filter-open', filterPanel.classList.contains('is-active'));
         });
         
-        // Pill click handlers
-        filterPanel.querySelectorAll('.tag').forEach(function(pill) {
+        filterIcon.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const wasOpen = filterPanel.classList.contains('is-active');
+                filterPanel.classList.toggle('is-active');
+                localStorage.setItem('openapi-ui-tag-filter-open', filterPanel.classList.contains('is-active'));
+                
+                // When opening panel, focus first pill or previously selected pill
+                if (!wasOpen && filterPanel.classList.contains('is-active')) {
+                    const pills = filterPanel.querySelectorAll('.tag');
+                    const activePill = Array.from(pills).find(function(p) {
+                        const tagClass = Array.from(p.classList).find(cls => cls.startsWith('tag-'));
+                        if (!tagClass) return false;
+                        const tagName = tagClass.substring(4);
+                        return tree.classList.contains('filter-' + tagName);
+                    });
+                    const firstPill = activePill || pills[0];
+                    if (firstPill) firstPill.focus();
+                }
+            }
+        });
+        
+        // Pill click and keyboard handlers
+        const pills = Array.from(filterPanel.querySelectorAll('.tag'));
+        
+        function activatePillFilter(pill) {
+            const tagClass = Array.from(pill.classList).find(cls => cls.startsWith('tag-'));
+            if (!tagClass) return;
+            
+            const tagName = tagClass.substring(4);
+            const filterClass = 'filter-' + tagName;
+            
+            // Remove any existing filter
+            tree.className = tree.className.replace(/\bfilter-\S+/g, '').trim();
+            // Add new filter
+            tree.classList.add(filterClass);
+            filterIcon.classList.add('is-active');
+            localStorage.setItem('openapi-ui-tag-filter', tagName);
+            updateFilterStatusLine();
+        }
+        
+        function deactivatePillFilter() {
+            tree.className = tree.className.replace(/\bfilter-\S+/g, '').trim();
+            filterIcon.classList.remove('is-active');
+            localStorage.setItem('openapi-ui-tag-filter', '');
+            updateFilterStatusLine();
+        }
+        
+        pills.forEach(function(pill) {
             pill.addEventListener('click', function() {
                 const tagClass = Array.from(pill.classList).find(cls => cls.startsWith('tag-'));
                 if (!tagClass) return;
@@ -2042,19 +2094,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Single-select: if this filter is already active, deselect it
                 if (tree.classList.contains(filterClass)) {
-                    tree.classList.remove(filterClass);
-                    filterIcon.classList.remove('is-active');
-                    localStorage.setItem('openapi-ui-tag-filter', '');
+                    deactivatePillFilter();
                 } else {
-                    // Remove any existing filter
-                    tree.className = tree.className.replace(/\bfilter-\S+/g, '').trim();
-                    // Add new filter
-                    tree.classList.add(filterClass);
-                    filterIcon.classList.add('is-active');
-                    localStorage.setItem('openapi-ui-tag-filter', tagName);
+                    activatePillFilter(pill);
                 }
+            });
+            
+            pill.addEventListener('keydown', function(e) {
+                const currentIndex = pills.indexOf(pill);
                 
-                updateFilterStatusLine();
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    if (currentIndex > 0) {
+                        const prevPill = pills[currentIndex - 1];
+                        prevPill.focus();
+                        activatePillFilter(prevPill);
+                    }
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    if (currentIndex < pills.length - 1) {
+                        const nextPill = pills[currentIndex + 1];
+                        nextPill.focus();
+                        activatePillFilter(nextPill);
+                    }
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const tagClass = Array.from(pill.classList).find(cls => cls.startsWith('tag-'));
+                    if (!tagClass) return;
+                    const tagName = tagClass.substring(4);
+                    const filterClass = 'filter-' + tagName;
+                    
+                    // If this pill's filter is active, deselect it
+                    if (tree.classList.contains(filterClass)) {
+                        deactivatePillFilter();
+                    }
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    filterPanel.classList.remove('is-active');
+                    localStorage.setItem('openapi-ui-tag-filter-open', 'false');
+                    filterIcon.focus();
+                } else if (e.key === 'ArrowDown' || e.key === 'Tab') {
+                    if (!e.shiftKey) {
+                        e.preventDefault();
+                        const tree = document.querySelector('[role="tree"]');
+                        if (tree) tree.focus();
+                    }
+                } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
+                    e.preventDefault();
+                    filterIcon.focus();
+                }
             });
         });
     }

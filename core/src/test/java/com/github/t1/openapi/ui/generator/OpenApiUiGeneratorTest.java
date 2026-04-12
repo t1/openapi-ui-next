@@ -1165,18 +1165,18 @@ class OpenApiUiGeneratorTest {
         generate("/tagged-nested.yaml");
 
         var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
-        then(pathTree).contains("<span class=\"tag tag-pets\">pets</span>");
-        then(pathTree).contains("<span class=\"tag tag-admin\">admin</span>");
-        then(pathTree).contains("<span class=\"tag tag-owners\">owners</span>");
+        then(pathTree).contains("<span class=\"tag tag-pets\" tabindex=\"0\" role=\"button\">pets</span>");
+        then(pathTree).contains("<span class=\"tag tag-admin\" tabindex=\"0\" role=\"button\">admin</span>");
+        then(pathTree).contains("<span class=\"tag tag-owners\" tabindex=\"0\" role=\"button\">owners</span>");
     }
 
     @Test void shouldRenderPillsInSpecDeclarationOrder() throws Exception {
         generate("/tagged-nested.yaml");
 
         var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
-        var petsIndex = pathTree.indexOf("<span class=\"tag tag-pets\">pets</span>");
-        var adminIndex = pathTree.indexOf("<span class=\"tag tag-admin\">admin</span>");
-        var ownersIndex = pathTree.indexOf("<span class=\"tag tag-owners\">owners</span>");
+        var petsIndex = pathTree.indexOf("<span class=\"tag tag-pets\" tabindex=\"0\" role=\"button\">pets</span>");
+        var adminIndex = pathTree.indexOf("<span class=\"tag tag-admin\" tabindex=\"0\" role=\"button\">admin</span>");
+        var ownersIndex = pathTree.indexOf("<span class=\"tag tag-owners\" tabindex=\"0\" role=\"button\">owners</span>");
         then(petsIndex).as("pets should come before admin").isLessThan(adminIndex);
         then(adminIndex).as("admin should come before owners").isLessThan(ownersIndex);
     }
