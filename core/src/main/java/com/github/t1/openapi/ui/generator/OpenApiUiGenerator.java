@@ -26,6 +26,7 @@ import static com.github.t1.bulmajava.basic.Color.INFO;
 import static com.github.t1.bulmajava.basic.Color.LINK;
 import static com.github.t1.bulmajava.basic.Color.SUCCESS;
 import static com.github.t1.bulmajava.basic.Color.WARNING;
+import static com.github.t1.bulmajava.components.Panel.panel;
 import static com.github.t1.bulmajava.elements.Box.box;
 import static com.github.t1.bulmajava.elements.Tag.tag;
 import static com.github.t1.bulmajava.elements.Tag.tagsAddon;
@@ -150,20 +151,24 @@ public class OpenApiUiGenerator {
         return div().classes("mode-selector-container").content(modeToggle, dropdownMenu);
     }
 
-    private static Element serverSelector(OpenAPI openApi) {
+    private static Renderable serverSelector(OpenAPI openApi) {
         var servers = openApi.getServers();
+        var panelHeading = element("button").attr("type", "button").classes("panel-heading", "server-toggle");
+
         if (servers == null || servers.isEmpty()) {
-            var serverBody = div().classes("server-body");
-            addServerBodyFooter(serverBody);
-            return div().id("server-selector").classes("is-collapsed")
-                    .content(
-                            element("button").attr("type", "button").classes("server-toggle")
-                                    .content(span("▶ Server"), span("(resolved from origin)").classes("server-url")),
-                            serverBody
-                    );
+            panelHeading.content(span("▶ Server"), span("(resolved from origin)").classes("server-url"));
+            var body = div().classes("panel-block")
+                    .content(div().id("server-override"),
+                            element("button").attr("type", "button").classes("custom-url-add")
+                                    .content("+ Add custom URL"));
+            return panel().id("server-selector").classes("is-collapsed")
+                    .content(panelHeading, body);
         }
 
-        var serverBody = div().classes("server-body");
+        panelHeading.content(span("▶ Server"), span(resolveFirstServerUrl(servers)).classes("server-url"));
+        var result = panel().id("server-selector").classes("is-collapsed")
+                .content(panelHeading);
+
         for (var i = 0; i < servers.size(); i++) {
             var server = servers.get(i);
             var url = server.getUrl();
@@ -171,95 +176,71 @@ public class OpenApiUiGenerator {
             var isFirstServer = (i == 0);
 
             if (server.getVariables() != null && !server.getVariables().isEmpty()) {
-                // Template server - show URL pattern as heading with nested presets
-                var heading = div().classes("template-server-heading");
-                heading.content(span(url));
+                // Template server — group all presets inside one panel-block
+                var templateGroup = div().classes("panel-block", "template-group");
+                var heading = div().classes("template-group-heading");
+                heading.content(span(url).classes("template-url"));
                 if (description != null && !description.isEmpty()) {
                     heading.content(span(" — "), span(description).classes("server-description"));
                 }
-                serverBody.content(heading);
+                templateGroup.content(heading);
 
-                // Check if all variables have defaults
                 var allVariablesHaveDefaults = server.getVariables().values().stream()
                         .allMatch(v -> v.getDefaultValue() != null);
 
                 if (allVariablesHaveDefaults) {
-                    // Auto-generate default preset
                     var resolvedUrl = resolveTemplateVariables(url, server.getVariables());
-
                     var presetId = "server-" + i + "-preset-0";
                     var radio = element("input").attr("type", "radio").attr("name", "server").attr("id", presetId)
                             .attr("value", resolvedUrl);
-                    if (isFirstServer) {
-                        radio.attr("checked", "");
-                    }
+                    if (isFirstServer) radio.attr("checked", "");
 
                     var label = element("label").attr("for", presetId).classes("template-preset-label");
                     label.content(radio, span(resolvedUrl));
+                    templateGroup.content(label);
 
-                    serverBody.content(label);
-
-                    // Add "+ Add preset" button for this template server with variable metadata
                     var addPresetBtn = element("button").attr("type", "button")
                             .classes("template-preset-add")
                             .attr("data-server-index", String.valueOf(i))
                             .attr("data-url-template", url);
-                    
-                    // Serialize variable metadata as JSON for JavaScript consumption
-                    var variablesJson = new StringBuilder("[");
-                    var first = true;
-                    for (var entry : server.getVariables().entrySet()) {
-                        if (!first) variablesJson.append(",");
-                        first = false;
-                        var variable = entry.getValue();
-                        variablesJson.append("{")
-                                .append("\"name\":\"").append(entry.getKey()).append("\",")
-                                .append("\"default\":\"").append(variable.getDefaultValue() != null ? variable.getDefaultValue() : "").append("\"");
-                        if (variable.getEnumeration() != null && !variable.getEnumeration().isEmpty()) {
-                            variablesJson.append(",\"enum\":[");
-                            variablesJson.append(String.join(",", variable.getEnumeration().stream()
-                                    .map(v -> "\"" + v + "\"").toList()));
-                            variablesJson.append("]");
-                        }
-                        if (variable.getDescription() != null) {
-                            variablesJson.append(",\"description\":\"").append(variable.getDescription()).append("\"");
-                        }
-                        variablesJson.append("}");
-                    }
-                    variablesJson.append("]");
-                    addPresetBtn.attr("data-variables", variablesJson.toString());
-                    
+                    var variablesJson = serializeVariables(server.getVariables());
+                    addPresetBtn.attr("data-variables", variablesJson);
                     addPresetBtn.content("+ Add preset");
-                    serverBody.content(addPresetBtn);
+                    templateGroup.content(addPresetBtn);
                 }
+
+                result.content(templateGroup);
             } else {
-                // Non-template server - show as radio button
+                // Non-template server — each is its own panel-block row
                 var radioId = "server-" + i;
                 var radio = element("input").attr("type", "radio").attr("name", "server").attr("id", radioId)
                         .attr("value", url);
-                if (isFirstServer) {
-                    radio.attr("checked", "");
-                }
+                if (isFirstServer) radio.attr("checked", "");
 
-                var label = element("label").attr("for", radioId).classes("server-radio-label");
+                var label = element("label").attr("for", radioId).classes("panel-block", "server-row");
                 label.content(radio, span(url));
                 if (description != null && !description.isEmpty()) {
                     label.content(span(" — "), span(description).classes("server-description"));
                 }
-
-                serverBody.content(label);
+                result.content(label);
             }
         }
 
-        addServerBodyFooter(serverBody);
+        result.content(div().classes("panel-block").id("server-override"));
+        result.content(div().classes("panel-block", "custom-url-block")
+                .content(element("button").attr("type", "button").classes("custom-url-add")
+                        .content("+ Add custom URL")));
+        return result;
+    }
 
-        var firstServerUrl = servers.getFirst().getUrl();
-        return div().id("server-selector").classes("is-collapsed")
-                .content(
-                        element("button").attr("type", "button").classes("server-toggle")
-                                .content(span("▶ Server"), span(firstServerUrl).classes("server-url")),
-                        serverBody
-                );
+    private static String resolveFirstServerUrl(List<org.eclipse.microprofile.openapi.models.servers.Server> servers) {
+        var first = servers.getFirst();
+        if (first.getVariables() != null && !first.getVariables().isEmpty()) {
+            var allHaveDefaults = first.getVariables().values().stream()
+                    .allMatch(v -> v.getDefaultValue() != null);
+            if (allHaveDefaults) return resolveTemplateVariables(first.getUrl(), first.getVariables());
+        }
+        return first.getUrl();
     }
 
     private static String resolveTemplateVariables(String url, Map<String, org.eclipse.microprofile.openapi.models.servers.ServerVariable> variables) {
@@ -270,21 +251,39 @@ public class OpenApiUiGenerator {
         return resolvedUrl;
     }
 
-    private static void addServerBodyFooter(Element serverBody) {
-        serverBody.content(div().id("server-override"));
-        serverBody.content(element("button").attr("type", "button").classes("custom-url-add")
-                .content("+ Add custom URL"));
+    private static String serializeVariables(Map<String, org.eclipse.microprofile.openapi.models.servers.ServerVariable> variables) {
+        var json = new StringBuilder("[");
+        var first = true;
+        for (var entry : variables.entrySet()) {
+            if (!first) json.append(",");
+            first = false;
+            var variable = entry.getValue();
+            json.append("{")
+                    .append("\"name\":\"").append(entry.getKey()).append("\",")
+                    .append("\"default\":\"").append(variable.getDefaultValue() != null ? variable.getDefaultValue() : "").append("\"");
+            if (variable.getEnumeration() != null && !variable.getEnumeration().isEmpty()) {
+                json.append(",\"enum\":[");
+                json.append(String.join(",", variable.getEnumeration().stream()
+                        .map(v -> "\"" + v + "\"").toList()));
+                json.append("]");
+            }
+            if (variable.getDescription() != null) {
+                json.append(",\"description\":\"").append(variable.getDescription()).append("\"");
+            }
+            json.append("}");
+        }
+        json.append("]");
+        return json.toString();
     }
 
-    private static Element globalHeaders() {
-        return div().id("global-headers").classes("global-headers", "is-collapsed")
-                .content(
-                        element("button").attr("type", "button").classes("global-headers-toggle")
-                                .content(span("Global Headers"), span("0").classes("global-headers-count")),
-                        div().classes("global-headers-body")
-                                .content(element("button").attr("type", "button").classes("custom-header-add")
-                                        .content("+ Add global header"))
-                );
+    private static Renderable globalHeaders() {
+        var panelHeading = element("button").attr("type", "button").classes("panel-heading", "global-headers-toggle")
+                .content(span("Global Headers"), span("0").classes("global-headers-count"));
+        var body = div().classes("panel-block", "global-headers-body")
+                .content(element("button").attr("type", "button").classes("custom-header-add")
+                        .content("+ Add global header"));
+        return panel().id("global-headers").classes("is-collapsed")
+                .content(panelHeading, body);
     }
 
     private static Element errorBanner() {

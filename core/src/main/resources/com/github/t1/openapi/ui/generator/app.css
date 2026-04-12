@@ -5,7 +5,8 @@
 .response-headers-toggle:focus,
 .schema-toggle:focus,
 .schema-nested-toggle:focus,
-.global-headers-toggle:focus {
+#server-selector > .panel-heading:focus,
+#global-headers > .panel-heading:focus {
     outline: 2px solid var(--bulma-link);
     outline-offset: 2px;
     border-radius: 2px;
@@ -559,19 +560,13 @@ pre.response code.hljs {
 .custom-url-remove:hover {
     color: var(--bulma-danger-dark);
 }
-/* server selector panel */
-#server-selector {
+/* server selector & global headers panels (Bulma panel overrides) */
+#server-selector,
+#global-headers {
     margin-bottom: 1rem;
-    border: 1px solid var(--bulma-border);
-    border-radius: 6px;
 }
-.server-toggle {
-    width: 100%;
-    text-align: left;
-    padding: 0.5rem 0.75rem;
-    background: var(--bulma-scheme-main-bis);
-    border: none;
-    border-radius: 6px;
+#server-selector > .panel-heading,
+#global-headers > .panel-heading {
     cursor: pointer;
     font-size: 0.8125rem;
     display: flex;
@@ -579,43 +574,25 @@ pre.response code.hljs {
     gap: 0.5rem;
 }
 .server-url {
-    font-family: monospace;
+    font-family: var(--mono-font);
     font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--bulma-text-weak);
+    margin-left: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
-.server-body {
-    padding: 0.75rem;
-    border-top: 1px solid var(--bulma-border);
-}
-#server-selector.is-collapsed .server-body {
+#server-selector.is-collapsed > .panel-block,
+#global-headers.is-collapsed > .panel-block {
     display: none;
 }
-.server-radio-label {
-    display: block;
-    padding: 0.25rem 0;
+.server-row {
     cursor: pointer;
 }
 .server-description {
     color: var(--bulma-text-light);
     font-size: 0.875rem;
-}
-/* global headers panel */
-.global-headers {
-    margin-bottom: 1rem;
-    border: 1px solid var(--bulma-border);
-    border-radius: 6px;
-}
-.global-headers-toggle {
-    width: 100%;
-    text-align: left;
-    padding: 0.5rem 0.75rem;
-    background: var(--bulma-scheme-main-bis);
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.8125rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
 }
 .global-headers-count {
     background: var(--bulma-scheme-main-ter);
@@ -623,12 +600,78 @@ pre.response code.hljs {
     border-radius: 10px;
     font-size: 0.6875rem;
 }
-.global-headers-body {
-    padding: 0.75rem;
-    border-top: 1px solid var(--bulma-border);
+/* template server groups */
+.template-group {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
 }
-.global-headers.is-collapsed .global-headers-body {
-    display: none;
+.template-group-heading {
+    font-size: 0.75rem;
+    color: var(--bulma-text-weak);
+    padding: 0.4em 0.75em;
+    background: var(--bulma-scheme-main-bis);
+    border-bottom: 1px solid var(--bulma-border-weak);
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+}
+.template-url {
+    font-family: var(--mono-font);
+    font-weight: 600;
+    color: var(--bulma-link);
+}
+.template-preset-label {
+    display: flex;
+    align-items: center;
+    padding: 0.375em 0.75em;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+.template-preset-label:hover {
+    background: var(--bulma-scheme-main-bis);
+}
+.template-preset-delete {
+    background: none;
+    border: none;
+    color: var(--bulma-danger);
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0 0.25rem;
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.template-preset-label:hover .template-preset-delete {
+    opacity: 0.6;
+}
+.template-preset-delete:hover {
+    opacity: 1;
+}
+.template-preset-add {
+    background: none;
+    border: 1px dashed var(--bulma-border);
+    border-radius: 4px;
+    color: var(--bulma-text-weak);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.2em 0.6em;
+    margin: 0.3em 0.75em;
+    display: inline-block;
+}
+.template-preset-add:hover {
+    border-color: var(--bulma-link);
+    color: var(--bulma-link);
+}
+.template-preset-form {
+    padding: 0.6em 0.75em;
+    background: var(--bulma-scheme-main-bis);
+    border-top: 1px solid var(--bulma-border-weak);
+}
+/* custom URL block separator */
+.custom-url-block {
+    border-top: 1px solid var(--bulma-border);
 }
 
 /* Tag filter */
