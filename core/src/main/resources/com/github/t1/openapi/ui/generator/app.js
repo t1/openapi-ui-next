@@ -9,6 +9,60 @@ document.addEventListener('DOMContentLoaded', function() {
     const responseCache = new Map();
     const schemaToggleCache = new Map();
 
+    // Generator registry: each key is a display label, each value is a generator function
+    const generators = {
+        curl: function(params) {
+            const headerFlags = Object.keys(params.headers).filter(function(h) {
+                return h !== 'Cookie';
+            }).map(function(h) {
+                return "-H '" + h + ": " + params.headers[h] + "'";
+            }).join(' ');
+            const cookieParts = [];
+            Object.keys(params.headers).forEach(function(h) {
+                if (h === 'Cookie') {
+                    const cookieValue = params.headers[h];
+                    cookieParts.push(cookieValue);
+                }
+            });
+            let cmd = 'curl -X ' + params.method;
+            if (headerFlags) cmd += ' ' + headerFlags;
+            if (cookieParts.length > 0) cmd += " -b '" + cookieParts.join('; ') + "'";
+            if (params.body) cmd += " -H 'Content-Type: " + (params.contentType || 'application/json') + "' -d '" + params.body + "'";
+            cmd += ' ' + params.url;
+            return cmd;
+        },
+        httpie: function(params) {
+            const headerArgs = Object.keys(params.headers).filter(function(h) {
+                return h !== 'Cookie';
+            }).map(function(h) {
+                return h + ':' + params.headers[h];
+            }).join(' ');
+            const cookieParts = [];
+            Object.keys(params.headers).forEach(function(h) {
+                if (h === 'Cookie') {
+                    cookieParts.push(params.headers[h]);
+                }
+            });
+            
+            // Apply httpie defaults: use http/https command based on scheme, omit GET method, omit scheme prefix, omit localhost
+            const urlObj = new URL(params.url);
+            const isHttps = urlObj.protocol === 'https:';
+            const command = isHttps ? 'https' : 'http';
+            const isLocalhost = urlObj.hostname === 'localhost';
+            const hostAndPath = isLocalhost 
+                ? urlObj.pathname + urlObj.search
+                : urlObj.hostname + (urlObj.port ? ':' + urlObj.port : '') + urlObj.pathname + urlObj.search;
+            const methodPart = params.method === 'GET' ? '' : params.method + ' ';
+            
+            let cmd = params.body
+                    ? "echo '" + params.body + "' | " + command + ' ' + methodPart + hostAndPath + " Content-Type:" + (params.contentType || 'application/json')
+                    : command + ' ' + methodPart + hostAndPath;
+            if (headerArgs) cmd += ' ' + headerArgs;
+            if (cookieParts.length > 0) cmd += ' Cookie:' + cookieParts.join('\\; ');
+            return cmd;
+        }
+    };
+
     function autoGrow(textarea) {
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
@@ -1838,43 +1892,22 @@ document.addEventListener('DOMContentLoaded', function() {
             const bodyTextarea = sendForm.querySelector('textarea[data-request-body]');
             const bodyValue = bodyTextarea ? bodyTextarea.value : '';
 
-            if (mode === 'curl') {
-                const headerFlags = Object.keys(requestHeaders).filter(function(h) {
-                    return h !== 'Cookie';
-                }).map(function(h) {
-                    return "-H '" + h + ": " + requestHeaders[h] + "'";
-                }).join(' ');
-                let cmd = 'curl -X ' + method;
-                if (headerFlags) cmd += ' ' + headerFlags;
-                if (cookieParts.length > 0) cmd += " -b '" + cookieParts.join('; ') + "'";
-                if (bodyValue) cmd += " -H 'Content-Type: application/json' -d '" + bodyValue + "'";
-                cmd += ' ' + url;
-                navigator.clipboard.writeText(cmd);
-                showCopied(sendBtn);
-            } else if (mode === 'httpie') {
-                const headerArgs = Object.keys(requestHeaders).filter(function(h) {
-                    return h !== 'Cookie';
-                }).map(function(h) {
-                    return h + ':' + requestHeaders[h];
-                }).join(' ');
-                
-                // Apply httpie defaults: use http/https command based on scheme, omit GET method, omit scheme prefix, omit localhost
-                const urlObj = new URL(url);
-                const isHttps = urlObj.protocol === 'https:';
-                const command = isHttps ? 'https' : 'http';
-                const isLocalhost = urlObj.hostname === 'localhost';
-                const hostAndPath = isLocalhost 
-                    ? urlObj.pathname + urlObj.search
-                    : urlObj.hostname + (urlObj.port ? ':' + urlObj.port : '') + urlObj.pathname + urlObj.search;
-                const methodPart = method === 'GET' ? '' : method + ' ';
-                
-                let cmd = bodyValue
-                        ? "echo '" + bodyValue + "' | " + command + ' ' + methodPart + hostAndPath + " Content-Type:application/json"
-                        : command + ' ' + methodPart + hostAndPath;
-                if (headerArgs) cmd += ' ' + headerArgs;
-                if (cookieParts.length > 0) cmd += ' Cookie:' + cookieParts.join('\\; ');
-                navigator.clipboard.writeText(cmd);
-                showCopied(sendBtn);
+            // Use generator registry for copy modes
+            if (mode === 'curl' || mode === 'httpie') {
+                const generator = generators[mode];
+                if (generator) {
+                    const params = {
+                        method: method,
+                        url: url,
+                        headers: requestHeaders,
+                        body: bodyValue,
+                        contentType: 'application/json',
+                        schema: null // Will be populated in future issues
+                    };
+                    const cmd = generator(params);
+                    navigator.clipboard.writeText(cmd);
+                    showCopied(sendBtn);
+                }
             } else if (mode === 'try') {
                 sendBtn.disabled = true;
                 sendBtn.textContent = 'Sending...';

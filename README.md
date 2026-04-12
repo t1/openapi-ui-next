@@ -308,6 +308,7 @@ Initial MVP release
 - Tag filter CSS classes: add tag-{name} CSS classes to path-tree items and method badges; generate per-tag CSS filter rules for tree items and badges; render filter icon and pill panel when API has 2+ tags ([#47](https://github.com/t1/openapi-ui-next/issues/47))
 - Tag filter JS interaction: pill selection with single-select toggle, filter icon active state, status line showing filtered operation count, localStorage persistence for panel state and selected tag, view toggle integration to restore filter panel when switching back to path view ([#48](https://github.com/t1/openapi-ui-next/issues/48))
 - Tag filter keyboard navigation: filter icon focusable with Tab, Enter/Space toggles panel and focuses first pill, Left/Right arrows navigate pills with immediate filter activation, Enter/Space on active pill deselects, Escape closes panel and returns focus to icon, proper Tab order integration with view toggle and tree ([#49](https://github.com/t1/openapi-ui-next/issues/49))
+- Generator registry refactoring: extract curl and HTTPie generation into standalone generator functions with pluggable registry pattern; foundation for additional output formats ([#50](https://github.com/t1/openapi-ui-next/issues/50))
 
 ## Contributing
 
