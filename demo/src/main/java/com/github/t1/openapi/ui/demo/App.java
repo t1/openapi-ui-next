@@ -6,6 +6,7 @@ import org.eclipse.microprofile.openapi.annotations.OpenAPIDefinition;
 import org.eclipse.microprofile.openapi.annotations.info.Contact;
 import org.eclipse.microprofile.openapi.annotations.info.Info;
 import org.eclipse.microprofile.openapi.annotations.servers.Server;
+import org.eclipse.microprofile.openapi.annotations.servers.ServerVariable;
 import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeIn;
 import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
@@ -20,8 +21,17 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
                 contact = @Contact(name = "OpenAPI UI", url = "https://github.com/t1/openapi-ui-next")),
         servers = {
                 @Server(url = "http://localhost:8080", description = "Local development server"),
-                @Server(url = "https://api.petstore.example.com", description = "Production server"),
-                @Server(url = "https://staging.petstore.example.com", description = "Staging server")
+                @Server(
+                        url = "https://{environment}.petstore.example.com",
+                        description = "Environment-specific server",
+                        variables = {
+                                @ServerVariable(
+                                        name = "environment",
+                                        description = "Deployment environment",
+                                        defaultValue = "api",
+                                        enumeration = {"api", "staging", "dev"})
+                        }),
+                @Server(url = "https://api.petstore.example.com", description = "Production server")
         },
         security = @SecurityRequirement(name = "BearerAuth"))
 @SecurityScheme(

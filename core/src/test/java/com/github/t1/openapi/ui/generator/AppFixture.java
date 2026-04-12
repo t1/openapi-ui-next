@@ -698,14 +698,23 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     String templateServerUrlPattern(int index) {
-        var label = page.locator("#server-selector label").nth(index);
-        var urlSpan = label.locator("span").first();
-        var url = urlSpan.textContent().trim();
-        // Return only if it contains template variables
-        if (url.contains("{") && url.contains("}")) {
-            return url;
-        }
-        return null;
+        var heading = page.locator("#server-selector .template-server-heading").nth(index);
+        var urlSpan = heading.locator("span").first();
+        return urlSpan.textContent().trim();
+    }
+
+    int templateServerPresetCount(int serverIndex) {
+        // Count preset labels that belong to the specified template server
+        // Presets are labeled with IDs like "server-{index}-preset-{presetIndex}"
+        var presetPattern = "input[id^='server-" + serverIndex + "-preset-']";
+        return (int) page.locator("#server-selector " + presetPattern).count();
+    }
+
+    String templateServerPresetLabel(int serverIndex, int presetIndex) {
+        var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
+        var label = page.locator("#server-selector label[for='" + presetId + "']");
+        var urlSpan = label.locator("span").last();
+        return urlSpan.textContent().trim();
     }
 
     boolean hasCustomUrlButton() {

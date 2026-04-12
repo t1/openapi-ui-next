@@ -151,22 +151,54 @@ public class OpenApiUiGenerator {
             var server = servers.get(i);
             var url = server.getUrl();
             var description = server.getDescription();
-            var radioId = "server-" + i;
             var isFirstServer = (i == 0);
 
-            var radio = element("input").attr("type", "radio").attr("name", "server").attr("id", radioId)
-                    .attr("value", url);
-            if (isFirstServer) {
-                radio.attr("checked", "");
-            }
+            if (server.getVariables() != null && !server.getVariables().isEmpty()) {
+                // Template server - show URL pattern as heading with nested presets
+                var heading = div().classes("template-server-heading");
+                heading.content(span(url));
+                if (description != null && !description.isEmpty()) {
+                    heading.content(span(" — "), span(description).classes("server-description"));
+                }
+                serverBody.content(heading);
 
-            var label = element("label").attr("for", radioId).classes("server-radio-label");
-            label.content(radio, span(url));
-            if (description != null && !description.isEmpty()) {
-                label.content(span(" — "), span(description).classes("server-description"));
-            }
+                // Check if all variables have defaults
+                var allVariablesHaveDefaults = server.getVariables().values().stream()
+                        .allMatch(v -> v.getDefaultValue() != null);
 
-            serverBody.content(label);
+                if (allVariablesHaveDefaults) {
+                    // Auto-generate default preset
+                    var resolvedUrl = resolveTemplateVariables(url, server.getVariables());
+
+                    var presetId = "server-" + i + "-preset-0";
+                    var radio = element("input").attr("type", "radio").attr("name", "server").attr("id", presetId)
+                            .attr("value", resolvedUrl);
+                    if (isFirstServer) {
+                        radio.attr("checked", "");
+                    }
+
+                    var label = element("label").attr("for", presetId).classes("template-preset-label");
+                    label.content(radio, span(resolvedUrl));
+
+                    serverBody.content(label);
+                }
+            } else {
+                // Non-template server - show as radio button
+                var radioId = "server-" + i;
+                var radio = element("input").attr("type", "radio").attr("name", "server").attr("id", radioId)
+                        .attr("value", url);
+                if (isFirstServer) {
+                    radio.attr("checked", "");
+                }
+
+                var label = element("label").attr("for", radioId).classes("server-radio-label");
+                label.content(radio, span(url));
+                if (description != null && !description.isEmpty()) {
+                    label.content(span(" — "), span(description).classes("server-description"));
+                }
+
+                serverBody.content(label);
+            }
         }
 
         addServerBodyFooter(serverBody);
@@ -178,6 +210,14 @@ public class OpenApiUiGenerator {
                                 .content(span("▶ Server"), span(firstServerUrl).classes("server-url")),
                         serverBody
                 );
+    }
+
+    private static String resolveTemplateVariables(String url, Map<String, org.eclipse.microprofile.openapi.models.servers.ServerVariable> variables) {
+        var resolvedUrl = url;
+        for (var entry : variables.entrySet()) {
+            resolvedUrl = resolvedUrl.replace("{" + entry.getKey() + "}", entry.getValue().getDefaultValue());
+        }
+        return resolvedUrl;
     }
 
     private static void addServerBodyFooter(Element serverBody) {

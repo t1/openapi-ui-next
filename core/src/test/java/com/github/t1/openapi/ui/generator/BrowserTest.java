@@ -2962,9 +2962,13 @@ class BrowserTest {
             then(app.templateServerUrlPattern(0)).isEqualTo("https://{environment}.example.com");
         }
 
-        @Disabled("TODO") @Test void shouldShowDefaultPreset() {}
+        @Test void shouldShowDefaultPreset() {
+            then(app.templateServerPresetCount(0)).isEqualTo(1);
+        }
 
-        @Disabled("TODO") @Test void shouldLabelDefaultPresetWithResolvedUrl() {}
+        @Test void shouldLabelDefaultPresetWithResolvedUrl() {
+            then(app.templateServerPresetLabel(0, 0)).isEqualTo("https://api.example.com");
+        }
 
         @Disabled("TODO") @Test void shouldShowNonTemplateServerAsRadio() {}
 
