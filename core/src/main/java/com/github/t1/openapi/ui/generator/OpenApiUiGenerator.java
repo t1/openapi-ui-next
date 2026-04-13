@@ -133,7 +133,7 @@ public class OpenApiUiGenerator {
                 .option("curl", o -> o.attr("title", "Copy as curl command"))
                 .option("overflow", "▾", o -> o.attr("title", "More formats").attr("data-overflow", "true"))
                 .attr("data-mode", "try").attr("data-base-url", baseUrl);
-        var sendButton = element("button").attr("type", "submit").classes("button", "is-primary", "mode-send-button").content("Send");
+        var sendButton = element("button").attr("type", "submit").attr("tabindex", "-1").classes("button", "is-primary", "mode-send-button").content("Send");
         modeToggle.content(sendButton);
 
         var dropdownMenu = div().classes("mode-dropdown-menu")

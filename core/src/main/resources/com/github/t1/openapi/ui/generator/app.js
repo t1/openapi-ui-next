@@ -422,6 +422,21 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 if (modeSendButton) modeSendButton.click();
+            } else if (e.key === 'Tab' && e.shiftKey) {
+                // Shift+Tab: if previous focusable is a status tab, jump to the active one
+                var allFocusable = Array.from(document.querySelectorAll(
+                    'input, select, textarea, button, a[tabindex="0"], [tabindex="0"]'
+                )).filter(function(f) { return f.offsetParent !== null && !f.disabled; });
+                var idx = allFocusable.indexOf(modeContainer);
+                for (var pi = idx - 1; pi >= 0; pi--) {
+                    var prev = allFocusable[pi];
+                    if (prev.closest && prev.closest('.toggle')) continue;
+                    if (prev.classList.contains('schema-status-tab')) {
+                        var activeTab = prev.closest('.schema-status-tabs').querySelector('.schema-status-tab.is-active');
+                        if (activeTab) { e.preventDefault(); activeTab.focus(); return; }
+                    }
+                    break;
+                }
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 const viewToggle = document.querySelector('[data-toggle="view"]');
@@ -1188,10 +1203,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (targetForm) {
                     var firstInput = targetForm.querySelector('input, select, textarea');
                     if (firstInput) firstInput.focus();
-                    else {
-                        var sendBtn = targetForm.querySelector('button[type=submit]');
-                        if (sendBtn) sendBtn.focus();
-                    }
+                    else if (modeContainer) modeContainer.focus();
                 }
             }
         }
@@ -1319,10 +1331,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (targetForm) {
                 var firstInput = targetForm.querySelector('input, select, textarea');
                 if (firstInput) firstInput.focus();
-                else {
-                    var sendBtn = targetForm.querySelector('button[type=submit]');
-                    if (sendBtn) sendBtn.focus();
-                }
+                else if (modeContainer) modeContainer.focus();
             }
         }
     });
@@ -1878,7 +1887,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function showCopied(btn) {
         const original = btn.textContent;
         btn.textContent = 'Copied!';
-        btn.focus();
+        if (modeContainer) modeContainer.focus();
         setTimeout(function() { btn.textContent = original; }, 1500);
     }
 
@@ -1910,13 +1919,13 @@ document.addEventListener('DOMContentLoaded', function() {
             ? '#server-selector .dropdown-content input, #server-selector .dropdown-content button'
             : '#method-content input, #method-content select, #method-content textarea, #method-content button, #method-content [tabindex="0"],'
               + ' .tabs a[tabindex="0"],'
-              + ' .mode-send-button,'
+              + ' [data-toggle="mode"],'
               + ' [role="tree"]';
         const candidates = Array.from(document.querySelectorAll(candidateSelector)).filter(function(c) {
             if (c === el) return false;
             if (c.disabled) return false;
             if (!c.offsetParent && c.getAttribute('role') !== 'tree') return false;
-            if (c.closest && c.closest('.toggle') && !c.classList.contains('mode-send-button')) return false;
+            if (c.closest && c.closest('.toggle') && c.getAttribute('data-toggle') !== 'mode') return false;
             // when navigating from outside tabs, only the active tab is a candidate
             const elIsTab = el.closest && el.closest('.tabs');
             if (!elIsTab && c.closest && c.closest('.tabs') && !c.closest('li').classList.contains('is-active')) return false;
@@ -1981,7 +1990,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!el || !el.closest) return;
         // don't interfere with tree or toggle internal navigation
         if (el.closest('[role="tree"]')) return;
-        if (el.closest('.toggle') && !el.classList.contains('mode-send-button')) return;
+        if (el.closest('.toggle')) return;
         // let the server dropdown handle its own keyboard navigation
         var serverSel = el.closest('#server-selector');
         if (serverSel && serverSel.classList.contains('is-active')) return;
@@ -2002,7 +2011,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (var i = currentIndex + delta; i >= 0 && i < allFocusable.length; i += delta) {
                     var candidate = allFocusable[i];
                     if (candidate.classList.contains('schema-status-tab')) continue;
-                    if (candidate.closest && candidate.closest('.toggle') && !candidate.classList.contains('mode-send-button')) continue;
+                    if (candidate.closest && candidate.closest('.toggle') && candidate.getAttribute('data-toggle') !== 'mode') continue;
                     candidate.focus();
                     return;
                 }
@@ -2050,7 +2059,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Scan backward to find the previous content element (skip toggle internals)
                 for (var pi = currentIndex - 1; pi >= 0; pi--) {
                     var prevElement = allFocusable[pi];
-                    if (prevElement.closest && prevElement.closest('.toggle') && !prevElement.classList.contains('mode-send-button')) continue;
+                    if (prevElement.closest && prevElement.closest('.toggle')) continue;
                     if (prevElement.classList.contains('schema-status-tab')) {
                         var activeStatusTab = prevElement.closest('.schema-status-tabs').querySelector('.schema-status-tab.is-active');
                         if (activeStatusTab) {
@@ -2434,8 +2443,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (sendBtn) {
                         sendBtn.disabled = false;
                         sendBtn.textContent = 'Send';
-                        sendBtn.focus();
                     }
+                    if (modeContainer) modeContainer.focus();
                 });
             }
         });

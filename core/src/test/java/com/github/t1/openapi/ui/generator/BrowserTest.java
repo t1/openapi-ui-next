@@ -1354,7 +1354,7 @@ class BrowserTest {
             app.pressKey("Enter");
 
             then(app.activeElementTag()).isEqualTo("SELECT");
-            then(app.isSendButtonFocused()).isFalse();
+            then(app.isModeToggleFocused()).isFalse();
         }
 
         @ResourceLock("params-try") @Nested class InTryMode {
@@ -1385,7 +1385,7 @@ class BrowserTest {
                 then(app.hasResponseStatus()).isFalse();
             }
 
-            @Test void shouldRestoreFocusToSendButtonAfterSend() {
+            @Test void shouldRestoreFocusToModeToggleAfterSend() {
                 app.mockEndpoint("/pets/42", "application/json", "{\"id\":\"42\"}");
                 app.expandFirstNode();
                 app.clickTreeNode("pets/{petId}/index.html");
@@ -1394,7 +1394,7 @@ class BrowserTest {
                 app.clickSend();
                 app.waitForResponse();
 
-                then(app.isSendButtonFocused()).isTrue();
+                then(app.isModeToggleFocused()).isTrue();
             }
         }
 
@@ -1443,7 +1443,7 @@ class BrowserTest {
             then(app.sendButtonText()).isEqualTo("Copied!");
         }
 
-        @Test void shouldFocusCopyButtonAfterCopyViaEnter() {
+        @Test void shouldFocusModeToggleAfterCopyViaEnter() {
             app.clickModeButton("curl");
             app.expandFirstNode();
             app.clickTreeNode("pets/{petId}/index.html");
@@ -1452,7 +1452,7 @@ class BrowserTest {
             app.focusInput("petId");
             app.pressKey("Enter");
 
-            then(app.isSendButtonFocused()).isTrue();
+            then(app.isModeToggleFocused()).isTrue();
         }
 
         @Test void shouldIncludeMethodInCurlMode() {
@@ -1583,7 +1583,7 @@ class BrowserTest {
 
             app.pressKey("ArrowDown");
 
-            then(app.activeElementSelector()).contains("button").contains("type=submit");
+            then(app.isModeToggleFocused()).isTrue();
         }
 
         @Test void shouldMoveOutOfTextareaOnArrowUpAtFirstLine() {
@@ -2066,22 +2066,22 @@ class BrowserTest {
             then(app.activeStatusCodeTab()).isEqualTo("200");
         }
 
-        @Test void shouldNavigateDownFromAcceptSelectToSendButton() {
+        @Test void shouldNavigateDownFromAcceptSelectToModeToggle() {
             navigateToPetDetail();
             app.focusSelect("accept");
 
             app.pressKey("ArrowDown");
 
-            then(app.activeElementSelector()).contains("button").contains("type=submit");
+            then(app.isModeToggleFocused()).isTrue();
         }
 
-        @Test void shouldNavigateUpFromSendButtonToCustomHeaderAdd() {
+        @Test void shouldNavigateDownFromModeToggleToViewToggle() {
             navigateToPetDetail();
-            app.focusSendButton();
+            app.focusModeToggle();
 
-            app.pressKey("ArrowUp");
+            app.pressKey("ArrowDown");
 
-            then(app.activeElementSelector()).contains("button").contains("custom-header-add");
+            then(app.isViewToggleFocused()).isTrue();
         }
 
         @Test void shouldNavigateRightFromAcceptSelectToSchemaToggle() {
@@ -2102,23 +2102,15 @@ class BrowserTest {
             then(app.activeElementSelector()).contains("select");
         }
 
-        @Test void shouldNavigateDownFromSchemaToggleToSendButton() {
+        @Test void shouldNavigateDownFromSchemaToggleToModeToggle() {
             navigateToPetDetail();
             app.focusSchemaToggle("response");
 
             app.pressKey("ArrowDown");
 
-            then(app.activeElementSelector()).contains("button").contains("type=submit");
+            then(app.isModeToggleFocused()).isTrue();
         }
 
-        @Test void shouldBumpOnArrowDownFromSendButton() {
-            navigateToPetDetail();
-            app.focusSendButton();
-
-            app.pressKey("ArrowDown");
-
-            then(app.activeElementSelector()).contains("button").contains("type=submit");
-        }
 
     }
 

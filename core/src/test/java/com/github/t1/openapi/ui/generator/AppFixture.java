@@ -301,7 +301,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.waitForFunction("name => document.activeElement && document.activeElement.getAttribute('name') === name", name);
     }
 
-    void focusSendButton() {page.locator(".mode-send-button").focus();}
+    void focusSendButton() {page.locator("[data-toggle='mode']").focus();}
 
     void clickSend() {page.locator(".mode-send-button").click();}
 
@@ -355,11 +355,6 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     boolean isSendButtonEnabled() {
         return (Boolean) page.evaluate(
                 "() => !document.querySelector('.mode-send-button').disabled");
-    }
-
-    boolean isSendButtonFocused() {
-        return (Boolean) page.evaluate(
-                "() => document.activeElement === document.querySelector('.mode-send-button')");
     }
 
     String responseText() {return page.locator("#detail pre.response").textContent();}
