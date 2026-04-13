@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.github.t1.bulmajava.basic.Color.DANGER;
-import static com.github.t1.bulmajava.basic.Color.PRIMARY;
 import static com.github.t1.bulmajava.basic.Size.MEDIUM;
 import static com.github.t1.bulmajava.basic.Size.NORMAL;
 import static com.github.t1.bulmajava.basic.Size.SMALL;
@@ -38,7 +37,6 @@ import static com.github.t1.bulmajava.components.Panel.panel;
 import static com.github.t1.bulmajava.components.Message.message;
 import static com.github.t1.bulmajava.components.Message.messageBody;
 import static com.github.t1.bulmajava.elements.Box.box;
-import static com.github.t1.bulmajava.elements.Button.button;
 import static com.github.t1.bulmajava.elements.Tag.tag;
 import static com.github.t1.bulmajava.elements.Tag.tagsAddon;
 import static com.github.t1.bulmajava.basic.Color.WARNING;
@@ -175,8 +173,6 @@ class OperationFragmentGenerator {
         }
         var responseArea = div().classes("response-area");
         responseArea.content(columns().classes("is-gapless").content(
-                column().classes("is-narrow").content(
-                        button("Send").is(PRIMARY).attr("type", "submit")),
                 column().classes("has-text-right")));
         operationForm.content(responseArea);
         return operationForm;
@@ -667,7 +663,6 @@ class OperationFragmentGenerator {
     private Element panelSkeleton(Element responseInfo, Element documentedHeaders) {
         var panel = div();
         panel.content(columns().classes("is-gapless").content(
-                column().classes("is-narrow").content(button("Send").is(PRIMARY).attr("type", "submit")),
                 column().classes("has-text-right").content(responseInfo)));
         var headersSection = box().classes("response-headers", "flat-box");
         headersSection.content(subtitle(6, "Headers ▶").classes("response-headers-toggle").attr("tabindex", "0"));

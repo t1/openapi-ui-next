@@ -765,12 +765,19 @@ class OpenApiUiGeneratorTest {
         then(fragment).doesNotContain("X-Request-Id");
     }
 
-    @Test void shouldWrapSendButtonInResponseArea() throws Exception {
+    @Test void shouldHaveResponseArea() throws Exception {
         generate("/response-headers.yaml");
 
         var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
         then(fragment).contains("response-area");
-        then(fragment).contains("type=\"submit\"");
+    }
+
+    @Test void shouldHaveSendButtonInModeSelector() throws Exception {
+        generate("/response-headers.yaml");
+
+        var index = Files.readString(outputDir.resolve("index.html"));
+        then(index).contains("mode-send-button");
+        then(index).contains("type=\"submit\"");
     }
 
     @Test void shouldAcceptOpenAPIModelDirectly() throws Exception {

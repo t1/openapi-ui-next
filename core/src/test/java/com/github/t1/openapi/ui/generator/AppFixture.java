@@ -301,11 +301,11 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.waitForFunction("name => document.activeElement && document.activeElement.getAttribute('name') === name", name);
     }
 
-    void focusSendButton() {page.locator("#detail button[type=submit]").focus();}
+    void focusSendButton() {page.locator(".mode-send-button").focus();}
 
-    void clickSend() {page.locator("#detail button[type=submit]").click();}
+    void clickSend() {page.locator(".mode-send-button").click();}
 
-    String sendButtonText() {return page.locator("#detail button[type=submit]").textContent();}
+    String sendButtonText() {return page.locator(".mode-send-button").textContent();}
 
     void waitForResponse() {page.waitForSelector("#detail .response-status");}
 
@@ -317,7 +317,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         clickSend();
         waitForResponse();
         // And ensure the button is back to its idle state
-        page.waitForFunction("() => document.querySelector('#detail button[type=submit]')?.textContent === 'Send'");
+        page.waitForFunction("() => document.querySelector('.mode-send-button')?.textContent === 'Send'");
     }
 
     /// Clicks Send, waits for headers toggle to disappear and reappear (avoids "Sending..." race condition).
@@ -354,12 +354,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean isSendButtonEnabled() {
         return (Boolean) page.evaluate(
-                "() => !document.querySelector('#detail button[type=submit]').disabled");
+                "() => !document.querySelector('.mode-send-button').disabled");
     }
 
     boolean isSendButtonFocused() {
         return (Boolean) page.evaluate(
-                "() => document.activeElement === document.querySelector('#detail button[type=submit]')");
+                "() => document.activeElement === document.querySelector('.mode-send-button')");
     }
 
     String responseText() {return page.locator("#detail pre.response").textContent();}

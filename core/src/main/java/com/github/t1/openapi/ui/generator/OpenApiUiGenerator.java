@@ -133,7 +133,9 @@ public class OpenApiUiGenerator {
                 .option("curl", o -> o.attr("title", "Copy as curl command"))
                 .option("overflow", "▾", o -> o.attr("title", "More formats").attr("data-overflow", "true"))
                 .attr("data-mode", "try").attr("data-base-url", baseUrl);
-        
+        var sendButton = element("button").attr("type", "submit").classes("button", "is-primary", "mode-send-button").content("Send");
+        modeToggle.content(sendButton);
+
         var dropdownMenu = div().classes("mode-dropdown-menu")
                 .content(
                         div().classes("mode-dropdown-item").attr("data-generator", "httpie").content("HTTPie"),
@@ -147,7 +149,7 @@ public class OpenApiUiGenerator {
                         div().classes("mode-dropdown-item").attr("data-generator", "Spring WebClient").content("Spring WebClient"),
                         div().classes("mode-dropdown-item").attr("data-generator", "Spring RestTemplate").content("Spring RestTemplate")
                 );
-        
+
         return div().classes("mode-selector-container").content(modeToggle, dropdownMenu);
     }
 

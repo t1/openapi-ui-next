@@ -686,8 +686,17 @@ pre.response code.hljs {
 
 /* Detail pane layout */
 .detail-pane .mode-selector-container {
-    text-align: right;
     margin-top: 0.5rem;
+}
+
+/* Send/Copy button inside mode toggle */
+.mode-send-button.button.is-primary {
+    padding: 5px 14px;
+    font-size: 0.75rem;
+    border-radius: 5px;
+    border: none;
+    height: auto;
+    line-height: inherit;
 }
 
 /* Mode selector dropdown */

@@ -501,6 +501,18 @@ class BrowserTest {
                 then(app.responseText()).contains("<pets>");
             }
 
+            @Test void shouldSubmitOnEnterFromModeToggle() {
+                app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+                app.clickTreeNode("pets/index.html");
+                app.waitForDetailContent("List pets");
+                app.focusModeToggle();
+
+                app.pressKey("Enter");
+
+                app.waitForResponse();
+                then(app.statusBadgeText()).isEqualTo("200 OK");
+            }
+
             @Test void shouldRecoverSendButtonAfterResponseInTryMode() {
                 app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
 
