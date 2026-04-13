@@ -342,6 +342,9 @@ section > .container > .split-layout > .split-second {
 .schema-box.is-collapsed .split-layout {
     grid-template-columns: 1fr !important;
 }
+.schema-status-panel {
+    padding: 0 0.75rem;
+}
 .schema-response-description {
     color: var(--bulma-text-weak);
     font-size: 0.8125rem;
