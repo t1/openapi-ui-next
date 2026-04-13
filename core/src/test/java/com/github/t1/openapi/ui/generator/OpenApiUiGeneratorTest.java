@@ -472,6 +472,16 @@ class OpenApiUiGeneratorTest {
         then(css).contains("-webkit-line-clamp");
     }
 
+    @Test void shouldStyleFlatPanelHeading() throws Exception {
+        generate("/one-get.yaml");
+
+        var css = Files.readString(outputDir.resolve("openapi-ui.css"));
+        then(css).contains(".panel.flat-panel > .panel-heading {\n" +
+                "    background: var(--bulma-scheme-main-ter);\n" +
+                "    border-bottom: 1px solid var(--bulma-border);\n" +
+                "}");
+    }
+
     @Test void shouldRenderExpandChevron() throws Exception {
         generate("/multi-method.yaml");
 
@@ -717,6 +727,15 @@ class OpenApiUiGeneratorTest {
         var indexHtml = Files.readString(outputDir.resolve("index.html"));
         then(indexHtml).contains("global-headers");
         then(indexHtml).contains("Global Headers");
+    }
+
+    @Test void shouldRenderPanelHeadingsAsDivWithNestedToggleButton() throws Exception {
+        generate("/one-get.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("class=\"panel-heading\"");
+        then(indexHtml).contains("class=\"global-headers-toggle\"");
+        then(indexHtml).doesNotContain("class=\"panel-heading global-headers-toggle\"");
     }
 
     @Test void shouldNotIncludeDataMethodOnTagTreeOperations() throws Exception {

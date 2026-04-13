@@ -192,6 +192,14 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void focusModeToggle() {page.locator("[data-toggle='mode']").focus();}
 
+    boolean isModeSelectorInSplitSecond() {
+        return page.locator(".split-second .mode-selector-container").count() == 1;
+    }
+
+    boolean isModeSelectorInDetailHeader() {
+        return page.locator(".detail-header .mode-selector-container").count() > 0;
+    }
+
     boolean isModeToggleFocused() {
         return (Boolean) page.evaluate("() => document.activeElement.matches('[data-toggle=mode]')");
     }
@@ -692,33 +700,64 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("#server-selector").count() > 0;
     }
 
-    int serverRadioCount() {
-        return (int) page.locator("#server-selector input[type='radio']").count();
+    int serverItemCount() {
+        return (int) page.locator("#server-selector .server-row").count();
     }
 
-    String serverRadioLabel(int index) {
-        var label = page.locator("#server-selector label").nth(index);
-        var urlSpan = label.locator("span").first();
-        return urlSpan.textContent().trim();
+    int serverDropdownDividerCount() {
+        return (int) page.locator("#server-selector .dropdown-content > hr.dropdown-divider").count();
     }
 
-    String serverDescription(int index) {
-        var label = page.locator("#server-selector label").nth(index);
-        var descSpan = label.locator(".server-description");
-        if (descSpan.count() == 0) return "";
-        return descSpan.textContent().trim();
+    String serverItemUrl(int index) {
+        return page.locator("#server-selector .server-row").nth(index)
+                .locator(".server-item-url").textContent().trim();
     }
 
-    boolean isServerSelected(int index) {
-        return page.locator("#server-selector input[type='radio']").nth(index).isChecked();
+    String serverItemDescription(int index) {
+        var item = page.locator("#server-selector .server-row").nth(index);
+        var desc = item.locator(".server-item-description");
+        if (desc.count() == 0) return "";
+        return desc.textContent().trim();
+    }
+
+    boolean isServerDescriptionBelowUrl(int index) {
+        var item = page.locator("#server-selector .server-row").nth(index);
+        var urlTop = ((Number) item.locator(".server-item-url").evaluate("el => el.getBoundingClientRect().top")).doubleValue();
+        var descTop = ((Number) item.locator(".server-item-description").evaluate("el => el.getBoundingClientRect().top")).doubleValue();
+        return descTop > urlTop;
+    }
+
+    boolean isServerItemActive(int index) {
+        return page.locator("#server-selector .server-row").nth(index)
+                .locator("input[type='radio']").isChecked();
     }
 
     void clickServerToggle() {
-        page.locator("#server-selector > .panel-heading").click();
+        page.locator("#server-selector .dropdown-trigger button").click();
+    }
+
+    String serverTriggerTooltip() {
+        return page.locator("#server-selector .dropdown-trigger button").getAttribute("title");
+    }
+
+    void focusServerTrigger() {
+        page.locator("#server-selector .dropdown-trigger button").focus();
+    }
+
+    boolean isFocusInsideServerDropdown() {
+        return (Boolean) page.evaluate("!!document.activeElement && !!document.activeElement.closest('#server-selector .dropdown-content')");
+    }
+
+    String selectedServerUrl() {
+        return page.locator("#server-selector input[type='radio'][name='server']:checked").inputValue();
     }
 
     boolean isServerPanelExpanded() {
-        return !page.locator("#server-selector").getAttribute("class").contains("is-collapsed");
+        return page.locator("#server-selector").getAttribute("class").contains("is-active");
+    }
+
+    boolean isServerDropdownInHeader() {
+        return page.locator(".detail-header #server-selector").count() > 0;
     }
 
     boolean hasServerOverrideOobElement() {
@@ -740,7 +779,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     boolean isGlobalServerDisabled(int index) {
-        return page.locator("#server-selector input[type='radio']:not([name='server-override'])").nth(index).isDisabled();
+        return page.locator("#server-selector input[type='radio'][name='server']").nth(index).isDisabled();
     }
 
     String getHtml(String selector) {
@@ -749,8 +788,17 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     String templateServerUrlPattern(int index) {
         var heading = page.locator("#server-selector .template-group-heading").nth(index);
-        var urlSpan = heading.locator("span").first();
-        return urlSpan.textContent().trim();
+        return heading.locator(".server-item-url").textContent().trim();
+    }
+
+    String templateServerDescription(int index) {
+        return page.locator("#server-selector .template-group").nth(index)
+                .locator(".server-item-description").textContent().trim();
+    }
+
+    boolean templateServerDescriptionUsesItemClass(int index) {
+        return page.locator("#server-selector .template-group").nth(index)
+                .locator(".server-item-description").count() > 0;
     }
 
     int templateServerPresetCount(int serverIndex) {
@@ -763,8 +811,36 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     String templateServerPresetLabel(int serverIndex, int presetIndex) {
         var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
         var label = page.locator("#server-selector label[for='" + presetId + "']");
-        var urlSpan = label.locator("span").last();
-        return urlSpan.textContent().trim();
+        return label.locator(".server-item-url").textContent().trim();
+    }
+
+    boolean isPresetRadioFocused(int serverIndex, int presetIndex) {
+        var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
+        var radio = page.locator("#server-selector input[id='" + presetId + "']");
+        return (Boolean) radio.evaluate("el => el === document.activeElement");
+    }
+
+    boolean templateServerPresetUrlUsesItemClass(int serverIndex, int presetIndex) {
+        var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
+        var label = page.locator("#server-selector label[for='" + presetId + "']");
+        return label.locator(".server-item-url").count() > 0;
+    }
+
+    String serverRowPadding(int index) {
+        return (String) page.locator("#server-selector .server-row").nth(index)
+                .evaluate("el => window.getComputedStyle(el).padding");
+    }
+
+    String templatePresetLabelPadding(int serverIndex, int presetIndex) {
+        var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
+        return (String) page.locator("#server-selector label[for='" + presetId + "']")
+                .evaluate("el => window.getComputedStyle(el).padding");
+    }
+
+    boolean templateGroupHeadingHasBottomBorder(int serverIndex) {
+        var heading = page.locator("#server-selector .template-group").nth(serverIndex).locator(".template-group-heading");
+        return (Boolean) heading.evaluate(
+                "el => window.getComputedStyle(el).borderBottomWidth !== '0px'");
     }
 
     boolean templateServerHasAddPresetButton(int serverIndex) {
@@ -775,6 +851,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     void clickTemplateServerAddPreset(int serverIndex) {
         var selector = "#server-selector .template-preset-add[data-server-index='" + serverIndex + "']";
         page.locator(selector).click();
+    }
+
+    boolean isPresetFormFirstFieldFocused(int serverIndex) {
+        var formSelector = "#server-selector .template-preset-form[data-server-index='" + serverIndex + "']";
+        var firstField = page.locator(formSelector + " input, " + formSelector + " select").first();
+        return (Boolean) firstField.evaluate("el => el === document.activeElement");
     }
 
     boolean hasTemplateServerPresetForm(int serverIndex) {
@@ -819,8 +901,14 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     void deleteTemplatePreset(int serverIndex, int presetIndex) {
         var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
         var label = page.locator("#server-selector label[for='" + presetId + "']");
-        var deleteBtn = label.locator(".template-preset-delete");
+        var deleteBtn = label.locator(".delete");
         deleteBtn.click();
+    }
+
+    boolean presetDeleteButtonUsesBulmaDelete(int serverIndex, int presetIndex) {
+        var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
+        var label = page.locator("#server-selector label[for='" + presetId + "']");
+        return label.locator(".delete.is-small").count() > 0;
     }
 
     boolean hasCustomUrlButton() {
@@ -840,11 +928,15 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     boolean hasCustomUrlDeleteButton() {
-        return page.locator("#server-selector .custom-url-remove").count() > 0;
+        return page.locator("#server-selector .custom-url-row .delete").count() > 0;
+    }
+
+    boolean customUrlDeleteButtonUsesBulmaDelete() {
+        return page.locator("#server-selector .custom-url-row .delete.is-small").count() > 0;
     }
 
     void clickCustomUrlDelete(int index) {
-        page.locator("#server-selector .custom-url-remove").nth(index).click();
+        page.locator("#server-selector .custom-url-row .delete").nth(index).click();
     }
 
     void setCustomUrlValue(int index, String url) {
@@ -861,6 +953,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean isCustomUrlSelected(int index) {
         return page.locator("#server-selector .custom-url-row input[type='radio']").nth(index).isChecked();
+    }
+
+    String serverTriggerUrl() {
+        return page.locator("#server-selector .server-dropdown-trigger .server-url").textContent().trim();
     }
 
     String getLocalStorageItem(String key) {
@@ -1144,12 +1240,21 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void navigateTo(String hash) {page.navigate(testServer.baseUrl() + "/index.html" + hash);}
 
+    boolean hasRoundedCornersWhenCollapsed(String panelSelector) {
+        return (Boolean) page.evaluate(
+                "selector => { var heading = document.querySelector(selector + '.is-collapsed > .panel-heading');"
+                + " if (!heading) return false;"
+                + " var s = getComputedStyle(heading);"
+                + " return s.borderBottomLeftRadius !== '0px' && s.borderBottomRightRadius !== '0px'; }",
+                panelSelector);
+    }
+
     boolean isGlobalHeadersCollapsed() {
         return page.locator("#global-headers.is-collapsed").count() > 0;
     }
 
     void clickGlobalHeadersToggle() {
-        page.locator("#global-headers > .panel-heading").click();
+        page.locator("#global-headers .global-headers-toggle").click();
     }
 
     void clickGlobalHeaderButton(String text) {
@@ -1182,6 +1287,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     boolean isGlobalHeaderPersisted(int index) {
         return "true".equals(page.locator("#global-headers .custom-header-row").nth(index)
                 .locator(".persist-toggle").getAttribute("aria-pressed"));
+    }
+
+    boolean isGlobalHeaderRowAPanelBlock(int index) {
+        return page.locator("#global-headers > .panel-block.custom-header-row").nth(index).count() > 0;
     }
 
     boolean isGlobalHeaderPinInsideControl(int index) {

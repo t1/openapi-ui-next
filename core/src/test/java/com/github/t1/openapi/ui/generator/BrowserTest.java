@@ -23,6 +23,11 @@ class BrowserTest {
 
         @Test void shouldHaveSplitLayout() {then(app.hasSplitLayout()).isTrue();}
 
+        @Test void shouldHaveModeSelectorInSplitSecondArea() {
+            then(app.isModeSelectorInSplitSecond()).isTrue();
+            then(app.isModeSelectorInDetailHeader()).isFalse();
+        }
+
         @Test void shouldResizeOnDrag() {
             var widthBefore = app.treeWidth();
             app.dragSplitHandle(100);
@@ -112,12 +117,28 @@ class BrowserTest {
             then(app.selectedItemHasFocusRing()).isTrue();
         }
 
+        @Test void shouldHaveRoundedCornersWhenGlobalHeadersCollapsed() {
+            then(app.hasRoundedCornersWhenCollapsed("#global-headers")).isTrue();
+        }
+
         @Test void shouldToggleGlobalHeadersPanel() {
             then(app.isGlobalHeadersCollapsed()).isTrue();
             app.clickGlobalHeadersToggle();
             then(app.isGlobalHeadersCollapsed()).isFalse();
             app.clickGlobalHeadersToggle();
             then(app.isGlobalHeadersCollapsed()).isTrue();
+        }
+
+        @Test void shouldRenderGlobalHeaderRowsAsPanelBlocks() {
+            app.clickGlobalHeadersToggle();
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.clickGlobalHeaderButton("+ Add global header");
+            app.fillGlobalHeader(0, "Authorization", "Bearer token");
+            app.fillGlobalHeader(1, "X-Custom", "value");
+
+            then(app.isGlobalHeaderRowAPanelBlock(0)).isTrue();
+            then(app.isGlobalHeaderRowAPanelBlock(1)).isTrue();
+            app.screenshot("global-headers");
         }
 
         @Test void shouldShowGlobalHeaderPinAsIconRight() {
@@ -3181,38 +3202,147 @@ class BrowserTest {
     @ResourceLock("multiple-servers") @Nested class GivenAppWithMultipleServers {
         @RegisterExtension static AppFixture app = launch("multiple-servers.yaml");
 
-        @Test void shouldHaveServerPanel() {
+        @Test void shouldHaveServerDropdown() {
             then(app.hasServerPanel()).isTrue();
         }
 
-        @Test void shouldShowServerRadioButtons() {
-            then(app.serverRadioCount()).isEqualTo(3);
+        @Test void shouldShowServerDropdownInHeader() {
+            then(app.isServerDropdownInHeader()).isTrue();
         }
 
-        @Test void shouldLabelFirstRadioWithUrl() {
-            then(app.serverRadioLabel(0)).isEqualTo("https://api.example.com");
+        @Test void shouldShowServerItems() {
+            app.clickServerToggle();
+            then(app.serverItemCount()).isEqualTo(3);
+        }
+
+        @Test void shouldLabelFirstItemWithUrl() {
+            app.clickServerToggle();
+            then(app.serverItemUrl(0)).isEqualTo("https://api.example.com");
         }
 
         @Test void shouldShowServerDescriptions() {
-            then(app.serverDescription(0)).isEqualTo("Production server");
-        }
-
-        @Test void shouldSelectFirstServerByDefault() {
-            then(app.isServerSelected(0)).isTrue();
-        }
-
-        @Test void shouldToggleServerPanel() {
             app.clickServerToggle();
+            then(app.serverItemDescription(0)).isEqualTo("Production server");
+        }
+
+        @Test void shouldShowServerDescriptionBelowUrl() {
+            app.clickServerToggle();
+            then(app.isServerDescriptionBelowUrl(0)).isTrue();
+        }
+
+        @Test void shouldMarkFirstServerAsActive() {
+            app.clickServerToggle();
+            then(app.isServerItemActive(0)).isTrue();
+        }
+
+        @Test void shouldToggleServerDropdown() {
+            app.clickServerToggle();
+            then(app.isServerPanelExpanded()).isTrue();
+
+            app.clickServerToggle();
+            then(app.isServerPanelExpanded()).isFalse();
+        }
+
+        @Test void shouldKeepDropdownOpenAfterSelectingServer() {
+            app.clickServerToggle();
+
+            app.selectServer(1);
 
             then(app.isServerPanelExpanded()).isTrue();
         }
 
-        @Test void shouldStartCollapsed() {
+        @Test void shouldUseRadioButtonsForNonTemplateServers() {
+            app.clickServerToggle();
+
+            then(app.isServerItemActive(0)).isTrue();
+        }
+
+        @Test void shouldStartClosed() {
             then(app.isServerPanelExpanded()).isFalse();
+        }
+
+        @Test void shouldHaveDividersBetweenServerEntries() {
+            app.clickServerToggle();
+            then(app.serverDropdownDividerCount()).isEqualTo(3);
         }
 
         @Test void shouldHaveServerOverrideSlot() {
             then(app.hasElement("#server-override")).isTrue();
+        }
+
+        @Test void shouldShowKeyboardShortcutTooltipOnTrigger() {
+            then(app.serverTriggerTooltip()).contains("+0");
+        }
+
+        @Test void shouldFocusInsideDropdownWhenOpened() {
+            app.clickServerToggle();
+
+            then(app.isFocusInsideServerDropdown()).isTrue();
+        }
+
+        @Test void shouldCloseDropdownOnEscape() {
+            app.clickServerToggle();
+            then(app.isServerPanelExpanded()).isTrue();
+
+            app.pressKey("Escape");
+
+            then(app.isServerPanelExpanded()).isFalse();
+        }
+
+        @Test void shouldToggleDropdownWithCtrl0() {
+            app.pressKey("Control+Digit0");
+
+            then(app.isServerPanelExpanded()).isTrue();
+
+            app.pressKey("Control+Digit0");
+
+            then(app.isServerPanelExpanded()).isFalse();
+        }
+
+        @Test void shouldCloseDropdownAndRestoreFocusOnEnter() {
+            app.clickServerToggle();
+            app.pressKey("ArrowDown");
+            then(app.isServerItemActive(1)).isTrue();
+
+            app.pressKey("Enter");
+
+            then(app.isServerPanelExpanded()).isFalse();
+        }
+
+        @Test void shouldSelectNextServerOnArrowDown() {
+            app.clickServerToggle();
+            then(app.isServerItemActive(0)).isTrue();
+
+            app.pressKey("ArrowDown");
+
+            then(app.isServerItemActive(1)).isTrue();
+        }
+
+        @Test void shouldSelectPreviousServerOnArrowUp() {
+            app.clickServerToggle();
+            app.selectServer(2);
+
+            app.pressKey("ArrowUp");
+
+            then(app.isServerItemActive(1)).isTrue();
+        }
+
+        @Test void shouldBumpAtLastServerOnArrowDown() {
+            app.clickServerToggle();
+            app.selectServer(2);
+
+            app.pressKey("ArrowDown");
+
+            then(app.isServerItemActive(2)).isTrue();
+        }
+
+        @Test void shouldBumpAtFirstServerOnArrowUp() {
+            app.clickServerToggle();
+            then(app.isServerItemActive(0)).isTrue();
+
+            app.pressKey("ArrowUp");
+
+            then(app.isServerItemActive(0)).isTrue();
         }
     }
 
@@ -3245,6 +3375,13 @@ class BrowserTest {
             app.clickCustomUrlButton();
 
             then(app.hasCustomUrlDeleteButton()).isTrue();
+        }
+
+        @Test void shouldUsesBulmaDeleteForCustomUrlRemoveButton() {
+            app.clickServerToggle();
+            app.clickCustomUrlButton();
+
+            then(app.customUrlDeleteButtonUsesBulmaDelete()).isTrue();
         }
 
         @Test void shouldDeleteCustomUrl() {
@@ -3295,6 +3432,37 @@ class BrowserTest {
 
             then(app.getBaseUrl()).isEqualTo("https://custom.example.com");
         }
+
+        @Test void shouldSelectCustomUrlRadioOnAdd() {
+            app.clickServerToggle();
+
+            app.clickCustomUrlButton();
+
+            then(app.isCustomUrlSelected(0)).isTrue();
+        }
+
+        @Test void shouldUpdateTriggerWhileTypingCustomUrl() {
+            app.clickServerToggle();
+            app.clickCustomUrlButton();
+
+            app.setCustomUrlValue(0, "https://my-server.example.com");
+
+            then(app.serverTriggerUrl()).isEqualTo("https://my-server.example.com");
+        }
+
+        @Test void shouldSelectUrlAboveAfterDeletingCustomUrl() {
+            app.clickServerToggle();
+            app.clickCustomUrlButton();
+            app.setCustomUrlValue(0, "https://custom1.example.com");
+            app.clickCustomUrlButton();
+            app.setCustomUrlValue(1, "https://custom2.example.com");
+            app.selectCustomUrl(1);
+
+            app.clickCustomUrlDelete(1);
+
+            then(app.getBaseUrl()).isEqualTo("https://custom1.example.com");
+            then(app.customUrlRowCount()).isEqualTo(1);
+        }
     }
 
     @ResourceLock("template-servers") @Nested class GivenAppWithTemplateServers {
@@ -3304,12 +3472,36 @@ class BrowserTest {
             then(app.templateServerUrlPattern(0)).isEqualTo("https://{environment}.example.com");
         }
 
+        @Test void shouldShowTemplateDescriptionWithSameStyleAsNonTemplate() {
+            app.clickServerToggle();
+            then(app.templateServerDescription(0)).isNotEmpty();
+            then(app.templateServerDescriptionUsesItemClass(0)).isTrue();
+        }
+
         @Test void shouldShowDefaultPreset() {
             then(app.templateServerPresetCount(0)).isEqualTo(1);
         }
 
         @Test void shouldLabelDefaultPresetWithResolvedUrl() {
             then(app.templateServerPresetLabel(0, 0)).isEqualTo("https://api.example.com");
+        }
+
+        @Test void shouldShowPresetUrlWithMonospaceStyle() {
+            app.clickServerToggle();
+            then(app.templateServerPresetUrlUsesItemClass(0, 0)).isTrue();
+        }
+
+        @Test void shouldUseBulmaDeleteForPresetDeleteButton() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            app.setTemplatePresetFormValue(0, "environment", "staging");
+            app.clickTemplatePresetSave(0);
+
+            then(app.presetDeleteButtonUsesBulmaDelete(0, 1)).isTrue();
+        }
+
+        @Test void shouldNotHaveBorderBetweenTemplateHeadingAndPresets() {
+            then(app.templateGroupHeadingHasBottomBorder(0)).isFalse();
         }
 
         @Disabled("TODO") @Test void shouldShowNonTemplateServerAsRadio() {}
@@ -3323,6 +3515,44 @@ class BrowserTest {
             app.clickTemplateServerAddPreset(0);
             
             then(app.hasTemplateServerPresetForm(0)).isTrue();
+        }
+
+        @Test void shouldFocusFirstFieldOnAddPresetClick() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+
+            then(app.isPresetFormFirstFieldFocused(0)).isTrue();
+        }
+
+        @Test void shouldSavePresetOnEnterInFormField() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            app.setTemplatePresetFormValue(0, "environment", "staging");
+
+            app.pressKey("Enter");
+
+            then(app.hasTemplateServerPresetForm(0)).isFalse();
+            then(app.templateServerPresetCount(0)).isEqualTo(2);
+        }
+
+        @Test void shouldFocusSavedPresetRadio() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            app.setTemplatePresetFormValue(0, "environment", "staging");
+            app.clickTemplatePresetSave(0);
+
+            then(app.isPresetRadioFocused(0, 1)).isTrue();
+        }
+
+        @Test void shouldCancelPresetFormOnEscape() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+
+            app.pressKey("Escape");
+
+            then(app.hasTemplateServerPresetForm(0)).isFalse();
+            then(app.templateServerPresetCount(0)).isEqualTo(1);
+            then(app.isServerPanelExpanded()).isTrue();
         }
 
         @Test void shouldCreateFormInputsFromVariableMetadata() {
@@ -3389,6 +3619,30 @@ class BrowserTest {
             app.reload();
 
             then(app.templateServerPresetCount(0)).isEqualTo(1);
+        }
+
+        @Test void shouldSelectNewlyCreatedPreset() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            app.setTemplatePresetFormValue(0, "environment", "staging");
+            app.clickTemplatePresetSave(0);
+
+            then(app.getBaseUrl()).isEqualTo("https://staging.example.com");
+        }
+
+        @Test void shouldSelectPresetAboveAfterDeletingPreset() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            app.setTemplatePresetFormValue(0, "environment", "staging");
+            app.clickTemplatePresetSave(0);
+            app.clickTemplateServerAddPreset(0);
+            app.setTemplatePresetFormValue(0, "environment", "dev");
+            app.clickTemplatePresetSave(0);
+            // dev (index 2) is selected
+
+            app.deleteTemplatePreset(0, 2);
+
+            then(app.getBaseUrl()).isEqualTo("https://staging.example.com");
         }
     }
 

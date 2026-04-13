@@ -4,7 +4,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.t1/openapi-ui)](https://central.sonatype.com/artifact/com.github.t1/openapi-ui)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Generates static, keyboard-navigable HTML UIs from OpenAPI specifications; via CLI or Maven plugin.
+Generates static, keyboard-navigable HTML UIs from OpenAPI specifications; via CLI, Maven plugin, or Quarkus extension.
 
 ![OpenAPI UI Next: light](docs/screenshots/hero.png#gh-light-mode-only)
 ![OpenAPI UI Next: dark](docs/screenshots/hero-dark.png#gh-dark-mode-only)
@@ -17,9 +17,9 @@ keyboard and have not only a nice-looking, but a clear and poweruser-oriented vi
 
 In contrast, Swagger tends to show everything at once: `curl` commands you didn't ask for, response schemas that look
 just like actual responses, and deeply nested sections that bury the information you need, while schema objects are
-cluttered at the end. I often find myself copying ids from here to there and back. _OpenAPI UI Next_ keeps the UI clean
-by showing details on demand: schema documentation, response types, code snippets, etc. it's there when you want them,
-but hidden when you don't.
+cluttered at the end. So I often find myself scrolling up and down (with the mouse!), carefully reading where I am,
+and copying ids from here to there and back. _OpenAPI UI Next_ keeps the UI clean by showing details on demand: schema
+documentation, response types, code snippets, etc. it's there when you want them, but hidden when you don't.
 
 With big schemas, performance is also an issue: The OpenAPI UI tools I know (Swagger UI, Redoc (even the generated
 variant), Rapidoc) are slow by design: they are JavaScript-heavy SPAs that parse the spec at runtime in the browser.
@@ -29,16 +29,14 @@ backend, so they load instantly. The dynamic UX is provided mainly by HTMX, e.g.
 
 > This is also my playground for learning how to vibe-code at the Harness Engineering level.
 
-## Features
+## Key Features
 
 **Navigation & Layout**
 
 - Path-based or tag-based tree views with method badges
-- Resizable split pane with persistent width
 - Method tabs for switching operations on the same path
 - Keyboard navigation: cursor keys for spacial navigation in addition to Tab/Shift+Tab
 - Pin values, so you don't have to repeat them everywhere, quickly with Ctrl+P (Alt on Linux and Windows);
-  kept in local storage, so it survives reloads
 - URL hash navigation: bookmarkable deep links (`#pets/GET`, `#[billing]invoices/GET`)
 - Responsive layout (desktop: side-by-side; mobile: stacked)
 - Automatic dark mode support (uses system setting)
@@ -170,45 +168,60 @@ Then open http://localhost:8000.
 ### Maven Plugin
 
 ```xml
+
 <plugin>
-  <groupId>com.github.t1</groupId>
-  <artifactId>openapi-ui-maven-plugin</artifactId>
-  <version>${project.version}</version>
-  <executions>
-    <execution>
-      <phase>process-classes</phase>
-      <goals>
-        <goal>generate</goal>
-      </goals>
-      <configuration>
-        <specFile>${project.build.directory}/generated/openapi.yaml</specFile>
-        <outputDirectory>${project.build.directory}/classes/META-INF/resources/openapi-ui</outputDirectory>
-      </configuration>
-    </execution>
-  </executions>
+    <groupId>com.github.t1</groupId>
+    <artifactId>openapi-ui-maven-plugin</artifactId>
+    <version>${project.version}</version>
+    <executions>
+        <execution>
+            <phase>process-classes</phase>
+            <goals>
+                <goal>generate</goal>
+            </goals>
+            <configuration>
+                <specFile>${project.build.directory}/generated/openapi.yaml</specFile>
+                <outputDirectory>${project.build.directory}/classes/META-INF/resources/openapi-ui</outputDirectory>
+            </configuration>
+        </execution>
+    </executions>
 </plugin>
 ```
 
 ### Demo App
 
-A Quarkus petstore app that uses the Maven plugin to generate and serve the UI:
+A Quarkus petstore app that uses the Quarkus extension to generate and serve the UI,
+even in dev mode, so changes to the app source immediately show up in the UI.
+
+Build only the demo app and necessary modules:
 
 ```bash
-mvn package -pl demo -am
+mvn -DskipTests -pl core,demo -am
+```
+
+Run app:
+
+```bash
 java -jar demo/target/quarkus-app/quarkus-run.jar
+```
+
+Or dev mode (in the `demo` dir):
+
+```bash
+mvn quarkus:dev
 ```
 
 Then open http://localhost:8080/openapi-ui/index.html.
 
 ## Modules
 
-| Module                    | Description                                                           |
-|---------------------------|-----------------------------------------------------------------------|
-| `core`                    | Generator library: parses specs and produces HTML + CSS + JS          |
-| `cli`                     | Command-line tool: executable fat jar with shell header               |
-| `maven-plugin`            | Maven plugin: integrates generation into build pipelines              |
-| `quarkus-extension`       | Quarkus extension: dev-mode integration with auto-refresh             |
-| `demo`                    | Quarkus petstore app: exercises the plugin end-to-end                 |
+| Module              | Description                                                  |
+|---------------------|--------------------------------------------------------------|
+| `core`              | Generator library: parses specs and produces HTML + CSS + JS |
+| `cli`               | Command-line tool: executable fat jar with shell header      |
+| `maven-plugin`      | Maven plugin: integrates generation into build pipelines     |
+| `quarkus-extension` | Quarkus extension: dev-mode integration with auto-refresh    |
+| `demo`              | Quarkus petstore app: exercises the plugin end-to-end        |
 
 ## Tech Stack
 
@@ -288,33 +301,28 @@ Initial MVP release
 - **Quarkus extension**: dev-mode integration: change JAX-RS code, browser auto-refreshes UI
   ([#26](https://github.com/t1/openapi-ui-next/issues/26))
 - **Bug fixes**:
-  - request body toggle without schema ([#6](https://github.com/t1/openapi-ui-next/issues/6))
-  - textarea auto-grow ([#8](https://github.com/t1/openapi-ui-next/issues/8))
-  - keyboard navigation ([#21](https://github.com/t1/openapi-ui-next/issues/21), [#23](https://github.com/t1/openapi-ui-next/issues/23))
+    - request body toggle without schema ([#6](https://github.com/t1/openapi-ui-next/issues/6))
+    - textarea auto-grow ([#8](https://github.com/t1/openapi-ui-next/issues/8))
+    - keyboard
+      navigation ([#21](https://github.com/t1/openapi-ui-next/issues/21), [#23](https://github.com/t1/openapi-ui-next/issues/23))
 
 ### 1.2 - not yet released
 
-- Style custom headers like documented parameters: label-above layout with badge and auto-resizing name input
-- Security schemes infrastructure: resolve effective security requirements per operation ([#34](https://github.com/t1/openapi-ui-next/issues/34))
-- apiKey security: header and query parameter input fields with pin support and fetch integration ([#35](https://github.com/t1/openapi-ui-next/issues/35))
-- http bearer security: Authorization header input with pin support and auto-prefix Bearer in fetch ([#36](https://github.com/t1/openapi-ui-next/issues/36))
-- Info-only security schemes: documentation rows for browser-handled auth (http basic, oauth2, openIdConnect, mutualTLS, cookie apiKey) ([#37](https://github.com/t1/openapi-ui-next/issues/37))
-- Global server selector: collapsible panel with radio buttons for each server URL and description; persists selection in localStorage; foundation for multi-server support ([#39](https://github.com/t1/openapi-ui-next/issues/39))
-- Template server variables: HTML generation for servers with {variable} placeholders; displays URL pattern as heading with nested default preset; foundation for template variable support ([#44](https://github.com/t1/openapi-ui-next/issues/44))
-- Template server presets: JavaScript runtime for creating and selecting template variable presets with "+ Add preset" form, variable resolution, and base URL updates ([#45](https://github.com/t1/openapi-ui-next/issues/45))
-- Template preset persistence: localStorage persistence for user-created template server presets with delete functionality; presets survive page reloads and persist independently per template server ([#46](https://github.com/t1/openapi-ui-next/issues/46))
-- Custom server URLs: add arbitrary base URLs via "+ Add custom URL" button with editable text inputs, delete functionality, and localStorage persistence ([#41](https://github.com/t1/openapi-ui-next/issues/41))
-- Cross-origin security integration: automatic security input visibility based on selected server origin; browser-handled auth fields (basic, oauth2, openIdConnect, mutualTLS, cookie apiKey) show for cross-origin servers and hide for same-origin servers ([#43](https://github.com/t1/openapi-ui-next/issues/43))
-- Tag filter CSS classes: add tag-{name} CSS classes to path-tree items and method badges; generate per-tag CSS filter rules for tree items and badges; render filter icon and pill panel when API has 2+ tags ([#47](https://github.com/t1/openapi-ui-next/issues/47))
-- Tag filter JS interaction: pill selection with single-select toggle, filter icon active state, status line showing filtered operation count, localStorage persistence for panel state and selected tag, view toggle integration to restore filter panel when switching back to path view ([#48](https://github.com/t1/openapi-ui-next/issues/48))
-- Tag filter keyboard navigation: filter icon focusable with Tab, Enter/Space toggles panel and focuses first pill, Left/Right arrows navigate pills with immediate filter activation, Enter/Space on active pill deselects, Escape closes panel and returns focus to icon, proper Tab order integration with view toggle and tree ([#49](https://github.com/t1/openapi-ui-next/issues/49))
-- Generator registry refactoring: extract curl and HTTPie generation into standalone generator functions with pluggable registry pattern; foundation for additional output formats ([#50](https://github.com/t1/openapi-ui-next/issues/50))
-- Operation schema embedding: embed JSON schema for request body and responses in each operation fragment; JavaScript runtime parses and passes schema to generators for future use ([#51](https://github.com/t1/openapi-ui-next/issues/51))
-- Mode selector UX overhaul: replace 3-segment toggle with scalable mode selector (Try + 2 recent formats + overflow dropdown); dropdown menu lists all registered generators; Ctrl/Alt+4 opens dropdown; localStorage persistence for recently-used formats; foundation for extensible output format selection ([#52](https://github.com/t1/openapi-ui-next/issues/52))
-- JS fetch and Java HttpClient generators: add two new code snippet generators to dropdown menu; JS fetch produces async/await browser fetch code, Java HttpClient produces java.net.http builder pattern code ([#53](https://github.com/t1/openapi-ui-next/issues/53))
-- JAX-RS, Python, and Go generators: add three additional code snippet generators to dropdown menu; JAX-RS produces ClientBuilder fluent API code, Python produces requests library code, Go produces net/http code ([#54](https://github.com/t1/openapi-ui-next/issues/54))
-- MP Rest Client, Spring WebClient, and Spring RestTemplate generators: add three additional code snippet generators to dropdown menu; MP Rest Client produces typed client interfaces with @RegisterRestClient and method annotations, Spring WebClient produces reactive builder code, Spring RestTemplate produces imperative HTTP client code ([#55](https://github.com/t1/openapi-ui-next/issues/55))
-- Form-encoded request bodies: render individual input fields for application/x-www-form-urlencoded request bodies; serialize form data as URL-encoded on submit ([#7](https://github.com/t1/openapi-ui-next/issues/7))
+- **Security schemes**: apiKey, http bearer, and info-only rows for browser-handled
+  auth ([#34](https://github.com/t1/openapi-ui-next/issues/34), [#35](https://github.com/t1/openapi-ui-next/issues/35), [#36](https://github.com/t1/openapi-ui-next/issues/36), [#37](https://github.com/t1/openapi-ui-next/issues/37))
+- **Server selector**: dropdown in the header with server items, template variable presets, custom URLs, and localStorage
+  persistence ([#39](https://github.com/t1/openapi-ui-next/issues/39), [#41](https://github.com/t1/openapi-ui-next/issues/41), [#44](https://github.com/t1/openapi-ui-next/issues/44), [#45](https://github.com/t1/openapi-ui-next/issues/45), [#46](https://github.com/t1/openapi-ui-next/issues/46))
+- **Cross-origin security**: auto-show/hide security inputs based on server origin
+  ([#43](https://github.com/t1/openapi-ui-next/issues/43))
+- **Tag filtering**: pill-based filter panel with keyboard navigation and localStorage
+  persistence ([#47](https://github.com/t1/openapi-ui-next/issues/47), [#48](https://github.com/t1/openapi-ui-next/issues/48), [#49](https://github.com/t1/openapi-ui-next/issues/49))
+- **Code generators**: scalable mode selector with 8 generators — curl, HTTPie, JS fetch,
+  Java HttpClient, JAX-RS, Python requests, Go net/http, MP Rest Client, Spring WebClient,
+  Spring
+  RestTemplate ([#50](https://github.com/t1/openapi-ui-next/issues/50), [#51](https://github.com/t1/openapi-ui-next/issues/51), [#52](https://github.com/t1/openapi-ui-next/issues/52), [#53](https://github.com/t1/openapi-ui-next/issues/53), [#54](https://github.com/t1/openapi-ui-next/issues/54), [#55](https://github.com/t1/openapi-ui-next/issues/55))
+- **Form-encoded request bodies**: individual input fields for
+  `application/x-www-form-urlencoded` ([#7](https://github.com/t1/openapi-ui-next/issues/7))
+- Custom header styling: label-above layout with badge and auto-resizing name input
 
 ## Contributing
 
@@ -328,8 +336,10 @@ and keeps the momentum going. Bug reports and feature ideas are equally welcome.
 
 ### Build
 
+just:
+
 ```bash
-mvn verify
+mvn
 ```
 
 Browser tests run in Chromium by default. To test with WebKit (Safari) or Firefox:

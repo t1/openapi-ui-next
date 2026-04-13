@@ -503,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function() {
         row.innerHTML =
             '<input type="radio" name="server" id="' + radioId + '" value="' + escapedUrl + '">' +
             '<input type="text" class="custom-url-input" placeholder="Server URL" value="' + escapedUrl + '">' +
-            '<button type="button" class="custom-url-remove">×</button>';
+            '<button type="button" class="delete is-small"></button>';
         return row;
     }
 
@@ -547,6 +547,16 @@ document.addEventListener('DOMContentLoaded', function() {
         html += '</div>';
         
         form.innerHTML = html;
+        form.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                form.querySelector('.template-preset-save').click();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                form.querySelector('.template-preset-cancel').click();
+            }
+        });
         return form;
     }
 
@@ -554,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const serverSelector = document.getElementById('server-selector');
         if (!serverSelector) return;
         const rows = serverSelector.querySelectorAll('.custom-url-row');
-        const urls = Array.from(rows).map(row => row.querySelector('.custom-url-input').value).filter(url => url);
+        const urls = Array.from(rows).map(function(row) { return row.querySelector('.custom-url-input').value; }).filter(function(url) { return url; });
         localStorage.setItem('openapi-ui-custom-urls', JSON.stringify(urls));
     }
 
@@ -567,10 +577,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const label = document.createElement('label');
         label.className = 'template-preset-label';
         label.setAttribute('for', presetId);
-        const deleteBtn = isDeletable ? '<button type="button" class="template-preset-delete">×</button>' : '';
+        const deleteBtn = isDeletable ? '<button type="button" class="delete is-small"></button>' : '';
         label.innerHTML =
             '<input type="radio" name="server" id="' + presetId + '" value="' + resolvedUrl + '">' +
-            '<span>' + resolvedUrl + '</span>' +
+            '<span class="server-item-url">' + resolvedUrl + '</span>' +
             deleteBtn;
         return label;
     }
@@ -585,7 +595,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const addBtn = serverSelector.querySelector('.custom-url-add');
             if (!addBtn) return;
             const customUrlBlock = addBtn.closest('.custom-url-block');
-            urls.forEach(url => {
+            urls.forEach(function(url) {
                 const row = createCustomUrlRow(url);
                 customUrlBlock.insertBefore(row, addBtn);
             });
@@ -628,31 +638,150 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Server selector panel toggle
+    // Server selector dropdown toggle
     const serverSelector = document.getElementById('server-selector');
     if (serverSelector) {
-        const serverToggle = serverSelector.querySelector('.server-toggle');
-        if (serverToggle) {
-            serverToggle.addEventListener('click', function() {
-                serverSelector.classList.toggle('is-collapsed');
+        const serverTrigger = serverSelector.querySelector('.dropdown-trigger button');
+        function focusCheckedServerRadio() {
+            var checked = serverSelector.querySelector('input[type="radio"][name="server"]:checked');
+            if (checked) checked.focus();
+        }
+        if (serverTrigger) {
+            serverTrigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (!serverSelector.classList.contains('is-active')) {
+                    focusBeforeDropdown = document.activeElement;
+                }
+                serverSelector.classList.toggle('is-active');
+                if (serverSelector.classList.contains('is-active')) focusCheckedServerRadio();
             });
         }
+        // Tooltip with keyboard shortcut
+        serverTrigger.setAttribute('title', 'Server (' + shortcutMod + '+0)');
 
-        // Handle custom URL button click
+        // Select server radio on focus (spatial navigation focuses them)
+        serverSelector.addEventListener('focusin', function(e) {
+            var radio = e.target.closest('input[type="radio"][name="server"]');
+            if (radio && !radio.checked) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change', {bubbles: true}));
+            }
+        });
+
+        // Keyboard navigation inside server dropdown
+        var focusBeforeDropdown = null;
+        serverSelector.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                serverSelector.classList.remove('is-active');
+                if (focusBeforeDropdown) focusBeforeDropdown.focus();
+                else serverTrigger.focus();
+                e.preventDefault();
+                return;
+            }
+            if (e.key === 'Enter' && e.target.matches('input[type="radio"]')) {
+                serverSelector.classList.remove('is-active');
+                if (focusBeforeDropdown) focusBeforeDropdown.focus();
+                else serverTrigger.focus();
+                e.preventDefault();
+                return;
+            }
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                var direction = e.key === 'ArrowDown' ? 'down' : 'up';
+                var target = findSpatialTarget(e.target, direction);
+                if (target) target.focus();
+                else bump(e.target, 'v');
+                e.preventDefault();
+            }
+        });
+        // Ctrl+0 (Mac) / Alt+0 (other) to toggle server dropdown
+        document.addEventListener('keydown', function(e) {
+            var mod = /Mac/.test(navigator.platform) ? e.ctrlKey : e.altKey;
+            if (mod && e.code === 'Digit0') {
+                e.preventDefault();
+                if (!serverSelector.classList.contains('is-active')) {
+                    focusBeforeDropdown = document.activeElement;
+                    serverSelector.classList.add('is-active');
+                    focusCheckedServerRadio();
+                } else {
+                    serverSelector.classList.remove('is-active');
+                    if (focusBeforeDropdown) focusBeforeDropdown.focus();
+                    else serverTrigger.focus();
+                }
+            }
+        });
+
+        // Close dropdown when clicking outside — track in capture phase
+        // whether click started inside the selector, because DOM removal can
+        // detach the target before the bubble phase reaches the document
+        var serverClickInside = false;
+        serverSelector.addEventListener('click', function() {
+            serverClickInside = true;
+        }, true);
+        document.addEventListener('click', function() {
+            if (!serverClickInside) {
+                serverSelector.classList.remove('is-active');
+            }
+            serverClickInside = false;
+        });
+
+        // Handle server radio selection (both non-template and template servers)
+        serverSelector.addEventListener('change', function(e) {
+            if (e.target.matches('input[type="radio"][name="server"]')) {
+                var url = e.target.value;
+                serverSelector.querySelector('.server-dropdown-trigger .server-url').textContent = url;
+                updateBaseUrl(url);
+                localStorage.setItem('openapi-ui-server', url);
+            }
+        });
+
+        // Live-update trigger button while typing in a selected custom URL field
+        serverSelector.addEventListener('input', function(e) {
+            var input = e.target.closest('.custom-url-input');
+            if (!input) return;
+            var row = input.closest('.custom-url-row');
+            var radio = row.querySelector('input[type="radio"]');
+            if (radio && radio.checked) {
+                var url = input.value;
+                radio.value = url;
+                var triggerUrl = serverSelector.querySelector('.server-dropdown-trigger .server-url');
+                if (triggerUrl) triggerUrl.textContent = url;
+                updateBaseUrl(url);
+            }
+        });
+
+        // Handle dropdown item clicks (custom URLs, template presets, etc.)
         serverSelector.addEventListener('click', function(e) {
             const addBtn = e.target.closest('.custom-url-add');
             if (addBtn) {
                 const customUrlBlock = addBtn.closest('.custom-url-block');
                 const row = createCustomUrlRow('');
                 customUrlBlock.insertBefore(row, addBtn);
+                var radio = row.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                    radio.dispatchEvent(new Event('change', { bubbles: true }));
+                }
                 row.querySelector('.custom-url-input').focus();
                 return;
             }
-            const removeBtn = e.target.closest('.custom-url-remove');
+            const removeBtn = e.target.closest('.custom-url-row .delete');
             if (removeBtn) {
                 const row = removeBtn.closest('.custom-url-row');
+                var deletedRadio = row.querySelector('input[type="radio"]');
+                
+                // Find the radio above (or below if first) before removing
+                var allRadios = Array.from(serverSelector.querySelectorAll('input[name="server"]'));
+                var deletedIndex = allRadios.indexOf(deletedRadio);
+                var fallbackIndex = deletedIndex > 0 ? deletedIndex - 1 : 1;
+                var fallbackRadio = allRadios[fallbackIndex] || allRadios[0];
+                
                 row.remove();
                 saveCustomUrls();
+                
+                // Focus fallback if the deleted row had the selected radio
+                if (fallbackRadio && !serverSelector.querySelector('input[name="server"]:checked')) {
+                    fallbackRadio.focus();
+                }
                 return;
             }
             const addPresetBtn = e.target.closest('.template-preset-add');
@@ -663,6 +792,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const form = createTemplatePresetForm(serverIndex, urlTemplate, variables);
                 const templateGroup = addPresetBtn.closest('.template-group');
                 templateGroup.insertBefore(form, addPresetBtn);
+                var firstField = form.querySelector('input, select');
+                if (firstField) firstField.focus();
                 return;
             }
             const saveBtn = e.target.closest('.template-preset-save');
@@ -692,6 +823,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Insert new preset before the form
                 form.parentNode.insertBefore(label, form);
                 
+                // Focus the newly created preset (focusin handler selects it)
+                var newRadio = label.querySelector('input[type="radio"]');
+                newRadio.focus();
+                
                 // Save preset to localStorage
                 const storageKey = templatePresetsStorageKey(urlTemplate);
                 const stored = localStorage.getItem(storageKey);
@@ -709,7 +844,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.remove();
                 return;
             }
-            const deleteBtn = e.target.closest('.template-preset-delete');
+            const deleteBtn = e.target.closest('.template-preset-label .delete');
             if (deleteBtn) {
                 const label = deleteBtn.closest('.template-preset-label');
                 const radio = label.querySelector('input[type="radio"]');
@@ -720,8 +855,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 const addPresetBtn = templateGroup.querySelector('.template-preset-add');
                 const urlTemplate = addPresetBtn.getAttribute('data-url-template');
                 
+                // Find the radio above (or below if first) before removing
+                var allRadios = Array.from(serverSelector.querySelectorAll('input[name="server"]'));
+                var deletedIndex = allRadios.indexOf(radio);
+                var fallbackIndex = deletedIndex > 0 ? deletedIndex - 1 : 1;
+                var fallbackRadio = allRadios[fallbackIndex] || allRadios[0];
+                
                 // Remove from DOM
                 label.remove();
+                
+                // Focus fallback (focusin handler selects it)
+                if (fallbackRadio && !serverSelector.querySelector('input[name="server"]:checked')) {
+                    fallbackRadio.focus();
+                }
                 
                 // Remove from localStorage
                 const storageKey = templatePresetsStorageKey(urlTemplate);
@@ -754,15 +900,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Handle server radio selection
-        serverSelector.addEventListener('change', function(e) {
-            if (e.target.type === 'radio' && e.target.name === 'server') {
-                const selectedUrl = e.target.value;
-                updateBaseUrl(selectedUrl);
-                // Persist selection
-                localStorage.setItem('openapi-ui-server', selectedUrl);
-            }
-        });
+        // Note: server radio selection is handled by the unified 'change' listener above
 
         // Restore custom URLs from localStorage
         restoreCustomUrls();
@@ -770,13 +908,29 @@ document.addEventListener('DOMContentLoaded', function() {
         // Restore template presets from localStorage
         restoreTemplatePresets();
 
+        // Resolve origin for no-servers case
+        var triggerUrlEl = serverSelector.querySelector('.server-dropdown-trigger .server-url');
+        if (triggerUrlEl && !triggerUrlEl.textContent.trim()) {
+            triggerUrlEl.textContent = window.location.origin;
+            var originRadio = serverSelector.querySelector('input[type="radio"][name="server"][value=""]');
+            if (originRadio) {
+                originRadio.value = window.location.origin;
+                var originLabel = originRadio.closest('.server-row');
+                if (originLabel) {
+                    var urlDiv = originLabel.querySelector('.server-item-url');
+                    if (urlDiv) urlDiv.textContent = window.location.origin;
+                }
+            }
+        }
+
         // Restore selected server from localStorage
         const savedServer = localStorage.getItem('openapi-ui-server');
         if (savedServer) {
-            const radios = serverSelector.querySelectorAll('input[type="radio"][name="server"]');
-            for (const radio of radios) {
-                if (radio.value === savedServer) {
-                    radio.checked = true;
+            var radios = serverSelector.querySelectorAll('input[type="radio"][name="server"]');
+            for (var ri = 0; ri < radios.length; ri++) {
+                if (radios[ri].value === savedServer) {
+                    radios[ri].checked = true;
+                    triggerUrlEl.textContent = savedServer;
                     updateBaseUrl(savedServer);
                     break;
                 }
@@ -793,9 +947,7 @@ document.addEventListener('DOMContentLoaded', function() {
         globalHeadersPanel.addEventListener('click', function(e) {
             const addBtn = e.target.closest('.custom-header-add');
             if (addBtn) {
-                const body = globalHeadersPanel.querySelector('.global-headers-body');
-                const row = createHeaderRow('', '', false);
-                body.insertBefore(row, addBtn);
+                const row = addGlobalHeaderRow('', '', false);
                 row.querySelector('.custom-header-name').focus();
                 updateGlobalHeaderCount();
                 applyGlobalHeaderPlaceholders();
@@ -815,6 +967,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
         });
+    }
+
+    function addGlobalHeaderRow(name, value, persisted) {
+        var addBlock = globalHeadersPanel.querySelector('.global-headers-add');
+        var row = createHeaderRow(name, value, persisted);
+        row.classList.add('panel-block');
+        globalHeadersPanel.insertBefore(row, addBlock);
+        return row;
     }
 
     function updateGlobalHeaderCount() {
@@ -875,10 +1035,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!key.startsWith(STORAGE_PREFIX_GLOBAL_HEADER)) continue;
             const ghName = key.substring(STORAGE_PREFIX_GLOBAL_HEADER.length);
             const ghValue = localStorage.getItem(key);
-            const body = globalHeadersPanel.querySelector('.global-headers-body');
-            const addBtn = body.querySelector('.custom-header-add');
-            const row = createHeaderRow(ghName, ghValue, true);
-            body.insertBefore(row, addBtn);
+            addGlobalHeaderRow(ghName, ghValue, true);
         }
         updateGlobalHeaderCount();
         applyGlobalHeaderPlaceholders();
@@ -1727,11 +1884,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const rect = el.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
-        const candidates = Array.from(document.querySelectorAll(
-            '#method-content input, #method-content select, #method-content textarea, #method-content button, #method-content [tabindex="0"],'
-            + ' .tabs a[tabindex="0"],'
-            + ' [role="tree"]'
-        )).filter(function(c) {
+        var openServerDropdown = el.closest && el.closest('#server-selector.is-active');
+        var candidateSelector = openServerDropdown
+            ? '#server-selector .dropdown-content input, #server-selector .dropdown-content button'
+            : '#method-content input, #method-content select, #method-content textarea, #method-content button, #method-content [tabindex="0"],'
+              + ' .tabs a[tabindex="0"],'
+              + ' [role="tree"]';
+        const candidates = Array.from(document.querySelectorAll(candidateSelector)).filter(function(c) {
             if (c === el) return false;
             if (c.disabled) return false;
             if (!c.offsetParent && c.getAttribute('role') !== 'tree') return false;
@@ -1801,6 +1960,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // don't interfere with tree or toggle internal navigation
         if (el.closest('[role="tree"]')) return;
         if (el.closest('.toggle')) return;
+        // let the server dropdown handle its own keyboard navigation
+        var serverSel = el.closest('#server-selector');
+        if (serverSel && serverSel.classList.contains('is-active')) return;
 
         // Tab/Shift+Tab on status code tabs: move to next/prev non-status-tab element
         if (e.key === 'Tab' && el.classList.contains('schema-status-tab')) {
@@ -2291,11 +2453,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!serverSelector) return;
             
             const hasOverride = target.children.length > 0;
+            // Disable/enable global radio inputs (template presets)
             const globalInputs = serverSelector.querySelectorAll('input[type="radio"]:not([name="server-override"])');
             globalInputs.forEach(function(input) {
                 input.disabled = hasOverride;
             });
-            
             if (hasOverride) {
                 const overrideRadios = target.querySelectorAll('input[type="radio"]');
                 const selectedOverride = target.querySelector('input[type="radio"]:checked');
@@ -2308,10 +2470,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 });
             } else {
-                const selectedGlobal = serverSelector.querySelector('input[type="radio"]:checked');
-                if (selectedGlobal) {
-                    updateBaseUrl(selectedGlobal.value);
-                }
+                // Restore from checked radio
+                var selectedRadio = serverSelector.querySelector('input[type="radio"][name="server"]:checked');
+                if (selectedRadio) updateBaseUrl(selectedRadio.value);
             }
         }
     });

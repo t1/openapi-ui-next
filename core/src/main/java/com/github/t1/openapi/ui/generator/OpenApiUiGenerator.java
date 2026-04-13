@@ -98,14 +98,14 @@ public class OpenApiUiGenerator {
 
         var pageTitle = openApi.getInfo().getTitle();
         var detail = div().id("detail").attr("tabindex", "0");
-        var detailHeader = div().classes("detail-header").content(title(pageTitle), modeSelector);
+        var detailHeader = div().classes("detail-header").content(title(pageTitle), serverSelector(openApi));
+        var detailPane = div().classes("detail-pane").content(detail, modeSelector);
         var splitLayout = splitPane()
                 .first(box().content(viewToggle, treeContainer))
-                .second(detail)
+                .second(detailPane)
                 .persistAs("openapi-ui-tree-width");
         var body = section().content(container().content(
                 detailHeader,
-                serverSelector(openApi),
                 globalHeaders(),
                 splitLayout
         ), errorBanner());
@@ -153,84 +153,101 @@ public class OpenApiUiGenerator {
 
     private static Renderable serverSelector(OpenAPI openApi) {
         var servers = openApi.getServers();
-        var panelHeading = element("button").attr("type", "button").classes("panel-heading", "server-toggle");
+
+        // Trigger button
+        var triggerUrl = (servers != null && !servers.isEmpty()) ? resolveFirstServerUrl(servers) : "";
+        var triggerButton = element("button").attr("type", "button")
+                .attr("aria-haspopup", "true")
+                .classes("button", "server-dropdown-trigger")
+                .content(span(triggerUrl).classes("server-url"), span("▾").classes("dropdown-arrow"));
+        var trigger = div().classes("dropdown-trigger").content(triggerButton);
+
+        // Dropdown content
+        var dropdownContent = div().classes("dropdown-content");
 
         if (servers == null || servers.isEmpty()) {
-            panelHeading.content(span("▶ Server"), span("(resolved from origin)").classes("server-url"));
-            var body = div().classes("panel-block")
-                    .content(div().id("server-override"),
-                            element("button").attr("type", "button").classes("custom-url-add")
-                                    .content("+ Add custom URL"));
-            return panel().id("server-selector").classes("flat-panel", "is-collapsed")
-                    .content(panelHeading, body);
-        }
+            // No servers case — single radio item resolved from origin
+            var radioId = "server-0";
+            var radio = element("input").attr("type", "radio").attr("name", "server")
+                    .attr("id", radioId).attr("value", "").attr("checked", "");
+            var label = element("label").attr("for", radioId).classes("dropdown-item", "server-row");
+            label.content(radio);
+            label.content(div().classes("server-item-url"));
+            label.content(div().classes("server-item-description").content("resolved from origin"));
+            dropdownContent.content(label);
+        } else {
+            for (var i = 0; i < servers.size(); i++) {
+                if (i > 0) dropdownContent.content(element("hr").classes("dropdown-divider"));
+                var server = servers.get(i);
+                var url = server.getUrl();
+                var description = server.getDescription();
+                var isFirstServer = (i == 0);
 
-        panelHeading.content(span("▶ Server"), span(resolveFirstServerUrl(servers)).classes("server-url"));
-        var result = panel().id("server-selector").classes("flat-panel", "is-collapsed")
-                .content(panelHeading);
+                if (server.getVariables() != null && !server.getVariables().isEmpty()) {
+                    // Template server — group inside dropdown
+                    var templateGroup = div().classes("template-group");
+                    var heading = div().classes("template-group-heading");
+                    heading.content(div().classes("server-item-url").content(url));
+                    if (description != null && !description.isEmpty()) {
+                        heading.content(div().classes("server-item-description").content(description));
+                    }
+                    templateGroup.content(heading);
 
-        for (var i = 0; i < servers.size(); i++) {
-            var server = servers.get(i);
-            var url = server.getUrl();
-            var description = server.getDescription();
-            var isFirstServer = (i == 0);
+                    var allVariablesHaveDefaults = server.getVariables().values().stream()
+                            .allMatch(v -> v.getDefaultValue() != null);
 
-            if (server.getVariables() != null && !server.getVariables().isEmpty()) {
-                // Template server — group all presets inside one panel-block
-                var templateGroup = div().classes("panel-block", "template-group");
-                var heading = div().classes("template-group-heading");
-                heading.content(span(url).classes("template-url"));
-                if (description != null && !description.isEmpty()) {
-                    heading.content(span(" — "), span(description).classes("server-description"));
-                }
-                templateGroup.content(heading);
+                    if (allVariablesHaveDefaults) {
+                        var resolvedUrl = resolveTemplateVariables(url, server.getVariables());
+                        var presetId = "server-" + i + "-preset-0";
+                        var radio = element("input").attr("type", "radio").attr("name", "server").attr("id", presetId)
+                                .attr("value", resolvedUrl);
+                        if (isFirstServer) radio.attr("checked", "");
 
-                var allVariablesHaveDefaults = server.getVariables().values().stream()
-                        .allMatch(v -> v.getDefaultValue() != null);
+                        var label = element("label").attr("for", presetId).classes("template-preset-label");
+                        label.content(radio, span().classes("server-item-url").content(resolvedUrl));
+                        templateGroup.content(label);
 
-                if (allVariablesHaveDefaults) {
-                    var resolvedUrl = resolveTemplateVariables(url, server.getVariables());
-                    var presetId = "server-" + i + "-preset-0";
-                    var radio = element("input").attr("type", "radio").attr("name", "server").attr("id", presetId)
-                            .attr("value", resolvedUrl);
+                        var addPresetBtn = element("button").attr("type", "button")
+                                .classes("template-preset-add")
+                                .attr("data-server-index", String.valueOf(i))
+                                .attr("data-url-template", url);
+                        var variablesJson = serializeVariables(server.getVariables());
+                        addPresetBtn.attr("data-variables", variablesJson);
+                        addPresetBtn.content("+ Add preset");
+                        templateGroup.content(addPresetBtn);
+                    }
+
+                    dropdownContent.content(templateGroup);
+                } else {
+                    // Non-template server — radio item in dropdown
+                    var radioId = "server-" + i;
+                    var radio = element("input").attr("type", "radio").attr("name", "server")
+                            .attr("id", radioId).attr("value", url);
                     if (isFirstServer) radio.attr("checked", "");
 
-                    var label = element("label").attr("for", presetId).classes("template-preset-label");
-                    label.content(radio, span(resolvedUrl));
-                    templateGroup.content(label);
-
-                    var addPresetBtn = element("button").attr("type", "button")
-                            .classes("template-preset-add")
-                            .attr("data-server-index", String.valueOf(i))
-                            .attr("data-url-template", url);
-                    var variablesJson = serializeVariables(server.getVariables());
-                    addPresetBtn.attr("data-variables", variablesJson);
-                    addPresetBtn.content("+ Add preset");
-                    templateGroup.content(addPresetBtn);
+                    var label = element("label").attr("for", radioId).classes("dropdown-item", "server-row");
+                    label.content(radio);
+                    label.content(div().classes("server-item-url").content(url));
+                    if (description != null && !description.isEmpty()) {
+                        label.content(div().classes("server-item-description").content(description));
+                    }
+                    dropdownContent.content(label);
                 }
-
-                result.content(templateGroup);
-            } else {
-                // Non-template server — each is its own panel-block row
-                var radioId = "server-" + i;
-                var radio = element("input").attr("type", "radio").attr("name", "server").attr("id", radioId)
-                        .attr("value", url);
-                if (isFirstServer) radio.attr("checked", "");
-
-                var label = element("label").attr("for", radioId).classes("panel-block", "server-row");
-                label.content(radio, span(url));
-                if (description != null && !description.isEmpty()) {
-                    label.content(span(" — "), span(description).classes("server-description"));
-                }
-                result.content(label);
             }
         }
 
-        result.content(div().classes("panel-block").id("server-override"));
-        result.content(div().classes("panel-block", "custom-url-block")
+        // Server override OOB swap target
+        dropdownContent.content(div().id("server-override"));
+
+        // Custom URL section
+        dropdownContent.content(element("hr").classes("dropdown-divider"));
+        dropdownContent.content(div().classes("custom-url-block")
                 .content(element("button").attr("type", "button").classes("custom-url-add")
                         .content("+ Add custom URL")));
-        return result;
+
+        var menu = div().classes("dropdown-menu").attr("role", "menu").content(dropdownContent);
+
+        return div().id("server-selector").classes("dropdown", "is-right").content(trigger, menu);
     }
 
     private static String resolveFirstServerUrl(List<org.eclipse.microprofile.openapi.models.servers.Server> servers) {
@@ -277,13 +294,14 @@ public class OpenApiUiGenerator {
     }
 
     private static Renderable globalHeaders() {
-        var panelHeading = element("button").attr("type", "button").classes("panel-heading", "global-headers-toggle")
+        var toggleButton = element("button").attr("type", "button").classes("global-headers-toggle")
                 .content(span("Global Headers"), span("0").classes("global-headers-count"));
-        var body = div().classes("panel-block", "global-headers-body")
+        var panelHeading = div().classes("panel-heading").content(toggleButton);
+        var addButton = div().classes("panel-block", "global-headers-add")
                 .content(element("button").attr("type", "button").classes("custom-header-add")
                         .content("+ Add global header"));
         return panel().id("global-headers").classes("flat-panel", "is-collapsed")
-                .content(panelHeading, body);
+                .content(panelHeading, addButton);
     }
 
     private static Element errorBanner() {
