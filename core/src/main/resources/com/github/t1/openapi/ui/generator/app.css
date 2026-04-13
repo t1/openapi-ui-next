@@ -275,7 +275,9 @@ section > .container > .split-layout > .split-second {
     overflow: visible;
 }
 .schema-box-header {
+    display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 .schema-box-title {
     display: flex;
