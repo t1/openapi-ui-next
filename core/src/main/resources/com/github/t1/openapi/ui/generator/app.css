@@ -275,10 +275,7 @@ section > .container > .split-layout > .split-second {
     overflow: visible;
 }
 .schema-box-header {
-    display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
 }
 .schema-box-title {
     display: flex;
@@ -560,18 +557,21 @@ pre.response code.hljs {
 .custom-url-remove:hover {
     color: var(--bulma-danger-dark);
 }
-/* server selector & global headers panels (Bulma panel overrides) */
+/* flat panel (no shadow, subtle heading) */
+.panel.flat-panel {
+    box-shadow: none;
+    border: 1px solid var(--bulma-border);
+}
+.panel.flat-panel > .panel-heading {
+    background: color-mix(in srgb, var(--bulma-scheme-main-bis), var(--bulma-scheme-main));
+}
+.panel.flat-panel.is-collapsed > .panel-block {
+    display: none;
+}
+/* server selector */
 #server-selector,
 #global-headers {
     margin-bottom: 1rem;
-}
-#server-selector > .panel-heading,
-#global-headers > .panel-heading {
-    cursor: pointer;
-    font-size: 0.8125rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
 }
 .server-url {
     font-family: var(--mono-font);
@@ -582,10 +582,6 @@ pre.response code.hljs {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-#server-selector.is-collapsed > .panel-block,
-#global-headers.is-collapsed > .panel-block {
-    display: none;
 }
 .server-row {
     cursor: pointer;

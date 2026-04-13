@@ -161,12 +161,12 @@ public class OpenApiUiGenerator {
                     .content(div().id("server-override"),
                             element("button").attr("type", "button").classes("custom-url-add")
                                     .content("+ Add custom URL"));
-            return panel().id("server-selector").classes("is-collapsed")
+            return panel().id("server-selector").classes("flat-panel", "is-collapsed")
                     .content(panelHeading, body);
         }
 
         panelHeading.content(span("▶ Server"), span(resolveFirstServerUrl(servers)).classes("server-url"));
-        var result = panel().id("server-selector").classes("is-collapsed")
+        var result = panel().id("server-selector").classes("flat-panel", "is-collapsed")
                 .content(panelHeading);
 
         for (var i = 0; i < servers.size(); i++) {
@@ -282,7 +282,7 @@ public class OpenApiUiGenerator {
         var body = div().classes("panel-block", "global-headers-body")
                 .content(element("button").attr("type", "button").classes("custom-header-add")
                         .content("+ Add global header"));
-        return panel().id("global-headers").classes("is-collapsed")
+        return panel().id("global-headers").classes("flat-panel", "is-collapsed")
                 .content(panelHeading, body);
     }
 

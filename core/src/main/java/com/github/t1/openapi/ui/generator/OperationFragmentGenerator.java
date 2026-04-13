@@ -3,6 +3,7 @@ package com.github.t1.openapi.ui.generator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.t1.bulmajava.components.Panel;
 import com.github.t1.bulmajava.elements.Box;
 import com.github.t1.bulmajava.form.Form;
 import com.github.t1.htmljava.Element;
@@ -33,6 +34,7 @@ import static com.github.t1.bulmajava.basic.Size.SMALL;
 import static com.github.t1.bulmajava.basic.Style.FULLWIDTH;
 import static com.github.t1.bulmajava.columns.Column.column;
 import static com.github.t1.bulmajava.columns.Columns.columns;
+import static com.github.t1.bulmajava.components.Panel.panel;
 import static com.github.t1.bulmajava.components.Message.message;
 import static com.github.t1.bulmajava.components.Message.messageBody;
 import static com.github.t1.bulmajava.elements.Box.box;
@@ -515,8 +517,8 @@ class OperationFragmentGenerator {
         var skeleton = skeleton(jsonContent);
         if ("{}".equals(skeleton)) return;
 
-        var bodyBox = box();
-        bodyBox.classes("schema-box", "flat-box", "is-collapsed").attr("data-box", "body");
+        var bodyBox = panel();
+        bodyBox.classes("flat-panel", "schema-box", "is-collapsed").attr("data-box", "body");
         bodyBox.content(requestBodyHeader(jsonContent));
         bodyBox.content(requestBodyEditor(skeleton, jsonContent.getSchema()));
         operationForm.content(bodyBox);
@@ -557,7 +559,7 @@ class OperationFragmentGenerator {
         if (schema.getProperties() != null && !schema.getProperties().isEmpty()) {
             bodyControls.content(element("button").attr("type", "button").classes("schema-toggle").content("Schema ▶"));
         }
-        return div().classes("schema-box-header").content(bodyTitle, bodyControls);
+        return div().classes("schema-box-header", "panel-heading").content(bodyTitle, bodyControls);
     }
 
     private Element exampleSelect(MediaType jsonContent) {
@@ -772,11 +774,11 @@ class OperationFragmentGenerator {
         return responseBox;
     }
 
-    private Box responseBoxHeader(List<String> allContentTypes, boolean hasExpandableContent) {
-        var responseBox = box().classes("schema-box", "flat-box", "is-collapsed").attr("data-box", "response");
+    private Panel responseBoxHeader(List<String> allContentTypes, boolean hasExpandableContent) {
+        var responseBox = panel().classes("flat-panel", "schema-box", "is-collapsed").attr("data-box", "response");
         var title = div().classes("schema-box-title")
                 .content(subtitle(6, "Response"));
-        var header = div().classes("schema-box-header").content(title);
+        var header = div().classes("schema-box-header", "panel-heading").content(title);
         var controls = div().classes("schema-box-controls");
         if (allContentTypes.size() > 1) {
             controls.content(span("Accept").classes("schema-accept-label"));
