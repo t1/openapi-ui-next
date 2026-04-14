@@ -5,10 +5,8 @@ import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator.FilterOptions;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.ScreenshotOptions;
-
-import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import com.microsoft.playwright.Playwright;
-import com.microsoft.playwright.options.ColorScheme;
+import com.microsoft.playwright.Route;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -19,6 +17,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URL;
@@ -29,7 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static com.microsoft.playwright.options.ColorScheme.DARK;
+import static com.microsoft.playwright.options.ColorScheme.LIGHT;
 import static com.microsoft.playwright.options.WaitForSelectorState.HIDDEN;
+import static org.junit.jupiter.api.MediaType.IMAGE_PNG;
 import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
 
 @SuppressWarnings("SameParameterValue")
@@ -46,6 +49,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     private TestServer testServer;
     private BrowserContext context;
     private Page page;
+    private ExtensionContext currentContext;
+    private String lastWaitContext;
 
     AppFixture(String specFilename) {
         this.specFilename = specFilename;
@@ -80,6 +85,9 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     @Override public void beforeEach(@NonNull ExtensionContext extensionContext) {
+        this.currentContext = extensionContext;
+        this.lastWaitContext = null;
+
         var options = new Browser.NewContextOptions();
         if (!browser.browserType().name().equals("webkit")) {
             options.setPermissions(List.of("clipboard-read", "clipboard-write"));
@@ -90,6 +98,14 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     @Override public void afterEach(@NonNull ExtensionContext extensionContext) {
+        extensionContext.getExecutionException().ifPresent(ex -> {
+            var testName = getFullTestName(extensionContext);
+            var context = lastWaitContext != null ? "-" + lastWaitContext : "";
+            var filename = "failure-" + testName + sanitizeFilename(context);
+
+            publishScreenshot(filename, currentContext);
+        });
+
         testServer.resetMocks();
         context.close();
     }
@@ -111,7 +127,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     void mockRootEndpoint(String path, String contentType, String body) {testServer.mockRootEndpoint(path, contentType, body);}
 
     void simulateNetworkError(String path) {
-        page.route(url -> url.endsWith(path), route -> route.abort());
+        page.route(url -> url.endsWith(path), Route::abort);
     }
 
     void blockHtmxRequests() {testServer.blockHtmxRequests();}
@@ -176,9 +192,16 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.locator("[hx-get='" + hxGetPath + "'] .tag:text('" + method + "')").click();
     }
 
-    void waitForDetailContent(String text) {page.waitForSelector("#detail :text('" + text + "')");}
+    void waitForDetailContent(String text) {
+        lastWaitContext = "waitForDetailContent(\"" + text + "\")";
+        page.waitForSelector("#detail :text('" + text + "')");
+    }
 
     String detailText() {return page.locator("#detail").textContent();}
+
+    private String sanitizeFilename(String text) {
+        return text.replaceAll("[^a-zA-Z0-9.-]", "_").toLowerCase();
+    }
 
     double[] treeBoundingBox() {
         var box = page.locator("[role='tree']").boundingBox();
@@ -299,19 +322,23 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.evaluate("() => { var el = document.activeElement; el.setSelectionRange(el.value.length, el.value.length); }");
     }
 
-    void waitForInput(String name) {page.waitForSelector("#detail input[name='" + name + "']");}
+    void waitForInput(String name) {
+        lastWaitContext = "waitForInput(\"" + name + "\")";
+        page.waitForSelector("#detail input[name='" + name + "']");
+    }
 
     void waitForFocusedInput(String name) {
         page.waitForFunction("name => document.activeElement && document.activeElement.getAttribute('name') === name", name);
     }
 
-    void focusSendButton() {page.locator("[data-toggle='mode']").focus();}
-
     void clickSend() {page.locator(".mode-send-button").click();}
 
     String sendButtonText() {return page.locator(".mode-send-button").textContent();}
 
-    void waitForResponse() {page.waitForSelector("#detail .response-status");}
+    void waitForResponse() {
+        lastWaitContext = "waitForResponse()";
+        page.waitForSelector("#detail .response-status");
+    }
 
     void waitForTimeout(double milliseconds) {page.waitForTimeout(milliseconds);}
 
@@ -326,6 +353,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     /// Clicks Send, waits for headers toggle to disappear and reappear (avoids "Sending..." race condition).
     void resendAndWaitForHeaders() {
+        lastWaitContext = "resendAndWaitForHeaders()";
         // Remove existing toggle so we can wait for a fresh one
         page.evaluate("document.querySelector('#detail .response-headers-toggle')?.remove()");
         clickSend();
@@ -538,7 +566,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
         return (Boolean) page.evaluate(
                 "([panel, linkName]) => { var links = document.querySelectorAll(panel + ' .schema-link-row a');"
-                        + " for (var i = 0; i < links.length; i++) { if (links[i].textContent.includes(linkName) && links[i] === document.activeElement) return true; } return false; }",
+                + " for (var i = 0; i < links.length; i++) { if (links[i].textContent.includes(linkName) && links[i] === document.activeElement) return true; } return false; }",
                 new Object[]{panel, linkName});
     }
 
@@ -546,7 +574,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
         page.waitForFunction(
                 "([panel, linkName]) => { var links = document.querySelectorAll(panel + ' .schema-link-row a');"
-                        + " for (var i = 0; i < links.length; i++) { if (links[i].textContent.includes(linkName) && links[i] === document.activeElement) return true; } return false; }",
+                + " for (var i = 0; i < links.length; i++) { if (links[i].textContent.includes(linkName) && links[i] === document.activeElement) return true; } return false; }",
                 new Object[]{panel, linkName});
     }
 
@@ -577,8 +605,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     boolean schemaLinkSubRowExists(String statusCode, String linkName) {
         var panel = "#detail .schema-status-panel[data-status='" + statusCode + "']";
         return page.locator(panel + " .schema-props .schema-link-row")
-                .filter(new FilterOptions().setHasText(linkName))
-                .count() > 0;
+                       .filter(new FilterOptions().setHasText(linkName))
+                       .count() > 0;
     }
 
     int schemaLinkSubRowCount(String statusCode, String linkName) {
@@ -713,11 +741,11 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     int serverItemCount() {
-        return (int) page.locator("#server-selector .server-row").count();
+        return page.locator("#server-selector .server-row").count();
     }
 
     int serverDropdownDividerCount() {
-        return (int) page.locator("#server-selector .dropdown-content > hr.dropdown-divider").count();
+        return page.locator("#server-selector .dropdown-content > hr.dropdown-divider").count();
     }
 
     String serverItemUrl(int index) {
@@ -752,16 +780,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("#server-selector .dropdown-trigger button").getAttribute("title");
     }
 
-    void focusServerTrigger() {
-        page.locator("#server-selector .dropdown-trigger button").focus();
-    }
-
     boolean isFocusInsideServerDropdown() {
         return (Boolean) page.evaluate("!!document.activeElement && !!document.activeElement.closest('#server-selector .dropdown-content')");
-    }
-
-    String selectedServerUrl() {
-        return page.locator("#server-selector input[type='radio'][name='server']:checked").inputValue();
     }
 
     boolean isServerPanelExpanded() {
@@ -772,16 +792,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator(".detail-header #server-selector").count() > 0;
     }
 
-    boolean hasServerOverrideOobElement() {
-        return page.locator("[hx-swap-oob]").count() > 0;
-    }
-
     String serverOverrideWarning() {
         return page.locator("#server-override .server-override-warning").textContent().trim();
     }
 
     int serverOverrideServerCount() {
-        return (int) page.locator("#server-override input[type='radio']").count();
+        return page.locator("#server-override input[type='radio']").count();
     }
 
     String serverOverrideServerUrl(int index) {
@@ -792,10 +808,6 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean isGlobalServerDisabled(int index) {
         return page.locator("#server-selector input[type='radio'][name='server']").nth(index).isDisabled();
-    }
-
-    String getHtml(String selector) {
-        return page.locator(selector).innerHTML();
     }
 
     String templateServerUrlPattern(int index) {
@@ -810,14 +822,14 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean templateServerDescriptionUsesItemClass(int index) {
         return page.locator("#server-selector .template-group").nth(index)
-                .locator(".server-item-description").count() > 0;
+                       .locator(".server-item-description").count() > 0;
     }
 
     int templateServerPresetCount(int serverIndex) {
         // Count preset labels that belong to the specified template server
         // Presets are labeled with IDs like "server-{index}-preset-{presetIndex}"
         var presetPattern = "input[id^='server-" + serverIndex + "-preset-']";
-        return (int) page.locator("#server-selector " + presetPattern).count();
+        return page.locator("#server-selector " + presetPattern).count();
     }
 
     String templateServerPresetLabel(int serverIndex, int presetIndex) {
@@ -836,17 +848,6 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
         var label = page.locator("#server-selector label[for='" + presetId + "']");
         return label.locator(".server-item-url").count() > 0;
-    }
-
-    String serverRowPadding(int index) {
-        return (String) page.locator("#server-selector .server-row").nth(index)
-                .evaluate("el => window.getComputedStyle(el).padding");
-    }
-
-    String templatePresetLabelPadding(int serverIndex, int presetIndex) {
-        var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
-        return (String) page.locator("#server-selector label[for='" + presetId + "']")
-                .evaluate("el => window.getComputedStyle(el).padding");
     }
 
     boolean templateGroupHeadingHasBottomBorder(int serverIndex) {
@@ -938,7 +939,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     int customUrlRowCount() {
-        return (int) page.locator("#server-selector .custom-url-row").count();
+        return page.locator("#server-selector .custom-url-row").count();
     }
 
     boolean hasCustomUrlInput() {
@@ -1142,7 +1143,6 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     String readClipboard() {return (String) page.evaluate("() => navigator.clipboard.readText()");}
 
 
-
     boolean isViewActive(String view) {
         return page.locator("[data-toggle-value='" + view + "'].is-active").count() == 1;
     }
@@ -1164,6 +1164,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     void waitForTreeContent(String text) {
+        lastWaitContext = "waitForTreeContent(\"" + text + "\")";
         page.waitForSelector("#tree-container :text('" + text + "')");
     }
 
@@ -1171,38 +1172,29 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     boolean hasFilterIcon() {
         return page.locator("#tree-container .fa-filter").count() > 0;
     }
-    
+
     boolean isFilterIconFocused() {
         var filterIcon = page.locator(".filter-icon");
         return filterIcon.evaluate("el => el === document.activeElement").toString().equals("true");
     }
-    
-    void focusFilterIcon() {
-        page.locator(".filter-icon").focus();
-    }
-    
+
     void pressEnterOnFilterIcon() {
         page.evaluate("() => {" +
-                "const icon = document.querySelector('.filter-icon');" +
-                "const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });" +
-                "icon.dispatchEvent(event);" +
-                "}");
+                      "const icon = document.querySelector('.filter-icon');" +
+                      "const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });" +
+                      "icon.dispatchEvent(event);" +
+                      "}");
     }
-    
+
     void pressSpaceOnFilterIcon() {
         // Dispatch Space keydown event directly to the filter icon
         page.evaluate("() => {" +
-                "const icon = document.querySelector('.filter-icon');" +
-                "const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true });" +
-                "icon.dispatchEvent(event);" +
-                "}");
+                      "const icon = document.querySelector('.filter-icon');" +
+                      "const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true });" +
+                      "icon.dispatchEvent(event);" +
+                      "}");
     }
-    
-    boolean hasFilterPanelActiveClass() {
-        var panel = page.locator(".filter-pill-panel");
-        return panel.evaluate("el => el.classList.contains('is-active')").toString().equals("true");
-    }
-    
+
     boolean isPillFocused(String tagName) {
         var pill = page.locator(".filter-pill-panel .tag-" + sanitizeTagName(tagName));
         return pill.evaluate("el => el === document.activeElement").toString().equals("true");
@@ -1246,20 +1238,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     void waitMs(double ms) {page.waitForTimeout(ms);}
 
     void screenshot(String name) {
-        var dir = Path.of("target/screenshots");
-        try {
-            Files.createDirectories(dir);
-        } catch (Exception e) {
-            throw new RuntimeException("could not create screenshots directory", e);
-        }
-        page.screenshot(new ScreenshotOptions()
-                .setPath(dir.resolve(name + ".png"))
-                .setFullPage(true));
-        page.emulateMedia(new Page.EmulateMediaOptions().setColorScheme(ColorScheme.DARK));
-        page.screenshot(new ScreenshotOptions()
-                .setPath(dir.resolve(name + "-dark.png"))
-                .setFullPage(true));
-        page.emulateMedia(new Page.EmulateMediaOptions().setColorScheme(ColorScheme.LIGHT));
+        publishScreenshot(name, currentContext);
+        page.emulateMedia(new Page.EmulateMediaOptions().setColorScheme(DARK));
+        publishScreenshot(name + "-dark", currentContext);
+        page.emulateMedia(new Page.EmulateMediaOptions().setColorScheme(LIGHT));
     }
 
     String locationHash() {return (String) page.evaluate("() => location.hash");}
@@ -1351,6 +1333,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     void navigateToHash(String hash) {
+        lastWaitContext = "navigateToHash(\"" + hash + "\")";
         // wait for the tree to be fully rendered before navigating
         page.waitForSelector("[hx-get]");
         page.evaluate("location.hash = '#" + hash + "'");
@@ -1412,13 +1395,28 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     void waitForErrorBanner() {
+        lastWaitContext = "waitForErrorBanner()";
         page.waitForSelector("#error-banner:not([style*='display: none'])");
     }
 
     void waitForErrorBannerGone() {
+        lastWaitContext = "waitForErrorBannerGone()";
         page.waitForSelector("#error-banner", new Page.WaitForSelectorOptions()
                 .setState(HIDDEN));
     }
+
+    private String getFullTestName(ExtensionContext context) {
+        var className = context.getTestClass().map(Class::getSimpleName).orElse("UnknownClass");
+        var methodName = context.getTestMethod().map(Method::getName).orElse("unknownMethod");
+        return className + "-" + methodName;
+    }
+
+    private void publishScreenshot(String name, ExtensionContext context) {
+        context.publishReportEntry("create screenshot: " + name);
+        context.publishFile(name + ".png", IMAGE_PNG, this::screenshot);
+    }
+
+    private void screenshot(Path path) {page.screenshot(new ScreenshotOptions().setPath(path).setFullPage(true));}
 
     private static class TestServer {
         private final HttpServer server;

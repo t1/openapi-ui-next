@@ -77,9 +77,10 @@ Always use the visual companion for brainstorming — no need to ask for consent
 ### UI Review
 
 After changing UI generation code (in `core`), run the tests (`mvn test -pl core`) and review
-the screenshots in `core/target/screenshots/` using the `frontend-design` plugin for design
-and UX quality. The screenshots are produced automatically by the Playwright browser tests.
-Always check the dark as well as the light mode screenshots.
+the screenshots in `core/target/junit-jupiter/` (organized by test class/method) using the 
+`frontend-design` plugin for design and UX quality. The screenshots are produced automatically 
+by the Playwright browser tests via JUnit's `publishFile` API. Always check the dark as well as 
+the light mode screenshots.
 
 **VERY IMPORTANT**: Always visually confirm that CSS/layout changes actually achieved their goal
 by carefully inspecting the screenshots. Don't assume a change worked just because tests pass —
@@ -90,6 +91,11 @@ that was supposed to change and verify it matches the intent.
 render colors differently from real browsers — e.g. textarea backgrounds can appear lighter than
 they do in Chrome/Safari. Do not flag color issues from dark-mode screenshots without verifying
 in a real browser first.
+
+**Test failure debugging**: When tests fail with timeouts, screenshots are automatically captured
+to `core/target/junit-jupiter/` with filenames like `failure-<TestClass>-<method>-<context>.png`.
+The context shows which wait operation failed (e.g., `waitForDetailContent("Get a pet")`), making
+it easy to diagnose flaky tests.
 
 **VERY IMPORTANT**: Never claim interactive behavior (keyboard navigation, click handlers, focus
 management, expand/collapse) works without a browser test that exercises the exact interaction.
