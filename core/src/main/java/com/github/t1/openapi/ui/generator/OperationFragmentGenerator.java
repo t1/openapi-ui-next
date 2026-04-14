@@ -347,35 +347,76 @@ class OperationFragmentGenerator {
         if (components == null || components.getSecuritySchemes() == null) return;
         
         var authDiv = div().classes("auth-section");
+        var helpText = authHelpText(effectiveSecurity);
         
         // Get the first security requirement (OR alternative)
         var firstRequirement = effectiveSecurity.getFirst();
+        com.github.t1.bulmajava.form.Field lastField = null;
         for (var schemeName : firstRequirement.getSchemes().keySet()) {
             var scheme = components.getSecuritySchemes().get(schemeName);
             if (scheme == null) continue;
             
             if (SecurityScheme.Type.APIKEY == scheme.getType()) {
                 if (SecurityScheme.In.COOKIE == scheme.getIn()) {
-                    authDiv.content(cookieApiKeyAuthField(schemeName, scheme));
+                    lastField = cookieApiKeyAuthField(schemeName, scheme);
                 } else {
-                    authDiv.content(apiKeyAuthField(schemeName, scheme));
+                    lastField = apiKeyAuthField(schemeName, scheme);
                 }
             } else if (SecurityScheme.Type.HTTP == scheme.getType()) {
                 if ("bearer".equals(scheme.getScheme())) {
-                    authDiv.content(bearerAuthField(schemeName, scheme));
+                    lastField = bearerAuthField(schemeName, scheme);
                 } else if ("basic".equals(scheme.getScheme())) {
-                    authDiv.content(httpBasicAuthField(schemeName, scheme));
+                    lastField = httpBasicAuthField(schemeName, scheme);
                 }
             } else if (SecurityScheme.Type.OAUTH2 == scheme.getType()) {
-                authDiv.content(oauth2AuthField(schemeName, scheme));
+                lastField = oauth2AuthField(schemeName, scheme);
             } else if (SecurityScheme.Type.OPENIDCONNECT == scheme.getType()) {
-                authDiv.content(openIdConnectAuthField(schemeName, scheme));
+                lastField = openIdConnectAuthField(schemeName, scheme);
             } else if (SecurityScheme.Type.MUTUALTLS == scheme.getType()) {
-                authDiv.content(mutualTlsAuthField(schemeName, scheme));
+                lastField = mutualTlsAuthField(schemeName, scheme);
             }
+            authDiv.content(lastField);
         }
+
+        if (lastField != null && helpText != null) lastField.help(helpText);
         
         operationForm.content(authDiv);
+    }
+
+    private String authHelpText(
+            java.util.List<org.eclipse.microprofile.openapi.models.security.SecurityRequirement> effectiveSecurity) {
+        var firstRequirement = effectiveSecurity.getFirst();
+        var descriptions = firstRequirement.getSchemes().keySet().stream()
+                .map(name -> components.getSecuritySchemes().get(name))
+                .filter(s -> s != null && s.getDescription() != null)
+                .map(SecurityScheme::getDescription)
+                .toList();
+        var otherAlternatives = effectiveSecurity.stream().skip(1)
+                .flatMap(r -> r.getSchemes().keySet().stream())
+                .toList();
+        var andSchemes = firstRequirement.getSchemes().size() > 1
+                ? firstRequirement.getSchemes().keySet().stream().toList()
+                : List.<String>of();
+        if (descriptions.isEmpty() && otherAlternatives.isEmpty() && andSchemes.isEmpty()) return null;
+
+        var sb = new StringBuilder();
+        for (var desc : descriptions) {
+            if (!sb.isEmpty()) sb.append(" ");
+            sb.append(desc);
+            if (!desc.endsWith(".")) sb.append(".");
+        }
+        if (!otherAlternatives.isEmpty()) {
+            if (!sb.isEmpty()) sb.append(" ");
+            sb.append("Also accepts: ").append(String.join(", ", otherAlternatives)).append(".");
+        }
+        if (!andSchemes.isEmpty()) {
+            if (!sb.isEmpty()) sb.append(" ");
+            sb.append("Requires all of: ").append(String.join(", ", andSchemes)).append(".");
+        }
+        if (!otherAlternatives.isEmpty() || !andSchemes.isEmpty()) {
+            sb.append(" AND/OR combinations are not yet supported.");
+        }
+        return sb.toString();
     }
     
     private com.github.t1.bulmajava.form.Field apiKeyAuthField(String schemeName, SecurityScheme scheme) {

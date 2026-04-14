@@ -944,6 +944,14 @@ class OpenApiUiGeneratorTest {
         then(fragment).doesNotContain("<input");
     }
 
+    @Test void shouldRenderHelpTextForOrAlternatives() throws Exception {
+        generate("/security-or-alternatives.yaml");
+
+        var fragment = Files.readString(outputDir.resolve("pets/GET.html"));
+        then(fragment).contains("ApiKeyAuth");
+        then(fragment).contains("not yet supported");
+    }
+
     @Test void shouldIncludeServerOverrideOobForPerOperationServers() throws Exception {
         generate("/per-operation-servers.yaml");
 

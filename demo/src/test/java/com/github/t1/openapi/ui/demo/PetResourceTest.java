@@ -133,8 +133,18 @@ class PetResourceTest {
                 .body("type", is("urn:problem-type:pet-not-found"));
     }
 
+    @Test void shouldReturnUnauthorizedForDeleteWithoutToken() {
+        given()
+                .when().delete("/pets/1")
+                .then()
+                .statusCode(401)
+                .contentType("application/problem+json")
+                .body("type", is("urn:problem-type:unauthorized"));
+    }
+
     @Test void shouldReturnProblemDetailsForDeleteUnknownPet() {
         given()
+                .header("Authorization", "Bearer demo-token")
                 .when().delete("/pets/999")
                 .then()
                 .statusCode(400)
@@ -180,6 +190,7 @@ class PetResourceTest {
                 .extract().path("id");
 
         given()
+                .header("Authorization", "Bearer demo-token")
                 .when().delete("/pets/" + id)
                 .then()
                 .statusCode(204);

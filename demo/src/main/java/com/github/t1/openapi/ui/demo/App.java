@@ -10,7 +10,6 @@ import org.eclipse.microprofile.openapi.annotations.servers.ServerVariable;
 import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeIn;
 import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
-import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 
 @OpenAPIDefinition(
         info = @Info(
@@ -32,13 +31,12 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
                                         enumeration = {"api", "staging", "dev"})
                         }),
                 @Server(url = "https://api.petstore.example.com", description = "Production server")
-        },
-        security = @SecurityRequirement(name = "BearerAuth"))
+        })
 @SecurityScheme(
         securitySchemeName = "BearerAuth",
         type = SecuritySchemeType.HTTP,
         scheme = "bearer",
-        description = "Bearer token authentication")
+        description = "Use `demo-token` to authenticate")
 @SecurityScheme(
         securitySchemeName = "ApiKeyAuth",
         type = SecuritySchemeType.APIKEY,

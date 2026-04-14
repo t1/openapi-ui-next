@@ -34,6 +34,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirements;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,7 +57,6 @@ public class PetResource {
     private static long nextId = 4;
 
     @GET @Produces(APPLICATION_JSON)
-    @SecurityRequirement(name = "")
     @Operation(summary = "List all pets", description = "Returns all pets from the system. "
                                                         + "Supports filtering by status via the optional query parameter. "
                                                         + "Results are sorted by ID in ascending order. "
@@ -116,7 +116,6 @@ public class PetResource {
     }
 
     @POST @Produces(APPLICATION_JSON)
-    @SecurityRequirement(name = "ApiKeyAuth")
     @Operation(summary = "Add a new pet")
     public Response create(
             @HeaderParam("X-Api-Key") @Parameter(required = true, description = "API key for authentication") String apiKey,
@@ -176,7 +175,15 @@ public class PetResource {
             @SecurityRequirement(name = "ApiKeyAuth")})
     @Operation(summary = "Delete a pet")
     @Tag(name = "admin")
-    public Response delete(@PathParam("id") long id) {
+    @APIResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
+    public Response delete(@PathParam("id") long id,
+                           @HeaderParam("Authorization") String authorization) {
+        if (authorization == null || !authorization.equals("Bearer demo-token"))
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .type(ProblemDetails.MEDIA_TYPE)
+                    .entity(new ProblemDetails(URI.create("urn:problem-type:unauthorized"), "Unauthorized", 401, "Use `demo-token` as the bearer token", null))
+                    .build();
         var removed = PETS.removeIf(p -> p.id == id);
         if (!removed) throw new PetNotFoundException(id);
         return Response.noContent().build();
