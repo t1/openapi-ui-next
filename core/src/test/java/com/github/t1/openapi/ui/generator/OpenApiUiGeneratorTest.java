@@ -777,7 +777,7 @@ class OpenApiUiGeneratorTest {
 
         var index = Files.readString(outputDir.resolve("index.html"));
         then(index).contains("mode-send-button");
-        then(index).contains("type=\"submit\"");
+        then(index).contains("type=\"button\"");
     }
 
     @Test void shouldAcceptOpenAPIModelDirectly() throws Exception {
