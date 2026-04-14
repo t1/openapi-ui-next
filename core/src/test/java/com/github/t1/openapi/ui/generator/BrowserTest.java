@@ -528,6 +528,9 @@ class BrowserTest {
                 navigateToListPetsAndSend();
 
                 then(app.statusBadgeText()).isEqualTo("200 OK");
+                then(app.isStatusBadgeOnSameLineAsModeToggle())
+                        .as("status badge should be on the same line as the mode toggle")
+                        .isTrue();
             }
 
             @Test void shouldShowErrorStatusBadgeInTryMode() {
@@ -702,13 +705,22 @@ class BrowserTest {
             then(app.isModeToggleFocused()).isTrue();
         }
 
-        @Test void shouldFocusViewToggleOnArrowDownFromModeToggle() {
+        @Test void shouldNotJumpToViewToggleOnArrowDownFromModeToggle() {
+            app.waitForDetailContent("List invoices");
             app.focusModeToggle();
 
             app.pressKey("ArrowDown");
-            app.waitForViewToggleFocused();
 
-            then(app.isViewToggleFocused()).isTrue();
+            then(app.isViewToggleFocused()).isFalse();
+        }
+
+        @Test void shouldNotJumpToViewToggleOnArrowUpFromModeToggle() {
+            app.waitForDetailContent("List invoices");
+            app.focusModeToggle();
+
+            app.pressKey("ArrowUp");
+
+            then(app.isViewToggleFocused()).isFalse();
         }
 
         @Test void shouldNotWrapRightWhenOnLastView() {
@@ -1176,6 +1188,26 @@ class BrowserTest {
             then(app.detailText()).contains("Delete a pet"); // content should not switch
         }
 
+        @Test void shouldNavigateUpFromModeToggle() {
+            app.waitForDetailContent("List pets");
+            app.focusModeToggle();
+
+            app.pressKey("ArrowUp");
+
+            // should find the nearest focusable element above (not jump to view toggle)
+            then(app.isModeToggleFocused()).isFalse();
+            then(app.isViewToggleFocused()).isFalse();
+        }
+
+        @Test void shouldBumpOnArrowDownFromModeToggle() {
+            app.waitForDetailContent("List pets");
+            app.focusModeToggle();
+
+            app.pressKey("ArrowDown");
+
+            then(app.isModeToggleFocused()).isTrue();
+        }
+
         @Test void shouldFocusViewToggleOnArrowUpAtFirstItem() {
             app.focusTree();
             app.pressKey("ArrowUp"); // already first item → view toggle
@@ -1511,7 +1543,7 @@ class BrowserTest {
     @ResourceLock("httpie-localhost") @Nested class GivenAppWithHttpLocalhostUrl {
         @RegisterExtension static AppFixture app = launch("http-localhost.yaml");
 
-        @Test void shouldCopyHttpieCommandWithoutLocalhostForGET() {
+        @Test void shouldCopyHttpieCommandWithPortForLocalhostGET() {
             app.clickModeButton("httpie");
             app.expandFirstNode();
             app.clickTreeNode("pets/{id}/index.html");
@@ -1520,9 +1552,26 @@ class BrowserTest {
             app.clickSend();
 
             then(app.readClipboard())
-                    .isEqualTo("http /pets/42")
+                    .isEqualTo("http :8080/pets/42")
                     .doesNotContain("GET")
                     .doesNotContain("localhost");
+        }
+    }
+
+    @ResourceLock("httpie-localhost-default-port") @Nested class GivenAppWithHttpLocalhostDefaultPortUrl {
+        @RegisterExtension static AppFixture app = launch("http-localhost-default-port.yaml");
+
+        @Test void shouldCopyHttpieCommandWithHostnameForLocalhostDefaultPortGET() {
+            app.clickModeButton("httpie");
+            app.expandFirstNode();
+            app.clickTreeNode("pets/{id}/index.html");
+            app.waitForInput("id");
+            app.fillInput("id", "42");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .isEqualTo("http localhost/pets/42")
+                    .doesNotContain("GET");
         }
     }
 
@@ -2075,13 +2124,13 @@ class BrowserTest {
             then(app.isModeToggleFocused()).isTrue();
         }
 
-        @Test void shouldNavigateDownFromModeToggleToViewToggle() {
+        @Test void shouldNotJumpToViewToggleOnArrowDownFromModeToggle() {
             navigateToPetDetail();
             app.focusModeToggle();
 
             app.pressKey("ArrowDown");
 
-            then(app.isViewToggleFocused()).isTrue();
+            then(app.isViewToggleFocused()).isFalse();
         }
 
         @Test void shouldNavigateRightFromAcceptSelectToSchemaToggle() {
@@ -3557,6 +3606,24 @@ class BrowserTest {
             then(app.hasTemplateServerPresetForm(0)).isFalse();
             then(app.templateServerPresetCount(0)).isEqualTo(1);
             then(app.isServerPanelExpanded()).isTrue();
+        }
+
+        @Test void shouldFocusPresetRadioAfterCancelClick() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+
+            app.clickTemplatePresetCancel(0);
+
+            then(app.isPresetRadioFocused(0, 0)).isTrue();
+        }
+
+        @Test void shouldFocusPresetRadioAfterCancelEscape() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+
+            app.pressKey("Escape");
+
+            then(app.isPresetRadioFocused(0, 0)).isTrue();
         }
 
         @Test void shouldCreateFormInputsFromVariableMetadata() {

@@ -328,6 +328,15 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.waitForSelector("#detail .response-headers-toggle");
     }
 
+    boolean isStatusBadgeOnSameLineAsModeToggle() {
+        var modeBox = page.locator("[data-toggle='mode']").boundingBox();
+        var statusBox = page.locator("#detail .response-status").boundingBox();
+        if (modeBox == null || statusBox == null) return false;
+        // same line: the status badge's vertical midpoint is within the mode toggle's vertical span
+        var statusMidY = statusBox.y + statusBox.height / 2;
+        return statusMidY >= modeBox.y && statusMidY <= modeBox.y + modeBox.height;
+    }
+
     boolean hasResponseStatus() {return page.locator("#detail .response-status").count() > 0;}
 
     String statusBadgeText() {return page.locator("#detail .response-status").textContent();}
@@ -877,6 +886,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.locator(saveButtonSelector).click();
     }
 
+    void clickTemplatePresetCancel(int serverIndex) {
+        var formSelector = "#server-selector .template-preset-form[data-server-index='" + serverIndex + "']";
+        var cancelButtonSelector = formSelector + " .template-preset-cancel";
+        page.locator(cancelButtonSelector).click();
+    }
+
     void setTemplatePresetFormValue(int serverIndex, String variableName, String value) {
         var formSelector = "#server-selector .template-preset-form[data-server-index='" + serverIndex + "']";
         var inputSelector = formSelector + " [name='" + variableName + "']";
@@ -1109,6 +1124,8 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     void clearClipboard() {page.evaluate("() => navigator.clipboard.writeText('')");}
 
     String readClipboard() {return (String) page.evaluate("() => navigator.clipboard.readText()");}
+
+
 
     boolean isViewActive(String view) {
         return page.locator("[data-toggle-value='" + view + "'].is-active").count() == 1;

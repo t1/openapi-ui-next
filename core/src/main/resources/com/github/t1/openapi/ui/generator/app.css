@@ -685,8 +685,15 @@ pre.response code.hljs {
 }
 
 /* Detail pane layout */
-.detail-pane .mode-selector-container {
-    margin-top: 0.5rem;
+.mode-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.mode-row .response-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
 }
 
 /* Send/Copy button inside mode toggle */

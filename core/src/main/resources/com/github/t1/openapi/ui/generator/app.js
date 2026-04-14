@@ -44,14 +44,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Apply httpie defaults: use http/https command based on scheme, omit GET method, omit scheme prefix, omit localhost
+            // Apply httpie short form: scheme becomes the command, GET is the default method,
+            // localhost is replaced by :<port> when a non-default port is present
             const urlObj = new URL(params.url);
             const isHttps = urlObj.protocol === 'https:';
             const command = isHttps ? 'https' : 'http';
             const isLocalhost = urlObj.hostname === 'localhost';
-            const hostAndPath = isLocalhost 
-                ? urlObj.pathname + urlObj.search
-                : urlObj.hostname + (urlObj.port ? ':' + urlObj.port : '') + urlObj.pathname + urlObj.search;
+            const pathAndQuery = urlObj.pathname + urlObj.search;
+            let host;
+            if (isLocalhost) {
+                host = urlObj.port ? ':' + urlObj.port : 'localhost';
+            } else {
+                host = urlObj.hostname + (urlObj.port ? ':' + urlObj.port : '');
+            }
+            const hostAndPath = host + pathAndQuery;
             const methodPart = params.method === 'GET' ? '' : params.method + ' ';
             
             let cmd = params.body
@@ -437,11 +443,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     break;
                 }
-            } else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                const viewToggle = document.querySelector('[data-toggle="view"]');
-                if (viewToggle) viewToggle.focus();
             }
+            // ArrowUp/ArrowDown are handled by spatial navigation
         });
         document.addEventListener('keydown', function(e) {
             const mod = /Mac/.test(navigator.platform) ? e.ctrlKey : e.altKey;
@@ -865,7 +868,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const cancelBtn = e.target.closest('.template-preset-cancel');
             if (cancelBtn) {
                 const form = cancelBtn.closest('.template-preset-form');
+                const templateGroup = form.closest('.template-group');
+                const checkedRadio = templateGroup.querySelector('input[name="server"]:checked')
+                    || templateGroup.querySelector('input[name="server"]');
                 form.remove();
+                if (checkedRadio) checkedRadio.focus();
                 return;
             }
             const deleteBtn = e.target.closest('.template-preset-label .delete');
@@ -1220,7 +1227,13 @@ document.addEventListener('DOMContentLoaded', function() {
         var modeSel = document.querySelector('.mode-selector-container');
         var responseArea = detail.querySelector('.response-area');
         if (modeSel && responseArea) {
-            responseArea.parentNode.insertBefore(modeSel, responseArea);
+            var modeRow = document.querySelector('.mode-row');
+            if (!modeRow) {
+                modeRow = document.createElement('div');
+                modeRow.className = 'mode-row';
+            }
+            responseArea.parentNode.insertBefore(modeRow, responseArea);
+            modeRow.appendChild(modeSel);
         }
     }
     // Rescue mode selector back to detail-pane before HTMX replaces content inside detail
@@ -1228,6 +1241,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!e.detail.target || !detail.contains(e.detail.target)) return;
         var modeSel = document.querySelector('.mode-selector-container');
         if (modeSel && detailPane) detailPane.appendChild(modeSel);
+        // Clean up mode-row and any moved response-info
+        var modeRow = document.querySelector('.mode-row');
+        if (modeRow) modeRow.remove();
     });
     document.body.addEventListener('htmx:afterSwap', function(e) {
         moveModeSelector();
@@ -1667,6 +1683,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (body && body.trim() && contentType && contentType.includes('json') && pre) {
                 applyBodyLinks(pre, form, body, String(status));
             }
+            // move response-info into the mode-row
+            var responseInfo = area.querySelector('.response-info');
+            var modeRow = document.querySelector('.mode-row');
+            if (responseInfo && modeRow) {
+                // remove any previous response-info from the mode-row
+                var oldInfo = modeRow.querySelector('.response-info');
+                if (oldInfo) oldInfo.remove();
+                modeRow.appendChild(responseInfo);
+            }
         }
 
         function fetchFragment(url) {
@@ -1990,7 +2015,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!el || !el.closest) return;
         // don't interfere with tree or toggle internal navigation
         if (el.closest('[role="tree"]')) return;
-        if (el.closest('.toggle')) return;
+        // mode toggle: let spatial nav handle ArrowUp/ArrowDown, but leave ArrowLeft/Right to toggle
+        if (el.matches('[data-toggle="mode"]') && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Home' || e.key === 'End')) return;
+        if (el.closest('.toggle') && !el.matches('[data-toggle="mode"]')) return;
         // let the server dropdown handle its own keyboard navigation
         var serverSel = el.closest('#server-selector');
         if (serverSel && serverSel.classList.contains('is-active')) return;
