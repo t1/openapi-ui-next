@@ -3414,6 +3414,8 @@ class BrowserTest {
         }
 
         @Test void shouldToggleDropdownWithCtrl0() {
+            app.focusTree(); // Ensure page has focus before keyboard shortcut
+
             app.pressKey(MOD + "+Digit0");
 
             then(app.isServerPanelExpanded()).isTrue();
