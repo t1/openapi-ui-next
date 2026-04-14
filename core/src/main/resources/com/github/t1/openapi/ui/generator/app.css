@@ -145,6 +145,10 @@ section > .container > .split-layout > .split-second {
     resize: none;
     overflow-y: hidden;
     min-height: 10rem;
+    width: 100%;
+}
+.schema-box .split-first textarea[data-request-body] {
+    flex: 1 0 auto;
 }
 @keyframes bump-vertical {
     0%, 100% { transform: translateY(0); }
@@ -341,6 +345,18 @@ section > .container > .split-layout > .split-second {
 }
 .schema-box.is-collapsed .split-layout {
     grid-template-columns: 1fr !important;
+}
+.schema-box .split-first,
+.schema-box .split-second {
+    display: flex;
+    flex-direction: column;
+}
+.schema-box .split-first > div,
+.schema-box .split-second > div {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 15rem;
 }
 .schema-status-panel {
     padding: 0 0.75rem;

@@ -641,10 +641,11 @@ class OperationFragmentGenerator {
         var resolvedSchema = SchemaResolver.resolve(schema, schemas);
         var hasProperties = resolvedSchema.getProperties() != null && !resolvedSchema.getProperties().isEmpty();
         if (hasProperties) {
+            var textareaWrapper = div().classes("p-3").content(textareaEl);
             var treeContent = div();
             new SchemaRenderer(null).render(treeContent, resolvedSchema);
-            var tree = div().classes("schema-box-tree", "schema-box-content").content(treeContent);
-            return splitPane().ratio(1, 1).first(textareaEl).second(tree);
+            var treeWrapper = div().classes("p-3", "schema-box-tree", "schema-box-content").content(treeContent);
+            return splitPane().ratio(1, 1).first(textareaWrapper).second(treeWrapper);
         }
         return textareaEl;
     }
