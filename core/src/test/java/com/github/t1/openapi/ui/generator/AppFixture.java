@@ -110,6 +110,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void mockRootEndpoint(String path, String contentType, String body) {testServer.mockRootEndpoint(path, contentType, body);}
 
+    void simulateNetworkError(String path) {
+        page.route(url -> url.endsWith(path), route -> route.abort());
+    }
+
     void blockHtmxRequests() {testServer.blockHtmxRequests();}
 
     void unblockHtmxRequests() {testServer.unblockHtmxRequests();}
@@ -949,6 +953,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.locator("#server-selector .custom-url-row .delete").nth(index).click();
     }
 
+    void focusCustomUrlInput(int index) {
+        page.locator("#server-selector .custom-url-input").nth(index).focus();
+    }
+
     void setCustomUrlValue(int index, String url) {
         page.locator("#server-selector .custom-url-input").nth(index).fill(url);
     }
@@ -1106,6 +1114,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     int customHeaderRowCount() {
         return page.locator("#detail .custom-header-row").count();
+    }
+
+    void focusAddCustomHeaderButton() {
+        page.locator("#detail .custom-header-add").focus();
     }
 
     void fillCustomHeader(int index, String name, String value) {
@@ -1374,6 +1386,15 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void clickCustomHeaderTagDelete(int index) {
         page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-remove").click();
+    }
+
+    boolean isCustomHeaderDeleteFocusable(int index) {
+        var tabindex = page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-remove").getAttribute("tabindex");
+        return "0".equals(tabindex);
+    }
+
+    void focusCustomHeaderDelete(int index) {
+        page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-remove").focus();
     }
 
     double customHeaderNameWidth(int index) {

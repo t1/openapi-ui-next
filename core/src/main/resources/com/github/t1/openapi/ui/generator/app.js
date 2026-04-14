@@ -512,7 +512,7 @@ document.addEventListener('DOMContentLoaded', function() {
         row.innerHTML =
             '<label class="label custom-header-label">' +
             '<input type="text" class="custom-header-name"' + nameAttr + nameSize + ' placeholder="Header name"' + (name ? ' value="' + escapedName + '"' : '') + '>' +
-            '<div class="tags has-addons is-inline-flex ml-2"><span class="tag">header</span><span class="tag is-info">custom</span><a class="tag is-delete custom-header-remove"></a></div>' +
+            '<div class="tags has-addons is-inline-flex ml-2"><span class="tag">header</span><span class="tag is-info">custom</span><a class="tag is-delete custom-header-remove" tabindex="0"></a></div>' +
             '</label>' +
             '<div class="control has-icons-right">' +
             '<input type="text" class="input is-small custom-header-value"' + valueAttr + ' placeholder="Value"' + (value ? ' value="' + escapedValue + '"' : '') + '>' +
@@ -705,7 +705,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 return;
             }
-            if (e.key === 'Enter' && e.target.matches('input[type="radio"]')) {
+            if (e.key === 'Enter' && (e.target.matches('input[type="radio"]') || e.target.matches('.custom-url-input'))) {
                 serverSelector.classList.remove('is-active');
                 if (focusBeforeDropdown) focusBeforeDropdown.focus();
                 else serverTrigger.focus();
@@ -1570,7 +1570,7 @@ document.addEventListener('DOMContentLoaded', function() {
             area.innerHTML = html;
             const badge = area.querySelector('.response-status');
             if (isFallback && badge) {
-                badge.textContent = status + ' ' + statusText;
+                badge.textContent = status === 0 ? statusText : status + ' ' + statusText;
                 if (status >= 200 && status < 300) badge.classList.add('is-success');
                 else badge.classList.add('is-error');
             }
@@ -1705,6 +1705,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        if (status === 0) {
+            isFallback = true;
+            return fetchFragment(fallbackUrl).then(function(html) {
+                if (html) populate(html);
+            });
+        }
         return fetchFragment(specificUrl).then(function(html) {
             if (html) return populate(html);
             isFallback = true;
@@ -2138,6 +2144,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 link.click();
             } else if (e.key === 'Enter' && el.classList.contains('schema-toggle')) {
                 el.click();
+            } else if (e.key === 'Enter' && el.tagName === 'BUTTON') {
+                el.click();
+            } else if (el.classList.contains('custom-header-remove')) {
+                el.click();
             } else if (e.key === 'Enter' && el.tagName !== 'SELECT') {
                 const sendBtn = document.querySelector('.mode-send-button');
                 if (sendBtn) sendBtn.click();
@@ -2375,6 +2385,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const formFields = Array.from(allNamedInputs).filter(function(field) {
                 // Exclude parameter inputs (they have data-param-in attribute)
                 if (field.hasAttribute('data-param-in')) return false;
+                // Exclude custom header inputs (handled separately above)
+                if (field.closest('.custom-header-row')) return false;
                 // Include non-checkbox inputs
                 if (field.type !== 'checkbox') return true;
                 // Include only checked checkboxes

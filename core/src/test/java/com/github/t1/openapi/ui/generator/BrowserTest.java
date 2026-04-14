@@ -559,6 +559,34 @@ class BrowserTest {
                 then(app.noBodyMessageText()).isEqualTo("no body");
             }
 
+            @Test void shouldShowNetworkErrorBadgeOnFetchFailure() {
+                app.simulateNetworkError("/pets");
+
+                navigateToListPetsAndSend();
+
+                then(app.statusBadgeText()).isEqualTo("Network error");
+            }
+
+            @Test void shouldShowErrorMessageInBodyOnNetworkFailure() {
+                app.simulateNetworkError("/pets");
+
+                navigateToListPetsAndSend();
+
+                then(app.responseText()).contains("Failed to fetch");
+            }
+
+            @Test void shouldNotAddBodyWhenCustomHeaderPresent() {
+                app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
+                app.focusTree();
+                app.pressKey("Enter");
+                app.waitForDetailContent("List pets");
+                app.clickButton("+ Add custom header");
+                app.clickSend();
+                app.waitForResponse();
+
+                then(app.statusBadgeText()).isEqualTo("200 OK");
+            }
+
             @Test void shouldShowHeadersToggleAfterSend() {
                 app.mockEndpoint("/pets", "application/json", "{\"id\":\"1\"}");
 
@@ -2267,6 +2295,13 @@ class BrowserTest {
             then(app.customHeaderRowCount()).isEqualTo(1);
         }
 
+        @Test void shouldAddCustomHeaderRowOnEnter() {
+            app.focusAddCustomHeaderButton();
+            app.pressKey("Enter");
+
+            then(app.customHeaderRowCount()).isEqualTo(1);
+        }
+
         @Test void shouldShowHeaderBadgeOnCustomHeaderRow() {
             app.clickButton("+ Add custom header");
             then(app.customHeaderHasBadge(0, "custom")).isTrue();
@@ -2277,6 +2312,32 @@ class BrowserTest {
             app.clickButton("+ Add custom header");
             then(app.customHeaderRowCount()).isEqualTo(1);
             app.clickCustomHeaderTagDelete(0);
+            then(app.customHeaderRowCount()).isEqualTo(0);
+        }
+
+        @Test void customHeaderDeleteShouldBeFocusable() {
+            app.clickButton("+ Add custom header");
+
+            then(app.isCustomHeaderDeleteFocusable(0)).isTrue();
+        }
+
+        @Test void shouldRemoveCustomHeaderOnEnter() {
+            app.clickButton("+ Add custom header");
+            then(app.customHeaderRowCount()).isEqualTo(1);
+
+            app.focusCustomHeaderDelete(0);
+            app.pressKey("Enter");
+
+            then(app.customHeaderRowCount()).isEqualTo(0);
+        }
+
+        @Test void shouldRemoveCustomHeaderOnSpace() {
+            app.clickButton("+ Add custom header");
+            then(app.customHeaderRowCount()).isEqualTo(1);
+
+            app.focusCustomHeaderDelete(0);
+            app.pressKey(" ");
+
             then(app.customHeaderRowCount()).isEqualTo(0);
         }
 
@@ -3474,6 +3535,17 @@ class BrowserTest {
             app.selectCustomUrl(0);
 
             then(app.isCustomUrlSelected(0)).isTrue();
+        }
+
+        @Test void shouldCloseDropdownOnEnterInCustomUrlInput() {
+            app.clickServerToggle();
+            app.clickCustomUrlButton();
+            app.setCustomUrlValue(0, "https://custom.example.com");
+            app.focusCustomUrlInput(0);
+
+            app.pressKey("Enter");
+
+            then(app.isServerPanelExpanded()).isFalse();
         }
 
         @Test void shouldUpdateBaseUrlWhenCustomUrlSelected() {
