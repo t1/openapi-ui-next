@@ -3414,11 +3414,11 @@ class BrowserTest {
         }
 
         @Test void shouldToggleDropdownWithCtrl0() {
-            app.pressKey("Control+Digit0");
+            app.pressKey(MOD + "+Digit0");
 
             then(app.isServerPanelExpanded()).isTrue();
 
-            app.pressKey("Control+Digit0");
+            app.pressKey(MOD + "+Digit0");
 
             then(app.isServerPanelExpanded()).isFalse();
         }
