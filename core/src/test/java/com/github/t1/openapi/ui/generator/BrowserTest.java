@@ -1832,6 +1832,16 @@ class BrowserTest {
             app.screenshot("request-body-schema");
         }
 
+        @Test void shouldShowSchemaTreeWhenToggled() {
+            app.clickTreeNode("pets/index.html");
+            app.waitForDetailContent("Add a pet");
+
+            app.toggleSchema("body");
+
+            then(app.isSchemaExpanded("body")).as("schema should be expanded").isTrue();
+            then(app.hasSchemaTree("body")).as("schema tree should be visible").isTrue();
+        }
+
         @Test void shouldAutoGrowTextareaWhenContentIsAdded() {
             app.clickTreeNode("pets/index.html");
             app.waitForDetailContent("Add a pet");

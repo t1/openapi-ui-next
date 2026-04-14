@@ -638,10 +638,11 @@ class OperationFragmentGenerator {
         }
         if (TRUE == required) textareaEl.attr("required", "");
         textareaEl.content(skeleton);
-        var hasProperties = schema.getProperties() != null && !schema.getProperties().isEmpty();
+        var resolvedSchema = SchemaResolver.resolve(schema, schemas);
+        var hasProperties = resolvedSchema.getProperties() != null && !resolvedSchema.getProperties().isEmpty();
         if (hasProperties) {
             var treeContent = div();
-            new SchemaRenderer(null).render(treeContent, schema);
+            new SchemaRenderer(null).render(treeContent, resolvedSchema);
             var tree = div().classes("schema-box-tree", "schema-box-content").content(treeContent);
             return splitPane().ratio(1, 1).first(textareaEl).second(tree);
         }

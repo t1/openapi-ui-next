@@ -14,14 +14,18 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                age:
-                  type: integer
-                active:
-                  type: boolean
+              $ref: '#/components/schemas/Pet'
       responses:
         '201':
           description: Pet created
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          type: integer
+        active:
+          type: boolean
