@@ -115,8 +115,11 @@ supported for nested arrays (e.g., `$response.body#/visits[*]/treatments[*]/id`)
 
 **Request Headers**
 
-- Global headers panel: set headers that apply to all requests; pin them when you want
-- Per-operation custom headers: add arbitrary, pinnable headers per endpoint
+- Custom headers with globe toggle: add headers per operation or make them global with one click
+  - Operation-specific by default (gray globe icon)
+  - Click globe to make header global across all operations (blue globe icon)
+  - Global headers automatically sync values across operations
+  - Pin headers to persist across page reloads
 
 **Try It Out**
 
@@ -322,7 +325,8 @@ Initial MVP release
   RestTemplate ([#50](https://github.com/t1/openapi-ui-next/issues/50), [#51](https://github.com/t1/openapi-ui-next/issues/51), [#52](https://github.com/t1/openapi-ui-next/issues/52), [#53](https://github.com/t1/openapi-ui-next/issues/53), [#54](https://github.com/t1/openapi-ui-next/issues/54), [#55](https://github.com/t1/openapi-ui-next/issues/55))
 - **Form-encoded request bodies**: individual input fields for
   `application/x-www-form-urlencoded` ([#7](https://github.com/t1/openapi-ui-next/issues/7))
-- Custom header styling: label-above layout with badge and auto-resizing name input
+- **Globe toggle for custom headers**: in-place controls to make headers operation-specific or global
+  across all operations with visual state indicators (gray/blue badge)
 
 ## Contributing
 

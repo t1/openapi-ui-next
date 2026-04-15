@@ -721,23 +721,6 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("Add custom header");
     }
 
-    @Test void shouldRenderGlobalHeadersPanel() throws Exception {
-        generate("/one-get.yaml");
-
-        var indexHtml = Files.readString(outputDir.resolve("index.html"));
-        then(indexHtml).contains("global-headers");
-        then(indexHtml).contains("Global Headers");
-    }
-
-    @Test void shouldRenderPanelHeadingsAsDivWithNestedToggleButton() throws Exception {
-        generate("/one-get.yaml");
-
-        var indexHtml = Files.readString(outputDir.resolve("index.html"));
-        then(indexHtml).contains("class=\"panel-heading\"");
-        then(indexHtml).contains("class=\"global-headers-toggle\"");
-        then(indexHtml).doesNotContain("class=\"panel-heading global-headers-toggle\"");
-    }
-
     @Test void shouldNotIncludeDataMethodOnTagTreeOperations() throws Exception {
         generate("/tagged-flat.yaml");
 

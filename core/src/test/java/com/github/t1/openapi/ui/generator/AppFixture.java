@@ -1390,6 +1390,23 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return ((Number) result).doubleValue();
     }
 
+    void clickCustomHeaderGlobeToggle(int index) {
+        page.locator("#detail .custom-header-row").nth(index).locator(".globe-toggle").click();
+    }
+
+    boolean isCustomHeaderGlobeActive(int index) {
+        return page.locator("#detail .custom-header-row").nth(index).locator(".globe-toggle.is-info").count() > 0;
+    }
+
+    boolean customHeaderGlobeUsesFontAwesomeIcon(int index) {
+        var globe = page.locator("#detail .custom-header-row").nth(index).locator(".globe-toggle");
+        return globe.locator(".icon i.fa-globe").count() > 0;
+    }
+
+    void fillCustomHeaderValue(int index, String value) {
+        page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-value").fill(value);
+    }
+
     boolean isErrorBannerVisible() {
         return page.locator("#error-banner").isVisible();
     }

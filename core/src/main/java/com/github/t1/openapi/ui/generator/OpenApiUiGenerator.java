@@ -106,7 +106,6 @@ public class OpenApiUiGenerator {
                 .persistAs("openapi-ui-tree-width");
         var body = section().content(container().content(
                 detailHeader,
-                globalHeaders(),
                 splitLayout
         ), errorBanner());
         return htmlDocument(pageTitle, body, operationIdMap);
@@ -293,17 +292,6 @@ public class OpenApiUiGenerator {
         }
         json.append("]");
         return json.toString();
-    }
-
-    private static Renderable globalHeaders() {
-        var toggleButton = element("button").attr("type", "button").classes("global-headers-toggle")
-                .content(span("Global Headers"), span("0").classes("global-headers-count"));
-        var panelHeading = div().classes("panel-heading").content(toggleButton);
-        var addButton = div().classes("panel-block", "global-headers-add")
-                .content(element("button").attr("type", "button").classes("custom-header-add")
-                        .content("+ Add global header"));
-        return panel().id("global-headers").classes("flat-panel", "is-collapsed")
-                .content(panelHeading, addButton);
     }
 
     private static Element errorBanner() {

@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const detail = document.getElementById('detail');
     const fieldCache = new Map();
+    const customHeaderCache = new Map();
     const responseCache = new Map();
     const schemaToggleCache = new Map();
 
@@ -499,24 +500,52 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function escapeHtmlAttribute(str) {
+        return str ? str.replace(/"/g, '&quot;') : '';
+    }
+
+    function buildHeaderTags() {
+        return '<div class="tags has-addons is-inline-flex ml-2">' +
+            '<span class="tag">header</span>' +
+            '<span class="tag is-info">custom</span>' +
+            '<span class="tag globe-toggle" data-global="false" tabindex="0" title="Make global">' +
+            '<span class="icon"><i class="fa-solid fa-globe"></i></span>' +
+            '</span>' +
+            '<a class="tag is-delete custom-header-remove" tabindex="0"></a>' +
+            '</div>';
+    }
+
+    function buildPersistToggle(persisted) {
+        return '<span class="icon is-small is-right persist-toggle" ' +
+            'aria-pressed="' + (persisted ? 'true' : 'false') + '" ' +
+            'title="Pin value (' + escapeHtmlAttribute(shortcutMod) + '+P)">' +
+            '<i class="fa-solid fa-thumbtack"></i>' +
+            '</span>';
+    }
+
     function createHeaderRow(name, value, persisted) {
         const row = document.createElement('div');
         row.className = 'field custom-header-row';
         if (persisted && name) row.setAttribute('data-prev-name', name);
-        const escapedName = name ? name.replace(/"/g, '&quot;') : '';
-        const escapedValue = value ? value.replace(/"/g, '&quot;') : '';
-        const nameAttr = name ? '' : ' name="' + randomName() + '"';
-        const valueAttr = name ? '' : ' name="' + randomName() + '"';
-        var placeholder = 'Header name';
-        var nameSize = ' size="' + Math.max(name ? name.length : placeholder.length, 1) + '"';
+        const escapedName = escapeHtmlAttribute(name);
+        const escapedValue = escapeHtmlAttribute(value);
+        const needsRandomName = !name;
+        const nameAttr = needsRandomName ? ' name="' + randomName() + '"' : '';
+        const valueAttr = needsRandomName ? ' name="' + randomName() + '"' : '';
+        const placeholderText = 'Header name';
+        const nameSize = ' size="' + Math.max(name ? name.length : placeholderText.length, 1) + '"';
         row.innerHTML =
             '<label class="label custom-header-label">' +
-            '<input type="text" class="custom-header-name"' + nameAttr + nameSize + ' placeholder="Header name"' + (name ? ' value="' + escapedName + '"' : '') + '>' +
-            '<div class="tags has-addons is-inline-flex ml-2"><span class="tag">header</span><span class="tag is-info">custom</span><a class="tag is-delete custom-header-remove" tabindex="0"></a></div>' +
+            '<input type="text" class="custom-header-name"' + nameAttr + nameSize + 
+            ' placeholder="' + placeholderText + '"' + 
+            (name ? ' value="' + escapedName + '"' : '') + '>' +
+            buildHeaderTags() +
             '</label>' +
             '<div class="control has-icons-right">' +
-            '<input type="text" class="input is-small custom-header-value"' + valueAttr + ' placeholder="Value"' + (value ? ' value="' + escapedValue + '"' : '') + '>' +
-            '<span class="icon is-small is-right persist-toggle" aria-pressed="' + (persisted ? 'true' : 'false') + '" title="Pin value (' + shortcutMod + '+P)"><i class="fa-solid fa-thumbtack"></i></span>' +
+            '<input type="text" class="input is-small custom-header-value"' + valueAttr + 
+            ' placeholder="Value"' + 
+            (value ? ' value="' + escapedValue + '"' : '') + '>' +
+            buildPersistToggle(persisted) +
             '</div>';
         return row;
     }
@@ -524,7 +553,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function createCustomUrlRow(url) {
         const row = document.createElement('label');
         row.className = 'custom-url-row server-radio-label';
-        const escapedUrl = url ? url.replace(/"/g, '&quot;') : '';
+        const escapedUrl = escapeHtmlAttribute(url);
         const radioId = 'custom-url-' + randomName();
         row.setAttribute('for', radioId);
         row.innerHTML =
@@ -1074,13 +1103,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function applyGlobalHeaderPlaceholders() {
         const globals = {};
-        if (globalHeadersPanel) {
-            globalHeadersPanel.querySelectorAll('.custom-header-row').forEach(function(row) {
+        // Collect global headers from custom headers with globe toggle
+        document.querySelectorAll('#detail .custom-header-row').forEach(function(row) {
+            const globeToggle = row.querySelector('.globe-toggle');
+            if (globeToggle && globeToggle.getAttribute('data-global') === 'true') {
                 const name = row.querySelector('.custom-header-name').value.trim();
                 const value = row.querySelector('.custom-header-value').value;
                 if (name) globals[name.toLowerCase()] = value;
-            });
-        }
+            }
+        });
         document.querySelectorAll('[data-param-in="header"]').forEach(function(el) {
             const name = el.getAttribute('name');
             if (!name) return;
@@ -1239,6 +1270,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Rescue mode selector back to detail-pane before HTMX replaces content inside detail
     document.body.addEventListener('htmx:beforeSwap', function(e) {
         if (!e.detail.target || !detail.contains(e.detail.target)) return;
+        // Save non-global custom headers to in-memory cache before DOM is destroyed
+        var form = detail.querySelector('form[data-path]');
+        if (form) {
+            var key = opKey(form);
+            var headers = [];
+            form.querySelectorAll('.custom-header-row').forEach(function(row) {
+                var globe = row.querySelector('.globe-toggle');
+                if (globe && globe.getAttribute('data-global') === 'true') return; // skip global
+                var name = row.querySelector('.custom-header-name').value;
+                var value = row.querySelector('.custom-header-value').value;
+                if (name || value) headers.push({name: name, value: value});
+            });
+            if (headers.length > 0) customHeaderCache.set(key, headers);
+            else customHeaderCache.delete(key);
+        }
         var modeSel = document.querySelector('.mode-selector-container');
         if (modeSel && detailPane) detailPane.appendChild(modeSel);
         // Clean up mode-row and any moved response-info
@@ -1277,22 +1323,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         // Restore persisted per-op custom headers
-        let swapForm = document.querySelector('#detail form[data-path]');
-        if (swapForm) {
-            const prefix = customHeaderStorageKey(swapForm, '');
-            const container = swapForm.querySelector('.custom-headers');
-            if (container) {
-                const addBtn = container.querySelector('.custom-header-add');
-                for (let si = 0; si < localStorage.length; si++) {
-                    const sKey = localStorage.key(si);
-                    if (!sKey.startsWith(prefix)) continue;
-                    const chName = sKey.substring(prefix.length);
-                    const chValue = localStorage.getItem(sKey);
-                    const chRow = createHeaderRow(chName, chValue, true);
-                    container.insertBefore(chRow, addBtn);
-                }
-            }
-        }
+        restoreCustomHeaders();
         applyGlobalHeaderPlaceholders();
         document.querySelectorAll('select[data-example-select]').forEach(function(sel) {
             sel.addEventListener('change', function() {
@@ -1474,8 +1505,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 customInp.size = Math.max(customInp.value.length, customInp.placeholder.length, 1);
             }
             const row = customInp.closest('.custom-header-row');
-            const form = row.closest('form[data-path]');
-            syncPersistedHeader(row, function(n) { return customHeaderStorageKey(form, n); });
+            const globeToggle = row.querySelector('.globe-toggle');
+            const isGlobal = globeToggle && globeToggle.getAttribute('data-global') === 'true';
+            
+            if (isGlobal && customInp.classList.contains('custom-header-name')) {
+                // Renaming a global header demotes it to operation-specific
+                const oldName = row.getAttribute('data-prev-name');
+                const newName = customInp.value.trim();
+                if (oldName && oldName !== newName) {
+                    // Demote to operation-specific
+                    globeToggle.setAttribute('data-global', 'false');
+                    globeToggle.classList.remove('is-info');
+                    globeToggle.setAttribute('title', 'Make global');
+                    localStorage.removeItem('openapi-ui-global-header:' + oldName);
+                    row.removeAttribute('data-prev-name');
+                }
+            } else if (isGlobal && customInp.classList.contains('custom-header-value')) {
+                // Update global header value in localStorage
+                const name = row.querySelector('.custom-header-name').value.trim();
+                const value = customInp.value;
+                if (name) {
+                    localStorage.setItem('openapi-ui-global-header:' + name, value);
+                    row.setAttribute('data-prev-name', name);
+                }
+                applyGlobalHeaderPlaceholders();
+            } else {
+                // Handle operation-specific persistence
+                const form = row.closest('form[data-path]');
+                syncPersistedHeader(row, function(n) { return customHeaderStorageKey(form, n); });
+            }
         }
     });
 
@@ -1495,16 +1553,55 @@ document.addEventListener('DOMContentLoaded', function() {
             row.querySelector('.custom-header-name').focus();
             return;
         }
+        const globeToggle = e.target.closest('.globe-toggle');
+        if (globeToggle) {
+            const row = globeToggle.closest('.custom-header-row');
+            const name = row.querySelector('.custom-header-name').value.trim();
+            const value = row.querySelector('.custom-header-value').value;
+            const isGlobal = globeToggle.getAttribute('data-global') === 'true';
+            
+            if (isGlobal) {
+                // Make operation-specific
+                globeToggle.setAttribute('data-global', 'false');
+                globeToggle.classList.remove('is-info');
+                globeToggle.setAttribute('title', 'Make global');
+                if (name) {
+                    localStorage.removeItem('openapi-ui-global-header:' + name);
+                    row.removeAttribute('data-prev-name');
+                }
+            } else {
+                // Make global
+                globeToggle.setAttribute('data-global', 'true');
+                globeToggle.classList.add('is-info');
+                globeToggle.setAttribute('title', 'Make operation-specific');
+                if (name) {
+                    localStorage.setItem('openapi-ui-global-header:' + name, value);
+                    row.setAttribute('data-prev-name', name);
+                }
+            }
+            applyGlobalHeaderPlaceholders();
+            return;
+        }
         const removeBtn = e.target.closest('.custom-header-remove');
         if (removeBtn) {
             const row = removeBtn.closest('.custom-header-row');
-            const persistBtn = row.querySelector('.persist-toggle');
-            if (persistBtn && persistBtn.getAttribute('aria-pressed') === 'true') {
-                const form = row.closest('form[data-path]');
-                const name = row.querySelector('.custom-header-name').value.trim();
-                if (form && name) localStorage.removeItem(customHeaderStorageKey(form, name));
+            const name = row.querySelector('.custom-header-name').value.trim();
+            const globeToggle = row.querySelector('.globe-toggle');
+            const isGlobal = globeToggle && globeToggle.getAttribute('data-global') === 'true';
+            
+            if (isGlobal && name) {
+                // Remove global header from storage
+                localStorage.removeItem('openapi-ui-global-header:' + name);
+            } else {
+                // Remove operation-specific persisted header
+                const persistBtn = row.querySelector('.persist-toggle');
+                if (persistBtn && persistBtn.getAttribute('aria-pressed') === 'true') {
+                    const form = row.closest('form[data-path]');
+                    if (form && name) localStorage.removeItem(customHeaderStorageKey(form, name));
+                }
             }
             row.remove();
+            applyGlobalHeaderPlaceholders();
             return;
         }
         const toggle = e.target.closest('.schema-toggle');
@@ -2709,6 +2806,57 @@ document.addEventListener('DOMContentLoaded', function() {
 
     initFilterIcon();
 
+    function restoreCustomHeaders() {
+        const swapForm = document.querySelector('#detail form[data-path]');
+        if (!swapForm) return;
+        const prefix = customHeaderStorageKey(swapForm, '');
+        const container = swapForm.querySelector('.custom-headers');
+        if (!container) return;
+        const addBtn = container.querySelector('.custom-header-add');
+        if (!addBtn) return;
+        
+        // Clear any existing header rows to avoid duplicates
+        container.querySelectorAll('.custom-header-row').forEach(function(row) {
+            row.remove();
+        });
+        
+        // Restore global headers first
+        for (let gi = 0; gi < localStorage.length; gi++) {
+            const gKey = localStorage.key(gi);
+            if (!gKey.startsWith('openapi-ui-global-header:')) continue;
+            const ghName = gKey.substring('openapi-ui-global-header:'.length);
+            const ghValue = localStorage.getItem(gKey);
+            const ghRow = createHeaderRow(ghName, ghValue, false);
+            const globeToggle = ghRow.querySelector('.globe-toggle');
+            globeToggle.setAttribute('data-global', 'true');
+            globeToggle.classList.add('is-info');
+            globeToggle.setAttribute('title', 'Make operation-specific');
+            ghRow.setAttribute('data-prev-name', ghName);
+            container.insertBefore(ghRow, addBtn);
+        }
+        // Restore operation-specific headers from localStorage (pinned)
+        var restoredNames = new Set();
+        for (let si = 0; si < localStorage.length; si++) {
+            const sKey = localStorage.key(si);
+            if (!sKey.startsWith(prefix)) continue;
+            const chName = sKey.substring(prefix.length);
+            const chValue = localStorage.getItem(sKey);
+            const chRow = createHeaderRow(chName, chValue, true);
+            container.insertBefore(chRow, addBtn);
+            restoredNames.add(chName);
+        }
+        // Restore operation-specific headers from session cache (non-pinned)
+        var key = opKey(swapForm);
+        var cached = customHeaderCache.get(key);
+        if (cached) {
+            cached.forEach(function(h) {
+                if (restoredNames.has(h.name)) return; // already restored from localStorage
+                var chRow = createHeaderRow(h.name, h.value, false);
+                container.insertBefore(chRow, addBtn);
+            });
+        }
+    }
+
     document.body.addEventListener('htmx:sendError', function(e) {
         const url = htmxErrorUrl(e);
         if (!url) return;
@@ -2719,4 +2867,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!url) return;
         retryHtmx(url, e.detail.target || document.getElementById('detail'));
     });
+
+    // Restore global and operation-specific headers on initial page load if content exists
+    if (document.querySelector('#detail form[data-path]')) {
+        restoreCustomHeaders();
+        applyGlobalHeaderPlaceholders();
+    }
 });
