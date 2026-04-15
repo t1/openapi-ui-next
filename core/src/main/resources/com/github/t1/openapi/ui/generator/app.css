@@ -58,7 +58,7 @@ section > .container > .split-layout > .split-first > .box {
 .tabs a[data-method="HEAD"],
 .tabs a[data-method="OPTIONS"],
 .tabs a[data-method="TRACE"] { color: var(--bulma-info); }
-.tabs a:focus {
+.tabs[data-tab-bar]:focus {
     outline: none;
     box-shadow: inset 0 0 0 2px var(--bulma-link);
 }
@@ -328,7 +328,7 @@ section > .container > .split-layout > .split-second {
 .schema-status-tab[data-status^="3"] { color: var(--bulma-link); }
 .schema-status-tab[data-status^="4"] { color: var(--bulma-warning); }
 .schema-status-tab[data-status^="5"] { color: var(--bulma-danger); }
-.schema-status-tab:focus {
+.schema-status-tabs:focus {
     outline: 2px solid var(--bulma-focus-shadow-color, hsl(217, 71%, 53%));
     outline-offset: -2px;
     border-radius: 2px;

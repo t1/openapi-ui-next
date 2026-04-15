@@ -428,24 +428,10 @@ document.addEventListener('DOMContentLoaded', function() {
         modeContainer.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
+                e.stopPropagation();
                 if (modeSendButton) modeSendButton.click();
-            } else if (e.key === 'Tab' && e.shiftKey) {
-                // Shift+Tab: if previous focusable is a status tab, jump to the active one
-                var allFocusable = Array.from(document.querySelectorAll(
-                    'input, select, textarea, button, a[tabindex="0"], [tabindex="0"]'
-                )).filter(function(f) { return f.offsetParent !== null && !f.disabled; });
-                var idx = allFocusable.indexOf(modeContainer);
-                for (var pi = idx - 1; pi >= 0; pi--) {
-                    var prev = allFocusable[pi];
-                    if (prev.closest && prev.closest('.toggle')) continue;
-                    if (prev.classList.contains('schema-status-tab')) {
-                        var activeTab = prev.closest('.schema-status-tabs').querySelector('.schema-status-tab.is-active');
-                        if (activeTab) { e.preventDefault(); activeTab.focus(); return; }
-                    }
-                    break;
-                }
             }
-            // ArrowUp/ArrowDown are handled by spatial navigation
+            // ArrowUp/ArrowDown: let bubble to spatial navigation
         });
         document.addEventListener('keydown', function(e) {
             const mod = /Mac/.test(navigator.platform) ? e.ctrlKey : e.altKey;
@@ -732,6 +718,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (focusBeforeDropdown) focusBeforeDropdown.focus();
                 else serverTrigger.focus();
                 e.preventDefault();
+                e.stopPropagation();
                 return;
             }
             if (e.key === 'Enter' && (e.target.matches('input[type="radio"]') || e.target.matches('.custom-url-input'))) {
@@ -739,14 +726,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (focusBeforeDropdown) focusBeforeDropdown.focus();
                 else serverTrigger.focus();
                 e.preventDefault();
+                e.stopPropagation();
                 return;
             }
             if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                var direction = e.key === 'ArrowDown' ? 'down' : 'up';
-                var target = findSpatialTarget(e.target, direction);
-                if (target) target.focus();
+                // Navigate within dropdown only — don't use findSpatialTarget (it's not scoped)
+                var focusable = Array.from(serverSelector.querySelectorAll(
+                    '.dropdown-content input, .dropdown-content button'
+                )).filter(function(f) { return f.offsetParent !== null && !f.disabled; });
+                var idx = focusable.indexOf(e.target);
+                var next = e.key === 'ArrowDown' ? idx + 1 : idx - 1;
+                if (next >= 0 && next < focusable.length) focusable[next].focus();
                 else bump(e.target, 'v');
                 e.preventDefault();
+                e.stopPropagation();
             }
         });
         // Ctrl+0 (Mac) / Alt+0 (other) to toggle server dropdown
@@ -1140,21 +1133,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         viewToggle.addEventListener('keydown', function(e) {
-            if (e.key === 'ArrowUp') {
+            if (e.key === 'Tab') {
                 e.preventDefault();
-                const modeToggle = document.querySelector('[data-toggle="mode"]');
-                if (modeToggle) modeToggle.focus();
-            } else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                const filterIcon = document.querySelector('.filter-icon');
-                if (filterIcon) {
-                    filterIcon.focus();
-                } else {
-                    const tree = document.querySelector('[role="tree"]');
-                    if (tree) tree.focus();
-                }
-            } else if (e.key === 'Tab') {
-                e.preventDefault();
+                e.stopPropagation();
                 if (e.shiftKey) {
                     const modeToggle = document.querySelector('[data-toggle="mode"]');
                     if (modeToggle) modeToggle.focus();
@@ -1168,6 +1149,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             }
+            // ArrowUp/ArrowDown: let bubble to spatial nav
         });
     }
 
@@ -1645,7 +1627,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const tabs = tab.closest('.schema-status-tabs');
         tabs.querySelectorAll('.schema-status-tab').forEach(function(t) { t.classList.remove('is-active'); });
         tab.classList.add('is-active');
-        tab.focus();
         const box = tab.closest('.schema-box');
         box.querySelectorAll('.schema-status-panel').forEach(function(p) { p.style.display = 'none'; });
         const panel = box.querySelector('.schema-status-panel[data-status="' + tab.textContent + '"]');
@@ -2049,67 +2030,63 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    /**
+     * Finds the nearest focusable element in the given direction from {@code el}'s
+     * screen position, using corridor-based primary-axis distance with euclidean
+     * fallback.
+     *
+     * IMPORTANT: This function must remain component-agnostic. No component-specific
+     * selectors, exceptions, or rect overrides. Components that need to act as a
+     * single spatial unit must be a single focusable element (tabindex="0" on the
+     * container, no tabindex on children). Components handle their own internal keys
+     * with stopPropagation; boundary navigation bubbles to the global handler which
+     * calls this function.
+     */
     function findSpatialTarget(el, direction) {
         const rect = el.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
-        var openServerDropdown = el.closest && el.closest('#server-selector.is-active');
-        var candidateSelector = openServerDropdown
-            ? '#server-selector .dropdown-content input, #server-selector .dropdown-content button'
-            : '#method-content input, #method-content select, #method-content textarea, #method-content button, #method-content [tabindex="0"],'
-              + ' .tabs a[tabindex="0"],'
-              + ' [data-toggle="mode"],'
-              + ' [role="tree"]';
+        const candidateSelector =
+            'input:not(:disabled), select:not(:disabled), textarea:not(:disabled),'
+            + ' button:not(:disabled), a[href], [tabindex="0"]';
         const candidates = Array.from(document.querySelectorAll(candidateSelector)).filter(function(c) {
             if (c === el) return false;
-            if (c.disabled) return false;
-            if (!c.offsetParent && c.getAttribute('role') !== 'tree') return false;
-            if (c.closest && c.closest('.toggle') && c.getAttribute('data-toggle') !== 'mode') return false;
-            // when navigating from outside tabs, only the active tab is a candidate
-            const elIsTab = el.closest && el.closest('.tabs');
-            if (!elIsTab && c.closest && c.closest('.tabs') && !c.closest('li').classList.contains('is-active')) return false;
-            const elIsStatusTab = el.classList.contains('schema-status-tab');
-            if (!elIsStatusTab && c.classList.contains('schema-status-tab') && !c.classList.contains('is-active')) return false;
+            if (!c.offsetParent) return false;
             return true;
         });
 
         let best = null;
         let bestDist = Infinity;
         let bestCorridor = false;
-        const elIsTab = el.closest && el.closest('.tabs');
-        const elIsStatusTab = el.classList.contains('schema-status-tab');
 
         candidates.forEach(function(c) {
-            let candidateRect = c.getBoundingClientRect();
-            // for tab links, use the tab bar's rect so the whole bar acts as one spatial unit
-            if (!elIsTab && c.closest && c.closest('.tabs')) candidateRect = c.closest('.tabs').getBoundingClientRect();
-            if (!elIsStatusTab && c.classList.contains('schema-status-tab')) candidateRect = c.closest('.schema-status-tabs').getBoundingClientRect();
+            const candidateRect = c.getBoundingClientRect();
             const candidateCenterX = candidateRect.left + candidateRect.width / 2;
             const candidateCenterY = candidateRect.top + candidateRect.height / 2;
 
-            // filter by direction
             if (direction === 'down' && candidateCenterY <= centerY) return;
             if (direction === 'up' && candidateCenterY >= centerY) return;
             if (direction === 'right' && candidateCenterX <= centerX) return;
             if (direction === 'left' && candidateCenterX >= centerX) return;
 
-            // check corridor overlap on cross-axis
             let corridor;
             if (direction === 'down' || direction === 'up') {
-                corridor = rect.right > candidateRect.left && candidateRect.right > rect.left; // horizontal overlap
+                corridor = rect.right > candidateRect.left && candidateRect.right > rect.left;
             } else {
-                corridor = rect.bottom > candidateRect.top && candidateRect.bottom > rect.top; // vertical overlap
+                corridor = rect.bottom > candidateRect.top && candidateRect.bottom > rect.top;
             }
 
-            // distance: primary axis for corridor, euclidean for fallback
             let dist;
             if (corridor) {
-                dist = (direction === 'down' || direction === 'up') ? Math.abs(candidateCenterY - centerY) : Math.abs(candidateCenterX - centerX);
+                dist = (direction === 'down' || direction === 'up')
+                    ? Math.abs(candidateCenterY - centerY)
+                    : Math.abs(candidateCenterX - centerX);
             } else {
-                dist = Math.sqrt((candidateCenterX - centerX) * (candidateCenterX - centerX) + (candidateCenterY - centerY) * (candidateCenterY - centerY));
+                dist = Math.sqrt(
+                    (candidateCenterX - centerX) * (candidateCenterX - centerX)
+                    + (candidateCenterY - centerY) * (candidateCenterY - centerY));
             }
 
-            // corridor candidates beat non-corridor
             if (corridor && !bestCorridor) {
                 best = c;
                 bestDist = dist;
@@ -2123,45 +2100,22 @@ document.addEventListener('DOMContentLoaded', function() {
         return best;
     }
 
-    // Spatial arrow-key navigation for detail pane and tabs
+    /**
+     * Global spatial navigation handler (bubble phase).
+     *
+     * Components handle their own internal keys (ArrowLeft/Right for toggles and
+     * tab bars, ArrowUp/Down within the tree, etc.) and call stopPropagation.
+     * This handler only fires for keys that no component claimed — typically
+     * arrow keys at component boundaries, or arrow keys on plain form fields.
+     *
+     * Also handles Enter/Space activation and Tab routing (not spatial nav, but co-located).
+     */
     document.addEventListener('keydown', function(e) {
         const el = document.activeElement;
         if (!el || !el.closest) return;
-        // don't interfere with tree or toggle internal navigation
-        if (el.closest('[role="tree"]')) return;
-        // mode toggle: let spatial nav handle ArrowUp/ArrowDown, but leave ArrowLeft/Right to toggle
-        if (el.matches('[data-toggle="mode"]') && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Home' || e.key === 'End')) return;
-        if (el.closest('.toggle') && !el.matches('[data-toggle="mode"]')) return;
-        // let the server dropdown handle its own keyboard navigation
-        var serverSel = el.closest('#server-selector');
-        if (serverSel && serverSel.classList.contains('is-active')) return;
 
-        // Tab/Shift+Tab on status code tabs: move to next/prev non-status-tab element
-        if (e.key === 'Tab' && el.classList.contains('schema-status-tab')) {
-            e.preventDefault();
-            // Find all focusable elements
-            var allFocusable = Array.from(document.querySelectorAll(
-                'input, select, textarea, button, a[tabindex="0"], [tabindex="0"]'
-            )).filter(function(f) {
-                return f.offsetParent !== null && !f.disabled;
-            });
-            var currentIndex = allFocusable.indexOf(el);
-            if (currentIndex >= 0) {
-                // Find next/prev element that's not a status tab (also skip toggle container)
-                var delta = e.shiftKey ? -1 : 1;
-                for (var i = currentIndex + delta; i >= 0 && i < allFocusable.length; i += delta) {
-                    var candidate = allFocusable[i];
-                    if (candidate.classList.contains('schema-status-tab')) continue;
-                    if (candidate.closest && candidate.closest('.toggle') && candidate.getAttribute('data-toggle') !== 'mode') continue;
-                    candidate.focus();
-                    return;
-                }
-            }
-            return;
-        }
-
-        // Tab/Shift+Tab on a tab: jump into content or back to tree
-        if (e.key === 'Tab' && el.closest('.tabs')) {
+        // Tab/Shift+Tab on a tab bar: jump into content or back to tree
+        if (e.key === 'Tab' && el.closest('[data-tab-bar]')) {
             e.preventDefault();
             if (e.shiftKey) {
                 var tree = document.querySelector('[role="tree"]');
@@ -2173,43 +2127,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Shift+Tab from FIRST content element: go to the active tab, not the last one
+        // Shift+Tab from FIRST content element: go to the tab bar
         if (e.key === 'Tab' && e.shiftKey && (el.closest('#method-content') || el.closest('#detail'))) {
-            // Check if we're at the first element by seeing if going down from tabs reaches us
-            var activeTabLink = document.querySelector('.tabs .is-active a');
-            if (activeTabLink) {
-                var firstContentElement = findSpatialTarget(activeTabLink, 'down');
+            var tabBar = document.querySelector('[data-tab-bar]');
+            if (tabBar) {
+                var firstContentElement = findSpatialTarget(tabBar, 'down');
                 if (firstContentElement === el) {
-                    // We're at the first content element - jump back to tab
                     e.preventDefault();
-                    activeTabLink.focus();
+                    tabBar.focus();
                     return;
-                }
-            }
-        }
-
-        // Shift+Tab into status tabs: focus the active status tab, not the last one in DOM order
-        if (e.key === 'Tab' && e.shiftKey && (el.closest('#method-content') || el.closest('#detail') || el.classList.contains('mode-send-button'))) {
-            var allFocusable = Array.from(document.querySelectorAll(
-                'input, select, textarea, button, a[tabindex="0"], [tabindex="0"]'
-            )).filter(function(f) {
-                return f.offsetParent !== null && !f.disabled;
-            });
-            var currentIndex = allFocusable.indexOf(el);
-            if (currentIndex > 0) {
-                // Scan backward to find the previous content element (skip toggle internals)
-                for (var pi = currentIndex - 1; pi >= 0; pi--) {
-                    var prevElement = allFocusable[pi];
-                    if (prevElement.closest && prevElement.closest('.toggle')) continue;
-                    if (prevElement.classList.contains('schema-status-tab')) {
-                        var activeStatusTab = prevElement.closest('.schema-status-tabs').querySelector('.schema-status-tab.is-active');
-                        if (activeStatusTab) {
-                            e.preventDefault();
-                            activeStatusTab.focus();
-                            return;
-                        }
-                    }
-                    break;
                 }
             }
         }
@@ -2244,7 +2170,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 bump(el, bumpDir);
             }
             e.preventDefault();
-            e.stopPropagation();
         } else if (e.key === 'Enter' || e.key === ' ') {
             var link = (el.tagName === 'A' && el.hasAttribute('href')) ? el
                 : el.querySelector && el.querySelector('a[href]');
@@ -2263,35 +2188,69 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             e.preventDefault();
-            e.stopPropagation();
         } else if (e.key === 'Escape') {
-            const tree = document.querySelector('[role="tree"]');
-            if (tree) tree.focus();
-            e.preventDefault();
-            e.stopPropagation();
+            if (el.closest('#method-content') || el.closest('#detail') || el.closest('[data-tab-bar]')) {
+                const tree = document.querySelector('[role="tree"]');
+                if (tree) tree.focus();
+                e.preventDefault();
+            }
         }
-    }, true);
+    });
 
-    // Activate method tabs on focus (spatial navigation focuses them)
-    document.addEventListener('focusin', function(e) {
-        const link = e.target.closest('.tabs a');
+    // Method tabs: react to TabBar tabchange event (ArrowLeft/Right switches tab)
+    document.addEventListener('tabchange', function(e) {
+        var tabBar = e.target.closest('[data-tab-bar="method-tabs"]');
+        if (!tabBar) return;
+        var value = e.detail.value;
+        var tab = tabBar.querySelector('[data-tab-value="' + value + '"]');
+        if (!tab) return;
+        clearPreviousResponse();
+        var hxGet = tab.getAttribute('hx-get');
+        if (hxGet) {
+            htmx.ajax('GET', hxGet, tab.getAttribute('hx-target'));
+            history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
+        }
+    });
+
+    // Method tabs: click on a tab link switches active tab and loads content
+    document.addEventListener('click', function(e) {
+        var link = e.target.closest('[data-tab-bar="method-tabs"] a[data-tab-value]');
         if (!link) return;
-        const li = link.closest('li');
+        var li = link.closest('li');
         if (!li || li.classList.contains('is-active')) return;
-        const tabs = li.closest('.tabs');
+        var tabs = link.closest('[data-tab-bar]');
         tabs.querySelectorAll('li').forEach(function(l) { l.classList.remove('is-active'); });
         li.classList.add('is-active');
         clearPreviousResponse();
-        const hxGet = link.getAttribute('hx-get');
-        htmx.ajax('GET', hxGet, link.getAttribute('hx-target'));
-        history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
+        var hxGet = link.getAttribute('hx-get');
+        if (hxGet) {
+            htmx.ajax('GET', hxGet, link.getAttribute('hx-target'));
+            history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
+        }
     });
 
-    // Activate status code tabs on focus
+    // When method tab bar gets focus, load active tab content
     document.addEventListener('focusin', function(e) {
-        if (!e.target.classList.contains('schema-status-tab')) return;
-        if (e.target.classList.contains('is-active')) return;
-        activateStatusTab(e.target);
+        var tabBar = e.target.closest('[data-tab-bar="method-tabs"]');
+        if (!tabBar) return;
+        var activeLi = tabBar.querySelector('li.is-active');
+        if (!activeLi) return;
+        var activeLink = activeLi.querySelector('a');
+        if (!activeLink) return;
+        var hxGet = activeLink.getAttribute('hx-get');
+        if (hxGet) {
+            htmx.ajax('GET', hxGet, activeLink.getAttribute('hx-target'));
+            history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
+        }
+    });
+
+    // Status tabs: react to TabBar tabchange event (ArrowLeft/Right switches tab)
+    document.addEventListener('tabchange', function(e) {
+        var tabBar = e.target.closest('[data-tab-bar="status-tabs"]');
+        if (!tabBar) return;
+        var value = e.detail.value;
+        var tab = tabBar.querySelector('[data-tab-value="' + value + '"]');
+        if (tab) activateStatusTab(tab);
     });
 
     // When clicking a method badge in the tree, navigate to that tab
@@ -2738,6 +2697,7 @@ document.addEventListener('DOMContentLoaded', function() {
         filterIcon.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
+                e.stopPropagation();
                 var wasOpen = filterPanel.classList.contains('is-active');
                 filterPanel.classList.toggle('is-active');
                 localStorage.setItem('openapi-ui-tag-filter-open', filterPanel.classList.contains('is-active'));
@@ -2751,17 +2711,21 @@ document.addEventListener('DOMContentLoaded', function() {
         filterPanel.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 e.preventDefault();
+                e.stopPropagation();
                 filterPanel.classList.remove('is-active');
                 localStorage.setItem('openapi-ui-tag-filter-open', 'false');
                 filterIcon.focus();
-            } else if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
+            } else if (e.key === 'Tab') {
                 e.preventDefault();
-                var treeEl = document.querySelector('[role="tree"]');
-                if (treeEl) treeEl.focus();
-            } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
-                e.preventDefault();
-                filterIcon.focus();
+                e.stopPropagation();
+                if (e.shiftKey) {
+                    filterIcon.focus();
+                } else {
+                    var treeEl = document.querySelector('[role="tree"]');
+                    if (treeEl) treeEl.focus();
+                }
             }
+            // ArrowUp/ArrowDown: let bubble to spatial nav
         });
     }
 

@@ -424,9 +424,9 @@ class OpenApiUiGeneratorTest {
         generate("/unsorted-status-codes.yaml");
 
         var operationFragment = Files.readString(outputDir.resolve("items/{id}/GET.html"));
-        then(operationFragment).contains("class=\"schema-status-tab is-active\" tabindex=\"0\" data-status=\"200\"");
-        then(operationFragment).contains("class=\"schema-status-tab\" tabindex=\"0\" data-status=\"404\"");
-        then(operationFragment).contains("class=\"schema-status-tab\" tabindex=\"0\" data-status=\"500\"");
+        then(operationFragment).contains("class=\"schema-status-tab is-active\" data-tab-value=\"200\" data-status=\"200\"");
+        then(operationFragment).contains("class=\"schema-status-tab\" data-tab-value=\"404\" data-status=\"404\"");
+        then(operationFragment).contains("class=\"schema-status-tab\" data-tab-value=\"500\" data-status=\"500\"");
     }
 
     @Test void shouldStillGenerateOperationFragments() throws Exception {

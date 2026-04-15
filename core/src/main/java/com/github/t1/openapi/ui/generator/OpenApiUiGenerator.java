@@ -4,6 +4,7 @@ import com.github.t1.bulmajava.basic.Color;
 import com.github.t1.htmljava.Element;
 import com.github.t1.htmljava.Renderable;
 import com.github.t1.openapi.ui.components.SplitPane;
+import com.github.t1.openapi.ui.components.TabBar;
 import com.github.t1.openapi.ui.components.Toggle;
 import com.github.t1.openapi.ui.components.Tree;
 import com.github.t1.openapi.ui.components.TreeContainer;
@@ -96,7 +97,7 @@ public class OpenApiUiGenerator {
         var modeSelector = modeSelector(baseUrl);
 
         var pageTitle = openApi.getInfo().getTitle();
-        var detail = div().id("detail").attr("tabindex", "0");
+        var detail = div().id("detail");
         var detailHeader = div().classes("detail-header").content(title(pageTitle), serverSelector(openApi));
         var detailPane = div().classes("detail-pane").content(detail, modeSelector);
         var splitLayout = splitPane()
@@ -309,6 +310,7 @@ public class OpenApiUiGenerator {
                 .script("vendor/highlight.min.js")
                 .javaScriptCode(operationIdMapScript(operationIdMap))
                 .javaScriptCode(Toggle.js())
+                .javaScriptCode(TabBar.js())
                 .javaScriptCode(Tree.js())
                 .javaScriptCode(SplitPane.js())
                 .javaScriptCode(loadResource("app.js"))

@@ -20,7 +20,7 @@ class PathFragmentGenerator {
             var li = element("li");
             if (first) li.classes("is-active");
             li.content(element("a").content(method.name())
-                    .attr("tabindex", "0")
+                    .attr("data-tab-value", method.name())
                     .attr("data-method", method.name())
                     .attr("hx-get", path + "/" + method.name() + ".html")
                     .attr("hx-target", "#method-content")
@@ -33,7 +33,7 @@ class PathFragmentGenerator {
             }
         }
         return div().content(
-                div().classes("tabs").content(tabList),
+                div().classes("tabs").attr("data-tab-bar", "method-tabs").attr("tabindex", "0").content(tabList),
                 div().id("method-content").content(firstMethodContent));
     }
 }

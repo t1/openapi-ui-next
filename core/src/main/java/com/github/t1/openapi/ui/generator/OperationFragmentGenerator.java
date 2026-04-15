@@ -825,9 +825,9 @@ class OperationFragmentGenerator {
     }
 
     private Element statusCodeTabs(List<String> statusCodes) {
-        var tabs = div().classes("schema-status-tabs");
+        var tabs = div().classes("schema-status-tabs").attr("data-tab-bar", "status-tabs").attr("tabindex", "0");
         for (var code : statusCodes) {
-            var tab = span(code).classes("schema-status-tab").attr("tabindex", "0").attr("data-status", code);
+            var tab = span(code).classes("schema-status-tab").attr("data-tab-value", code).attr("data-status", code);
             if (statusCodes.getFirst().equals(code)) tab.classes("is-active");
             tabs.content(tab);
         }

@@ -266,51 +266,60 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
             
                     switch (e.key) {
                         case 'ArrowDown':
-                            e.preventDefault();
-                            if (idx < items.length - 1) selectItem(items[idx + 1]);
-                            else bump(current, 'v');
+                            if (idx < items.length - 1) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                selectItem(items[idx + 1]);
+                            }
+                            // else: boundary — let event bubble to spatial nav
                             break;
                         case 'ArrowUp':
-                            e.preventDefault();
-                            if (idx > 0) selectItem(items[idx - 1]);
-                            else {
-                                var filterIcon = document.querySelector('.filter-icon');
-                                if (filterIcon) filterIcon.focus();
-                                else {
-                                    var viewToggle = document.querySelector('[data-toggle="view"]');
-                                    if (viewToggle) viewToggle.focus();
-                                    else bump(current, 'v');
-                                }
+                            if (idx > 0) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                selectItem(items[idx - 1]);
                             }
+                            // else: boundary — let event bubble to spatial nav
                             break;
                         case 'ArrowRight':
                             e.preventDefault();
+                            e.stopPropagation();
                             if (current.getAttribute('aria-expanded') === 'false') {
                                 toggleNode(current, true);
                             } else {
-                                var firstTabLink = document.querySelector('.tabs li:first-child a');
-                                if (firstTabLink) {
-                                    firstTabLink.focus();
-                                    var tabHxGet = firstTabLink.getAttribute('hx-get');
-                                    if (tabHxGet) history.replaceState(null, '', '#' + hxGetToRoute(tabHxGet));
+                                // enter detail pane: tab bar or first field
+                                var tabs = document.querySelector('[data-tab-bar]');
+                                if (tabs) tabs.focus();
+                                else {
+                                    var detail = document.getElementById('detail');
+                                    if (detail) {
+                                        var first = detail.querySelector('input, select, textarea, button[type=submit]');
+                                        if (first) first.focus();
+                                    }
                                 }
-                                else { focusFirstDetailField(); }
                             }
                             break;
                         case 'ArrowLeft':
-                            e.preventDefault();
                             if (current.getAttribute('aria-expanded') === 'true') {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 toggleNode(current, false);
                             } else {
                                 var parentGroup = current.closest('[role="group"]');
                                 if (parentGroup) {
                                     var parentItem = parentGroup.closest('[role="treeitem"]');
-                                    if (parentItem) selectItem(parentItem);
+                                    if (parentItem) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        selectItem(parentItem);
+                                    }
                                 }
                             }
+                            // else: root collapsed — let event bubble
                             break;
                         case 'Tab':
                             e.preventDefault();
+                            e.stopPropagation();
                             if (e.shiftKey) {
                                 var viewToggle = document.querySelector('[data-toggle="view"]');
                                 if (viewToggle) viewToggle.focus();
@@ -319,16 +328,17 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                                     if (modeToggle) modeToggle.focus();
                                 }
                             } else {
-                                var activeTabLink = document.querySelector('.tabs .is-active a');
-                                if (activeTabLink) activeTabLink.focus();
+                                var tabs = document.querySelector('[data-tab-bar]');
+                                if (tabs) tabs.focus();
                                 else focusFirstDetailField();
                             }
                             break;
                         case 'Enter':
                             e.preventDefault();
-                            var activeTabLink = document.querySelector('.tabs .is-active a');
-                            if (activeTabLink) {
-                                activeTabLink.focus();
+                            e.stopPropagation();
+                            var tabs = document.querySelector('[data-tab-bar]');
+                            if (tabs) {
+                                tabs.focus();
                             } else {
                                 var hxEl = current.querySelector('[hx-get]') || current;
                                 if (hxEl.getAttribute('hx-get')) htmx.ajax('GET', hxEl.getAttribute('hx-get'), '#detail');
@@ -336,6 +346,7 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                             break;
                         case 'Escape':
                             e.preventDefault();
+                            e.stopPropagation();
                             tree.focus();
                             break;
                     }

@@ -133,17 +133,21 @@ public class Toggle extends AbstractElement<Toggle> {
                         var idx = current ? values.indexOf(current) : -1;
                         if (e.key === 'ArrowRight') {
                             e.preventDefault();
+                            e.stopPropagation();
                             var next = Math.min(idx + 1, values.length - 1);
                             if (next !== idx) select(values[next]);
                         } else if (e.key === 'ArrowLeft') {
                             e.preventDefault();
+                            e.stopPropagation();
                             var next = Math.max(idx - 1, 0);
                             if (next !== idx) select(values[next]);
                         } else if (e.key === 'Home') {
                             e.preventDefault();
+                            e.stopPropagation();
                             select(values[0]);
                         } else if (e.key === 'End') {
                             e.preventDefault();
+                            e.stopPropagation();
                             select(values[values.length - 1]);
                         }
                     });
