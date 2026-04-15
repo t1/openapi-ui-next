@@ -33,6 +33,8 @@ public class Toggle extends AbstractElement<Toggle> {
 
     public Toggle activeOption(String value, Consumer<Element> customizer) {return option(value, value, true, customizer);}
 
+    /// Completes the overload set for activeOption; not currently used but kept for API symmetry
+    @SuppressWarnings("unused")
     public Toggle activeOption(String value, String label, Consumer<Element> customizer) {return option(value, label, true, customizer);}
 
     private Toggle option(String value, String label, boolean active, Consumer<Element> customizer) {

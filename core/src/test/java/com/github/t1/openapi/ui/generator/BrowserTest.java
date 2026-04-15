@@ -777,12 +777,6 @@ class BrowserTest {
             then(app.isFilterActive("billing")).isFalse();
         }
 
-        @Disabled("todo") @Test void shouldFilterTreeWhenPillSelected() {}
-
-        @Disabled("todo") @Test void shouldShowOnlyMatchingTreeItems() {}
-
-        @Disabled("todo") @Test void shouldHideNonMatchingMethodBadges() {}
-
         @Test void shouldShowFilterIconAsActiveWhenFilterActive() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
@@ -840,8 +834,8 @@ class BrowserTest {
             then(app.isFilterActive("billing")).isTrue();
         }
 
-        @Disabled("TODO: investigate why filter panel is still visible in tag view") @Test
-        void shouldHideFilterPanelWhenSwitchingToTagView() {
+        @Disabled("Bug: filter panel stays visible when switching to tag view")
+        @Test void shouldHideFilterPanelWhenSwitchingToTagView() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
             app.clickFilterIcon();
@@ -1705,6 +1699,7 @@ class BrowserTest {
             app.fillInput("id", "42");
             app.clickSend();
 
+            //noinspection HttpUrlsUsage — asserting the URL scheme was stripped, not using an HTTP link
             then(app.readClipboard())
                     .startsWith("http ")
                     .doesNotContain("GET")
@@ -2467,28 +2462,6 @@ class BrowserTest {
             then(app.customHeaderRowCount()).isEqualTo(0);
         }
 
-        // TODO: This test needs rework - globe toggle changes override semantics
-        // With globe toggle, global and operation-specific headers coexist
-        // Need to implement deduplication in send logic to prefer operation-specific
-        @Disabled("Override semantics changed with globe toggle - needs implementation")
-        @Test void shouldOverrideGlobalHeaderWithPerOperationHeader() {
-            // Create a global header using globe toggle
-            app.clickButton("+ Add custom header");
-            app.fillCustomHeader(0, "X-Debug", "global");
-            app.clickCustomHeaderGlobeToggle(0); // Make it global
-
-            // Add operation-specific header with same name
-            app.clickButton("+ Add custom header");
-            app.fillCustomHeader(1, "X-Debug", "per-op");
-
-            app.clickModeButton("curl");
-            app.fillInput("X-Request-ID", "req-1");
-            app.clickSend();
-            var clipboard = app.readClipboard();
-            then(clipboard).contains("-H 'X-Debug: per-op'");
-            then(clipboard).doesNotContain("global");
-        }
-
         @Test void shouldPersistSpecDefinedHeaderValue() {
             app.fillInput("X-Request-ID", "persist-me");
             app.toggleParamPersist("X-Request-ID");
@@ -3011,7 +2984,7 @@ class BrowserTest {
             then(app.focusedInputName()).isEqualTo("ownerId");
         }
 
-        @Disabled("not reliable")
+        @Disabled("Flaky: focus restoration after back-navigation has timing issues")
         @Test void shouldRestoreFocusOnLinkWhenNavigatingBack() {
             navigateToPetDetail();
             app.toggleSchema("response");

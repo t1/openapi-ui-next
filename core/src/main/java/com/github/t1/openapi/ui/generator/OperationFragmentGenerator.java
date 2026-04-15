@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.t1.bulmajava.components.Panel;
-import com.github.t1.bulmajava.elements.Box;
 import com.github.t1.bulmajava.form.Form;
 import com.github.t1.htmljava.Element;
 import com.github.t1.htmljava.Renderable;
@@ -241,7 +240,7 @@ class OperationFragmentGenerator {
         if (schema.getProperties() != null && !schema.getProperties().isEmpty()) {
             var propsNode = mapper.createObjectNode();
             for (var entry : schema.getProperties().entrySet()) {
-                var propSchema = (Schema) entry.getValue();
+                var propSchema = entry.getValue();
                 propsNode.set(entry.getKey(), (JsonNode) schemaToJsonNode(propSchema));
             }
             node.set("properties", propsNode);
@@ -356,25 +355,19 @@ class OperationFragmentGenerator {
             var scheme = components.getSecuritySchemes().get(schemeName);
             if (scheme == null) continue;
             
-            if (SecurityScheme.Type.APIKEY == scheme.getType()) {
-                if (SecurityScheme.In.COOKIE == scheme.getIn()) {
-                    lastField = cookieApiKeyAuthField(schemeName, scheme);
-                } else {
-                    lastField = apiKeyAuthField(schemeName, scheme);
-                }
-            } else if (SecurityScheme.Type.HTTP == scheme.getType()) {
-                if ("bearer".equals(scheme.getScheme())) {
-                    lastField = bearerAuthField(schemeName, scheme);
-                } else if ("basic".equals(scheme.getScheme())) {
-                    lastField = httpBasicAuthField(schemeName, scheme);
-                }
-            } else if (SecurityScheme.Type.OAUTH2 == scheme.getType()) {
-                lastField = oauth2AuthField(schemeName, scheme);
-            } else if (SecurityScheme.Type.OPENIDCONNECT == scheme.getType()) {
-                lastField = openIdConnectAuthField(schemeName, scheme);
-            } else if (SecurityScheme.Type.MUTUALTLS == scheme.getType()) {
-                lastField = mutualTlsAuthField(schemeName, scheme);
-            }
+            lastField = switch (scheme.getType()) {
+                case APIKEY -> SecurityScheme.In.COOKIE == scheme.getIn()
+                        ? cookieApiKeyAuthField(schemeName, scheme)
+                        : apiKeyAuthField(schemeName, scheme);
+                case HTTP -> "bearer".equals(scheme.getScheme())
+                        ? bearerAuthField(schemeName)
+                        : "basic".equals(scheme.getScheme())
+                        ? httpBasicAuthField(schemeName)
+                        : null;
+                case OAUTH2 -> oauth2AuthField(schemeName, scheme);
+                case OPENIDCONNECT -> openIdConnectAuthField(schemeName, scheme);
+                case MUTUALTLS -> mutualTlsAuthField(schemeName);
+            };
             authDiv.content(lastField);
         }
 
@@ -429,7 +422,7 @@ class OperationFragmentGenerator {
         return inputField;
     }
 
-    private com.github.t1.bulmajava.form.Field bearerAuthField(String schemeName, SecurityScheme scheme) {
+    private com.github.t1.bulmajava.form.Field bearerAuthField(String schemeName) {
         var badges = tagsAddon().content(tag("🔒 bearer").is(WARNING)).classes("is-inline-flex", "ml-2");
         var inputField = field().label(span(schemeName), badges);
         var inp = input(TEXT).attr("name", "Authorization");
@@ -439,7 +432,7 @@ class OperationFragmentGenerator {
         return inputField;
     }
 
-    private com.github.t1.bulmajava.form.Field httpBasicAuthField(String schemeName, SecurityScheme scheme) {
+    private com.github.t1.bulmajava.form.Field httpBasicAuthField(String schemeName) {
         var badges = tagsAddon().content(tag("🔒 basic").is(WARNING)).classes("is-inline-flex", "ml-2");
         var inputField = field().label(span(schemeName), badges);
         inputField.attr("data-browser-handled", "true");
@@ -478,7 +471,7 @@ class OperationFragmentGenerator {
         return inputField;
     }
 
-    private com.github.t1.bulmajava.form.Field mutualTlsAuthField(String schemeName, SecurityScheme scheme) {
+    private com.github.t1.bulmajava.form.Field mutualTlsAuthField(String schemeName) {
         var badges = tagsAddon().content(tag("🔒 mutualTLS").is(WARNING)).classes("is-inline-flex", "ml-2");
         var inputField = field().label(span(schemeName), badges);
         inputField.attr("data-browser-handled", "true");
@@ -612,31 +605,30 @@ class OperationFragmentGenerator {
         return select;
     }
 
+    /// RequestBody.getRequired() returns null in Smallrye 4.3.0 even when required=true in YAML.
+    /// Workaround: access the internal properties Map in BaseModel via reflection.
+    private Boolean requestBodyRequired() {
+        var requestBody = operation.getRequestBody();
+        if (requestBody == null) return null;
+        try {
+            var baseModelClass = requestBody.getClass().getSuperclass() // AbstractRequestBody
+                    .getSuperclass() // BaseExtensibleModel
+                    .getSuperclass(); // BaseModel
+            var propertiesField = baseModelClass.getDeclaredField("properties");
+            propertiesField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            var properties = (java.util.Map<String, Object>) propertiesField.get(requestBody);
+            return (Boolean) properties.get("required");
+        } catch (Exception e) {
+            return requestBody.getRequired();
+        }
+    }
+
     private Renderable requestBodyEditor(String skeleton, Schema schema) {
         var textareaEl = textarea()
                 .attr("data-request-body", "true")
                 .classes("is-family-code");
-        var requestBody = operation.getRequestBody();
-        // RequestBody.getRequired() returns null in Smallrye 4.3.0 even when required=true in YAML
-        // Workaround: access the internal properties Map in BaseModel via reflection
-        Boolean required = null;
-        if (requestBody != null) {
-            try {
-                // Navigate to BaseModel class (4 levels up from RequestBody)
-                var baseModelClass = requestBody.getClass().getSuperclass() // AbstractRequestBody
-                        .getSuperclass() // BaseExtensibleModel
-                        .getSuperclass(); // BaseModel
-                var propertiesField = baseModelClass.getDeclaredField("properties");
-                propertiesField.setAccessible(true);
-                @SuppressWarnings("unchecked")
-                var properties = (java.util.Map<String, Object>) propertiesField.get(requestBody);
-                required = (Boolean) properties.get("required");
-            } catch (Exception e) {
-                // Fall back to getRequired() if reflection fails
-                required = requestBody.getRequired();
-            }
-        }
-        if (TRUE == required) textareaEl.attr("required", "");
+        if (TRUE == requestBodyRequired()) textareaEl.attr("required", "");
         textareaEl.content(skeleton);
         var resolvedSchema = SchemaResolver.resolve(schema, schemas);
         var hasProperties = resolvedSchema.getProperties() != null && !resolvedSchema.getProperties().isEmpty();
@@ -1021,12 +1013,10 @@ class OperationFragmentGenerator {
             this.links = links != null ? links : Map.of();
         }
 
-        @SuppressWarnings("rawtypes")
         void render(Element container, Schema schema) {
             render(container, schema, "");
         }
 
-        @SuppressWarnings("rawtypes")
         private void render(Element container, Schema schema, String pathPrefix) {
             var resolved = SchemaResolver.resolve(schema, schemas);
             if (!visited.add(resolved)) return; // cycle detection
@@ -1108,7 +1098,6 @@ class OperationFragmentGenerator {
     }
 
     private static class JsonSkeletonGenerator {
-        @SuppressWarnings("rawtypes")
         static String generate(Schema schema, Map<String, Schema> schemas) {
             var resolved = SchemaResolver.resolve(schema, schemas);
             Map<String, Schema> properties = resolved.getProperties();
@@ -1125,10 +1114,13 @@ class OperationFragmentGenerator {
             return sb.toString();
         }
 
+        @SuppressWarnings("deprecation") // getExample() is the OpenAPI 3.0 singular form; getExamples() is 3.1
         static Object resolveExample(Schema schema) {
             var example = schema.getExample();
-            if (example == null && schema.getExamples() != null && !schema.getExamples().isEmpty())
-                example = schema.getExamples().getFirst();
+            if (example == null) {
+                var examples = schema.getExamples();
+                if (examples != null && !examples.isEmpty()) example = examples.getFirst();
+            }
             return example;
         }
 

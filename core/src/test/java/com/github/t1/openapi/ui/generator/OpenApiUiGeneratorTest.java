@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import io.smallrye.openapi.runtime.io.OpenApiParser;
+import static com.github.t1.openapi.ui.generator.OpenApiUiFileGenerator.parseOpenApi;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -476,10 +476,11 @@ class OpenApiUiGeneratorTest {
         generate("/one-get.yaml");
 
         var css = Files.readString(outputDir.resolve("openapi-ui.css"));
-        then(css).contains(".panel.flat-panel > .panel-heading {\n" +
-                "    background: var(--bulma-scheme-main-ter);\n" +
-                "    border-bottom: 1px solid var(--bulma-border);\n" +
-                "}");
+        then(css).contains("""
+                .panel.flat-panel > .panel-heading {
+                    background: var(--bulma-scheme-main-ter);
+                    border-bottom: 1px solid var(--bulma-border);
+                }""");
     }
 
     @Test void shouldRenderExpandChevron() throws Exception {
@@ -765,7 +766,7 @@ class OpenApiUiGeneratorTest {
 
     @Test void shouldAcceptOpenAPIModelDirectly() throws Exception {
         var specPath = Path.of(requireNonNull(getClass().getResource("/one-get.yaml")).toURI());
-        var openApi = OpenApiParser.parse(specPath.toUri().toURL());
+        var openApi = parseOpenApi(specPath);
 
         new OpenApiUiGenerator(openApi, writeToOutputDir()).generate();
 
@@ -775,7 +776,7 @@ class OpenApiUiGeneratorTest {
 
     @Test void shouldGenerateViaConsumer() throws Exception {
         var specPath = Path.of(requireNonNull(getClass().getResource("/one-get.yaml")).toURI());
-        var openApi = OpenApiParser.parse(specPath.toUri().toURL());
+        var openApi = parseOpenApi(specPath);
         var files = new LinkedHashMap<String, byte[]>();
 
         new OpenApiUiGenerator(openApi, files::put).generate();

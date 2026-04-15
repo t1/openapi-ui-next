@@ -83,11 +83,10 @@ class TreeTest {
     }
 
     @Test void shouldRenderNodeChildItemWithExtraContent() {
-        var html = tree().node("parent", node -> {
-            node.item(span("seg").classes("tree-segment"), item -> {
-                item.content(span("badge").classes("op"));
-            });
-        }).render();
+        var html = tree().node("parent", node ->
+            node.item(span("seg").classes("tree-segment"), item ->
+                item.content(span("badge").classes("op")))
+        ).render();
 
         then(html)
                 .contains("<span class=\"tree-segment\">seg</span>")
@@ -99,9 +98,9 @@ class TreeTest {
     }
 
     @Test void shouldRenderItemWithExtraContent() {
-        var html = tree().item(span("seg").classes("tree-segment"), item -> {
-            item.content(span("badge").classes("op"));
-        }).render();
+        var html = tree().item(span("seg").classes("tree-segment"), item ->
+            item.content(span("badge").classes("op"))
+        ).render();
 
         then(html)
                 .contains("<li role=\"treeitem\"")

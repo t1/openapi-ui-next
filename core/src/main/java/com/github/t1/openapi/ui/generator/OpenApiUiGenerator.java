@@ -26,7 +26,6 @@ import static com.github.t1.bulmajava.basic.Color.INFO;
 import static com.github.t1.bulmajava.basic.Color.LINK;
 import static com.github.t1.bulmajava.basic.Color.SUCCESS;
 import static com.github.t1.bulmajava.basic.Color.WARNING;
-import static com.github.t1.bulmajava.components.Panel.panel;
 import static com.github.t1.bulmajava.elements.Box.box;
 import static com.github.t1.bulmajava.elements.Tag.tag;
 import static com.github.t1.bulmajava.elements.Tag.tagsAddon;
@@ -548,9 +547,8 @@ public class OpenApiUiGenerator {
         return switch (method) {
             case GET -> SUCCESS;
             case POST -> LINK;
-            case PUT -> WARNING;
+            case PUT, PATCH -> WARNING;
             case DELETE -> DANGER;
-            case PATCH -> WARNING;
             default -> INFO;
         };
     }

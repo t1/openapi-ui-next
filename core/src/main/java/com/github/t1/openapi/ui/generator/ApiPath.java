@@ -2,6 +2,7 @@ package com.github.t1.openapi.ui.generator;
 
 import org.eclipse.microprofile.openapi.models.Operation;
 import org.eclipse.microprofile.openapi.models.parameters.Parameter;
+import org.jspecify.annotations.NonNull;
 
 record ApiPath(String value) {
     static final ApiPath ROOT = new ApiPath("");
@@ -30,5 +31,5 @@ record ApiPath(String value) {
         return new ApiPath(String.join("/", segments));
     }
 
-    @Override public String toString() { return value; }
+    @Override public @NonNull String toString() { return value; }
 }

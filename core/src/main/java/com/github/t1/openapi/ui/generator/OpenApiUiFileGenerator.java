@@ -1,6 +1,6 @@
 package com.github.t1.openapi.ui.generator;
 
-import io.smallrye.openapi.runtime.io.OpenApiParser;
+import io.smallrye.openapi.api.SmallRyeOpenAPI;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,10 +33,21 @@ public class OpenApiUiFileGenerator {
 
     private OpenAPI parseSpec() {
         log.info("Parsing {}", specFile);
-        try {
-            return OpenApiParser.parse(specFile.toUri().toURL());
+        return parseOpenApi(specFile);
+    }
+
+    public static OpenAPI parseOpenApi(Path path) {
+        try (var stream = path.toUri().toURL().openStream()) {
+            return SmallRyeOpenAPI.builder()
+                    .enableModelReader(false)
+                    .enableAnnotationScan(false)
+                    .enableStandardStaticFiles(false)
+                    .withCustomStaticFile(() -> stream)
+                    .defaultRequiredProperties(false)
+                    .build()
+                    .model();
         } catch (IOException e) {
-            throw new RuntimeException("could not parse spec: " + specFile, e);
+            throw new RuntimeException("could not parse spec: " + path, e);
         }
     }
 

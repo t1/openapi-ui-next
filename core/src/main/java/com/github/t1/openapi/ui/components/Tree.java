@@ -76,7 +76,8 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
             return this;
         }
 
-        /// Customize the node's `<li>` element
+        /// Customize the node's `<li>` element; returns `this` for fluent chaining
+        @SuppressWarnings("UnusedReturnValue")
         public Node customizeItem(Consumer<Element> customizer) {
             customizer.accept(item);
             return this;
