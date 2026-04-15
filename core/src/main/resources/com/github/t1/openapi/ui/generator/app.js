@@ -1146,8 +1146,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (modeToggle) modeToggle.focus();
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                const tree = document.querySelector('[role="tree"]');
-                if (tree) tree.focus();
+                const filterIcon = document.querySelector('.filter-icon');
+                if (filterIcon) {
+                    filterIcon.focus();
+                } else {
+                    const tree = document.querySelector('[role="tree"]');
+                    if (tree) tree.focus();
+                }
             } else if (e.key === 'Tab') {
                 e.preventDefault();
                 if (e.shiftKey) {
@@ -1172,7 +1177,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Restore persisted toggle state (after consumers registered)
     document.querySelectorAll('.toggle[data-persist]').forEach(function(container) {
         const saved = localStorage.getItem(container.getAttribute('data-persist'));
-        if (saved && saved !== container.querySelector('.is-active').getAttribute('data-toggle-value')) {
+        var currentEl = container.querySelector('.is-active');
+        var currentValue = currentEl ? currentEl.getAttribute('data-toggle-value') : null;
+        if (saved && saved !== currentValue) {
             container._select(saved);
         }
     });
@@ -1256,8 +1263,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var detailPane = document.querySelector('.detail-pane');
     function moveModeSelector() {
         var modeSel = document.querySelector('.mode-selector-container');
+        if (!modeSel) return;
         var responseArea = detail.querySelector('.response-area');
-        if (modeSel && responseArea) {
+        if (responseArea) {
             var modeRow = document.querySelector('.mode-row');
             if (!modeRow) {
                 modeRow = document.createElement('div');
@@ -1265,6 +1273,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             responseArea.parentNode.insertBefore(modeRow, responseArea);
             modeRow.appendChild(modeSel);
+            modeSel.style.display = '';
+        } else {
+            modeSel.style.display = 'none';
         }
     }
     // Rescue mode selector back to detail-pane before HTMX replaces content inside detail
@@ -2351,6 +2362,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const item = hxEl.closest('[role="treeitem"]');
         const tree = document.querySelector('[role="tree"]');
         if (item && tree) {
+            // Clear filter if the target item is hidden by it
+            var filterClass = Array.from(tree.classList).find(function(cls) { return cls.startsWith('filter-'); });
+            if (filterClass && getComputedStyle(item).display === 'none') {
+                var filterToggle = document.querySelector('.filter-pill-panel');
+                if (filterToggle && filterToggle._select) {
+                    filterToggle._select('all');
+                }
+            }
             tree._expandParentsOf(item);
             tree.querySelectorAll('[aria-selected="true"]').forEach(function(el) { el.removeAttribute('aria-selected'); });
             item.setAttribute('aria-selected', 'true');
@@ -2659,9 +2678,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        const allOperations = tree.querySelectorAll('[role="treeitem"]').length;
-        const visibleOperations = tree.querySelectorAll('[role="treeitem"]:not([style*="display: none"])').length;
-        statusLine.textContent = 'Showing ' + visibleOperations + ' of ' + allOperations + ' operations';
+        const allItems = tree.querySelectorAll('[role="treeitem"]');
+        const visibleCount = Array.from(allItems).filter(function(item) {
+            return getComputedStyle(item).display !== 'none';
+        }).length;
+        statusLine.textContent = 'Showing ' + visibleCount + ' of ' + allItems.length + ' paths';
     }
     
     function initFilterIcon() {
@@ -2674,18 +2695,39 @@ document.addEventListener('DOMContentLoaded', function() {
         const tree = document.querySelector('[role="tree"]');
         if (!filterPanel || !tree) return;
         
-        // Restore panel state from localStorage
+        // Initialize Toggle component for dynamically loaded filter panel
+        if (window.initToggle) window.initToggle(filterPanel);
+        
+        // React to toggle events
+        filterPanel.addEventListener('toggle', function(e) {
+            var tagName = e.detail.value;
+            var isFiltering = tagName && tagName !== 'all';
+            tree.className = tree.className.replace(/\bfilter-\S+/g, '').trim();
+            if (isFiltering) {
+                tree.classList.add('filter-' + tagName);
+                filterIcon.classList.add('is-active');
+                // Clear detail panel if the selected item is now filtered out
+                var selected = tree.querySelector('[aria-selected="true"]');
+                if (selected && getComputedStyle(selected).display === 'none') {
+                    selected.removeAttribute('aria-selected');
+                    htmx.ajax('GET', 'empty-detail.html', {target: '#detail', swap: 'innerHTML'});
+                }
+            } else {
+                filterIcon.classList.remove('is-active');
+            }
+            updateFilterStatusLine();
+        });
+        
+        // Restore panel open/closed state from localStorage
         const panelOpen = localStorage.getItem('openapi-ui-tag-filter-open') === 'true';
         if (panelOpen) {
             filterPanel.classList.add('is-active');
         }
         
-        // Restore selected tag from localStorage
+        // Restore selected tag via Toggle's _select (triggers toggle event above)
         const savedTag = localStorage.getItem('openapi-ui-tag-filter');
-        if (savedTag) {
-            tree.classList.add('filter-' + savedTag);
-            filterIcon.classList.add('is-active');
-            updateFilterStatusLine();
+        if (savedTag && filterPanel._select) {
+            filterPanel._select(savedTag);
         }
         
         filterIcon.addEventListener('click', function() {
@@ -2696,111 +2738,30 @@ document.addEventListener('DOMContentLoaded', function() {
         filterIcon.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                const wasOpen = filterPanel.classList.contains('is-active');
+                var wasOpen = filterPanel.classList.contains('is-active');
                 filterPanel.classList.toggle('is-active');
                 localStorage.setItem('openapi-ui-tag-filter-open', filterPanel.classList.contains('is-active'));
-                
-                // When opening panel, focus first pill or previously selected pill
                 if (!wasOpen && filterPanel.classList.contains('is-active')) {
-                    const pills = filterPanel.querySelectorAll('.tag');
-                    const activePill = Array.from(pills).find(function(p) {
-                        const tagClass = Array.from(p.classList).find(cls => cls.startsWith('tag-'));
-                        if (!tagClass) return false;
-                        const tagName = tagClass.substring(4);
-                        return tree.classList.contains('filter-' + tagName);
-                    });
-                    const firstPill = activePill || pills[0];
-                    if (firstPill) firstPill.focus();
+                    filterPanel.focus();
                 }
             }
         });
         
-        // Pill click and keyboard handlers
-        const pills = Array.from(filterPanel.querySelectorAll('.tag'));
-        
-        function activatePillFilter(pill) {
-            const tagClass = Array.from(pill.classList).find(cls => cls.startsWith('tag-'));
-            if (!tagClass) return;
-            
-            const tagName = tagClass.substring(4);
-            const filterClass = 'filter-' + tagName;
-            
-            // Remove any existing filter
-            tree.className = tree.className.replace(/\bfilter-\S+/g, '').trim();
-            // Add new filter
-            tree.classList.add(filterClass);
-            filterIcon.classList.add('is-active');
-            localStorage.setItem('openapi-ui-tag-filter', tagName);
-            updateFilterStatusLine();
-        }
-        
-        function deactivatePillFilter() {
-            tree.className = tree.className.replace(/\bfilter-\S+/g, '').trim();
-            filterIcon.classList.remove('is-active');
-            localStorage.setItem('openapi-ui-tag-filter', '');
-            updateFilterStatusLine();
-        }
-        
-        pills.forEach(function(pill) {
-            pill.addEventListener('click', function() {
-                const tagClass = Array.from(pill.classList).find(cls => cls.startsWith('tag-'));
-                if (!tagClass) return;
-                
-                const tagName = tagClass.substring(4);
-                const filterClass = 'filter-' + tagName;
-                
-                // Single-select: if this filter is already active, deselect it
-                if (tree.classList.contains(filterClass)) {
-                    deactivatePillFilter();
-                } else {
-                    activatePillFilter(pill);
-                }
-            });
-            
-            pill.addEventListener('keydown', function(e) {
-                const currentIndex = pills.indexOf(pill);
-                
-                if (e.key === 'ArrowLeft') {
-                    e.preventDefault();
-                    if (currentIndex > 0) {
-                        const prevPill = pills[currentIndex - 1];
-                        prevPill.focus();
-                        activatePillFilter(prevPill);
-                    }
-                } else if (e.key === 'ArrowRight') {
-                    e.preventDefault();
-                    if (currentIndex < pills.length - 1) {
-                        const nextPill = pills[currentIndex + 1];
-                        nextPill.focus();
-                        activatePillFilter(nextPill);
-                    }
-                } else if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    const tagClass = Array.from(pill.classList).find(cls => cls.startsWith('tag-'));
-                    if (!tagClass) return;
-                    const tagName = tagClass.substring(4);
-                    const filterClass = 'filter-' + tagName;
-                    
-                    // If this pill's filter is active, deselect it
-                    if (tree.classList.contains(filterClass)) {
-                        deactivatePillFilter();
-                    }
-                } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    filterPanel.classList.remove('is-active');
-                    localStorage.setItem('openapi-ui-tag-filter-open', 'false');
-                    filterIcon.focus();
-                } else if (e.key === 'ArrowDown' || e.key === 'Tab') {
-                    if (!e.shiftKey) {
-                        e.preventDefault();
-                        const tree = document.querySelector('[role="tree"]');
-                        if (tree) tree.focus();
-                    }
-                } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
-                    e.preventDefault();
-                    filterIcon.focus();
-                }
-            });
+        // Filter-specific keyboard handlers on the toggle container
+        filterPanel.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                filterPanel.classList.remove('is-active');
+                localStorage.setItem('openapi-ui-tag-filter-open', 'false');
+                filterIcon.focus();
+            } else if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
+                e.preventDefault();
+                var treeEl = document.querySelector('[role="tree"]');
+                if (treeEl) treeEl.focus();
+            } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
+                e.preventDefault();
+                filterIcon.focus();
+            }
         });
     }
 

@@ -694,7 +694,7 @@ pre.response code.hljs {
     display: none;
 }
 .filter-pill-panel.is-active {
-    display: block;
+    display: inline-flex;
 }
 .filter-icon.is-active {
     color: hsl(204, 86%, 53%); /* Bulma link color */

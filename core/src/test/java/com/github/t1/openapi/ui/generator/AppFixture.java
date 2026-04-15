@@ -197,6 +197,11 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.waitForSelector("#detail :text('" + text + "')");
     }
 
+    void waitForDetailEmpty() {
+        lastWaitContext = "waitForDetailEmpty()";
+        page.waitForFunction("() => document.getElementById('detail').innerHTML.trim() === ''");
+    }
+
     String detailText() {return page.locator("#detail").textContent();}
 
     private String sanitizeFilename(String text) {
@@ -924,6 +929,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         deleteBtn.click();
     }
 
+    boolean hasPresetDeleteButton(int serverIndex, int presetIndex) {
+        var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
+        var label = page.locator("#server-selector label[for='" + presetId + "']");
+        return label.locator(".delete").count() > 0;
+    }
+
     boolean presetDeleteButtonUsesBulmaDelete(int serverIndex, int presetIndex) {
         var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
         var label = page.locator("#server-selector label[for='" + presetId + "']");
@@ -1195,13 +1206,26 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                       "}");
     }
 
-    boolean isPillFocused(String tagName) {
-        var pill = page.locator(".filter-pill-panel .tag-" + sanitizeTagName(tagName));
-        return pill.evaluate("el => el === document.activeElement").toString().equals("true");
+    void focusFilterToggle() {
+        page.locator(".filter-pill-panel").focus();
+    }
+
+    boolean isFilterToggleFocused() {
+        return page.locator(".filter-pill-panel").evaluate("el => el === document.activeElement").toString().equals("true");
+    }
+
+    boolean isPillActive(String tagName) {
+        var pill = page.locator(".filter-pill-panel [data-toggle-value='" + sanitizeTagName(tagName) + "']");
+        return pill.evaluate("el => el.classList.contains('is-active')").toString().equals("true");
     }
 
     boolean isFilterPanelVisible() {
         return page.locator(".filter-pill-panel").isVisible();
+    }
+
+    void waitForFilterPanelHidden() {
+        lastWaitContext = "waitForFilterPanelHidden()";
+        page.waitForSelector(".filter-pill-panel", new Page.WaitForSelectorOptions().setState(HIDDEN));
     }
 
     void clickFilterIcon() {
@@ -1209,7 +1233,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     void clickPill(String tagName) {
-        page.locator(".filter-pill-panel .tag-" + sanitizeTagName(tagName)).click();
+        page.locator(".filter-pill-panel [data-toggle-value='" + sanitizeTagName(tagName) + "']").click();
     }
 
     boolean isFilterActive(String tagName) {

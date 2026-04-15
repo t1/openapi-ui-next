@@ -274,9 +274,13 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                             e.preventDefault();
                             if (idx > 0) selectItem(items[idx - 1]);
                             else {
-                                var viewToggle = document.querySelector('[data-toggle="view"]');
-                                if (viewToggle) viewToggle.focus();
-                                else bump(current, 'v');
+                                var filterIcon = document.querySelector('.filter-icon');
+                                if (filterIcon) filterIcon.focus();
+                                else {
+                                    var viewToggle = document.querySelector('[data-toggle="view"]');
+                                    if (viewToggle) viewToggle.focus();
+                                    else bump(current, 'v');
+                                }
                             }
                             break;
                         case 'ArrowRight':

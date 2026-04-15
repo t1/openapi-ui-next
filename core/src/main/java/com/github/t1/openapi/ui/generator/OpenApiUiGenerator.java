@@ -332,6 +332,7 @@ public class OpenApiUiGenerator {
         output.accept("index.html", page.render().getBytes());
         output.accept("tag-tree.html", tagTree.render().getBytes());
         output.accept("path-tree.html", pathTree.render().getBytes());
+        output.accept("empty-detail.html", "".getBytes());
         var tagFilterCss = generateTagFilterCss();
         output.accept("openapi-ui.css", (Toggle.css() + Tree.css() + SplitPane.css() + loadResource("app.css") + tagFilterCss).getBytes());
         generateFragments(root, ApiPath.ROOT, operationIdMap, globalServers, components, globalSecurity);
@@ -397,16 +398,17 @@ public class OpenApiUiGenerator {
         var filterIcon = element("i").classes("fa-solid", "fa-filter", "filter-icon").attr("role", "button").attr("tabindex", "0");
         wrapper.content(filterIcon);
         
-        var pillPanel = div().classes("filter-pill-panel");
+        var pillPanel = toggle("tag-filter").persistAs("openapi-ui-tag-filter");
+        pillPanel.classes("filter-pill-panel");
+        pillPanel.activeOption("all", "all");
         for (var tag : tags) {
             var sanitized = sanitizeTagName(tag);
-            var pill = span(tag).classes("tag", "tag-" + sanitized).attr("tabindex", "0").attr("role", "button");
-            pillPanel.content(pill);
+            pillPanel.option(sanitized, tag, o -> o.classes("tag-" + sanitized));
         }
         wrapper.content(pillPanel);
         wrapper.content(t);
         
-        var statusLine = div().classes("filter-status-line");
+        var statusLine = element("p").classes("help", "filter-status-line");
         wrapper.content(statusLine);
         
         return wrapper;

@@ -1,6 +1,5 @@
 package com.github.t1.openapi.ui.generator;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -764,7 +763,7 @@ class BrowserTest {
             then(app.isFilterActive("billing")).isTrue();
         }
 
-        @Test void shouldDeselectActivePillOnClick() {
+        @Test void shouldClearFilterOnAllClick() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
             app.clickFilterIcon();
@@ -772,7 +771,7 @@ class BrowserTest {
 
             then(app.isFilterActive("billing")).isTrue();
 
-            app.clickPill("billing");
+            app.clickPill("all");
 
             then(app.isFilterActive("billing")).isFalse();
         }
@@ -788,7 +787,7 @@ class BrowserTest {
 
             then(app.isFilterIconActive()).isTrue();
 
-            app.clickPill("billing");
+            app.clickPill("all");
 
             then(app.isFilterIconActive()).isFalse();
         }
@@ -800,11 +799,52 @@ class BrowserTest {
 
             then(app.getFilterStatusLine()).isNull();
 
+            app.clickPill("users");
+
+            then(app.getFilterStatusLine()).isEqualTo("Showing 1 of 3 paths");
+        }
+
+        @Test void shouldShowAllAsActiveByDefault() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.clickFilterIcon();
+
+            then(app.isPillActive("all")).isTrue();
+        }
+
+        @Test void shouldHighlightActivePill() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.clickFilterIcon();
+
             app.clickPill("billing");
 
-            var statusLine = app.getFilterStatusLine();
-            then(statusLine).isNotNull();
-            then(statusLine).matches("Showing \\d+ of \\d+ operations");
+            then(app.isPillActive("billing")).isTrue();
+            then(app.isPillActive("all")).isFalse();
+        }
+
+        @Test void shouldHighlightAllWhenCleared() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.clickFilterIcon();
+            app.clickPill("billing");
+
+            app.clickPill("all");
+
+            then(app.isPillActive("all")).isTrue();
+            then(app.isPillActive("billing")).isFalse();
+        }
+
+        @Test void shouldHighlightRestoredPillOnReload() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.clickFilterIcon();
+            app.clickPill("billing");
+
+            app.navigateHome();
+            app.waitForTreeContent("invoices");
+
+            then(app.isPillActive("billing")).isTrue();
         }
 
         @Test void shouldPersistPanelStateAcrossReload() {
@@ -834,7 +874,6 @@ class BrowserTest {
             then(app.isFilterActive("billing")).isTrue();
         }
 
-        @Disabled("Bug: filter panel stays visible when switching to tag view")
         @Test void shouldHideFilterPanelWhenSwitchingToTagView() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
@@ -843,7 +882,7 @@ class BrowserTest {
             then(app.isFilterPanelVisible()).isTrue();
 
             app.clickViewButton("tags");
-            app.waitForTreeContent("billing");
+            app.waitForFilterPanelHidden();
 
             // Tag view should not have filter UI at all
             then(app.isFilterPanelVisible()).isFalse();
@@ -864,9 +903,32 @@ class BrowserTest {
             then(app.isFilterPanelVisible()).isTrue();
         }
 
-        @Disabled("todo") @Test void shouldClearFilterWhenNavigatingToFilteredOutItem() {}
+        @Test void shouldClearFilterWhenNavigatingToFilteredOutItem() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.clickFilterIcon();
+            app.clickPill("users");
 
-        @Disabled("todo") @Test void shouldClearDetailPanelWhenSelectedItemFilteredOut() {}
+            then(app.isFilterActive("users")).isTrue();
+
+            app.navigateToHash("invoices/GET");
+            app.waitForDetailContent("List invoices");
+
+            then(app.isFilterActive("users")).isFalse();
+        }
+
+        @Test void shouldClearDetailPanelWhenSelectedItemFilteredOut() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.clickTreeNode("invoices/index.html");
+            app.waitForDetailContent("List invoices");
+            app.clickFilterIcon();
+
+            app.clickPill("users");
+
+            app.waitForDetailEmpty();
+            then(app.detailText()).doesNotContain("List invoices");
+        }
 
         // Keyboard navigation tests
         @Test void shouldFocusFilterIconWithTab() {
@@ -890,13 +952,13 @@ class BrowserTest {
             then(app.isFilterPanelVisible()).isTrue();
         }
 
-        @Test void shouldFocusFirstPillWhenOpeningPanel() {
+        @Test void shouldFocusFilterToggleWhenOpeningPanel() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
 
             app.pressEnterOnFilterIcon();
 
-            then(app.isPillFocused("billing")).isTrue();
+            then(app.isFilterToggleFocused()).isTrue();
         }
 
         @Test void shouldTogglePanelWithSpaceOnFilterIcon() {
@@ -908,6 +970,26 @@ class BrowserTest {
             app.pressSpaceOnFilterIcon();
 
             then(app.isFilterPanelVisible()).isTrue();
+        }
+
+        @Test void shouldFocusFilterIconOnArrowDownFromViewToggle() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.focusViewToggle();
+
+            app.pressKey("ArrowDown");
+
+            then(app.isFilterIconFocused()).isTrue();
+        }
+
+        @Test void shouldFocusFilterIconOnArrowUpFromTreeTop() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.focusTree();
+
+            app.pressKey("ArrowUp");
+
+            then(app.isFilterIconFocused()).isTrue();
         }
     }
 
@@ -2362,6 +2444,18 @@ class BrowserTest {
     @ResourceLock("tagged-nested") @Nested class GivenTaggedNestedApp {
         @RegisterExtension static AppFixture app = launch("tagged-nested.yaml");
 
+        @Test void shouldMoveOneStepOnArrowRight() {
+            app.clickFilterIcon();
+            app.clickPill("pets");
+            app.focusFilterToggle();
+
+            app.pressKey("ArrowRight");
+
+            then(app.isPillActive("pets")).as("pets should no longer be active").isFalse();
+            then(app.isPillActive("admin")).as("admin should be active (one step right)").isTrue();
+            then(app.isPillActive("owners")).as("owners should NOT be active (two steps right)").isFalse();
+        }
+
         @Test void shouldRestoreTagHashWhenDefaultViewIsPaths() {
             then(app.isViewActive("paths")).isTrue();
 
@@ -2984,7 +3078,6 @@ class BrowserTest {
             then(app.focusedInputName()).isEqualTo("ownerId");
         }
 
-        @Disabled("Flaky: focus restoration after back-navigation has timing issues")
         @Test void shouldRestoreFocusOnLinkWhenNavigatingBack() {
             navigateToPetDetail();
             app.toggleSchema("response");
@@ -3714,7 +3807,11 @@ class BrowserTest {
             then(app.templateGroupHeadingHasBottomBorder(0)).isFalse();
         }
 
-        @Disabled("TODO") @Test void shouldShowNonTemplateServerAsRadio() {}
+        @Test void shouldShowNonTemplateServerAsRadio() {
+            app.clickServerToggle();
+
+            then(app.serverItemUrl(0)).isEqualTo("https://static.example.com");
+        }
 
         @Test void shouldHaveAddPresetButton() {
             then(app.templateServerHasAddPresetButton(0)).isTrue();
@@ -3819,9 +3916,24 @@ class BrowserTest {
             then(app.getBaseUrl()).isEqualTo("https://staging.example.com");
         }
 
-        @Disabled("TODO") @Test void shouldDeleteUserCreatedPreset() {}
+        @Test void shouldDeleteUserCreatedPreset() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            app.setTemplatePresetFormValue(0, "environment", "staging");
+            app.clickTemplatePresetSave(0);
 
-        @Disabled("TODO") @Test void shouldNotDeleteDefaultPreset() {}
+            then(app.templateServerPresetCount(0)).isEqualTo(2);
+
+            app.deleteTemplatePreset(0, 1);
+
+            then(app.templateServerPresetCount(0)).isEqualTo(1);
+        }
+
+        @Test void shouldNotDeleteDefaultPreset() {
+            app.clickServerToggle();
+
+            then(app.hasPresetDeleteButton(0, 0)).isFalse();
+        }
 
         @Test void shouldPersistCreatedPresetInLocalStorage() {
             app.clickServerToggle();

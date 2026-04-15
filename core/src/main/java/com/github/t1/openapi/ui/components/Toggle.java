@@ -57,6 +57,11 @@ public class Toggle extends AbstractElement<Toggle> {
         return this;
     }
 
+    public Toggle deselectable() {
+        attr("data-deselectable", "");
+        return this;
+    }
+
     public Toggle persistAs(String key) {
         attr("data-persist", key);
         return this;
@@ -94,12 +99,21 @@ public class Toggle extends AbstractElement<Toggle> {
     private static final String JS = """
             document.addEventListener('DOMContentLoaded', function() {
                 function initToggle(container) {
+                    if (container._select) return;
                     var values = Array.from(container.querySelectorAll('[data-toggle-value]:not([data-overflow])')).map(function(el) {
                         return el.getAttribute('data-toggle-value');
                     });
+                    var deselectable = container.hasAttribute('data-deselectable');
                     function select(value) {
                         var current = container.querySelector('.is-active');
-                        if (current && current.getAttribute('data-toggle-value') === value) return;
+                        if (current && current.getAttribute('data-toggle-value') === value) {
+                            if (!deselectable) return;
+                            current.classList.remove('is-active');
+                            var persistKey = container.getAttribute('data-persist');
+                            if (persistKey) localStorage.setItem(persistKey, '');
+                            container.dispatchEvent(new CustomEvent('toggle', { detail: { value: null } }));
+                            return;
+                        }
                         container.querySelectorAll('[data-toggle-value]').forEach(function(b) {
                             b.classList.remove('is-active');
                         });
@@ -114,8 +128,9 @@ public class Toggle extends AbstractElement<Toggle> {
                         });
                     });
                     container.addEventListener('keydown', function(e) {
-                        var current = container.querySelector('.is-active').getAttribute('data-toggle-value');
-                        var idx = values.indexOf(current);
+                        var currentEl = container.querySelector('.is-active');
+                        var current = currentEl ? currentEl.getAttribute('data-toggle-value') : null;
+                        var idx = current ? values.indexOf(current) : -1;
                         if (e.key === 'ArrowRight') {
                             e.preventDefault();
                             var next = Math.min(idx + 1, values.length - 1);
@@ -134,6 +149,7 @@ public class Toggle extends AbstractElement<Toggle> {
                     });
                     container._select = select;
                 }
+                window.initToggle = initToggle;
                 document.querySelectorAll('.toggle[data-toggle]').forEach(initToggle);
             });
             """;

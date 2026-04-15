@@ -94,6 +94,16 @@ class ToggleTest {
                 """);
     }
 
+    @Test void shouldRenderDeselectable() {
+        var rendered = toggle("filter").deselectable().option("a").render();
+
+        then(rendered).isEqualTo("""
+                <div class="toggle" data-toggle="filter" tabindex="0" data-deselectable="">
+                    <span data-toggle-value="a">a</span>
+                </div>
+                """);
+    }
+
     @Test void shouldDeactivatePreviouslyActiveOption() {
         var rendered = toggle("mode").activeOption("try").option("curl").activate("curl").render();
 

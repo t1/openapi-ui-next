@@ -1134,6 +1134,13 @@ class OpenApiUiGeneratorTest {
         then(pathTree).contains("<i class=\"fa-solid fa-filter filter-icon\"");
     }
 
+    @Test void shouldRenderFilterStatusLineAsHelpText() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        then(pathTree).contains("<p class=\"help filter-status-line\">");
+    }
+
     @Test void shouldNotRenderFilterIconWhenApiHasOneTag() throws Exception {
         var specYaml = """
                 openapi: 3.0.3
@@ -1179,22 +1186,38 @@ class OpenApiUiGeneratorTest {
         then(pathTree).doesNotContain("fa-filter");
     }
 
+    @Test void shouldRenderAllOptionAsFirstActivePill() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        then(pathTree).contains("<span class=\"is-active\" data-toggle-value=\"all\">all</span>");
+    }
+
     @Test void shouldRenderPillPanelWithPillsForEachTag() throws Exception {
         generate("/tagged-nested.yaml");
 
         var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
-        then(pathTree).contains("<span class=\"tag tag-pets\" tabindex=\"0\" role=\"button\">pets</span>");
-        then(pathTree).contains("<span class=\"tag tag-admin\" tabindex=\"0\" role=\"button\">admin</span>");
-        then(pathTree).contains("<span class=\"tag tag-owners\" tabindex=\"0\" role=\"button\">owners</span>");
+        then(pathTree).contains("<span class=\"tag-pets\" data-toggle-value=\"pets\">pets</span>");
+        then(pathTree).contains("<span class=\"tag-admin\" data-toggle-value=\"admin\">admin</span>");
+        then(pathTree).contains("<span class=\"tag-owners\" data-toggle-value=\"owners\">owners</span>");
+    }
+
+    @Test void shouldRenderAllOptionBeforeTagPills() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        var allIndex = pathTree.indexOf("data-toggle-value=\"all\"");
+        var petsIndex = pathTree.indexOf("data-toggle-value=\"pets\"");
+        then(allIndex).as("all should come before pets").isLessThan(petsIndex);
     }
 
     @Test void shouldRenderPillsInSpecDeclarationOrder() throws Exception {
         generate("/tagged-nested.yaml");
 
         var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
-        var petsIndex = pathTree.indexOf("<span class=\"tag tag-pets\" tabindex=\"0\" role=\"button\">pets</span>");
-        var adminIndex = pathTree.indexOf("<span class=\"tag tag-admin\" tabindex=\"0\" role=\"button\">admin</span>");
-        var ownersIndex = pathTree.indexOf("<span class=\"tag tag-owners\" tabindex=\"0\" role=\"button\">owners</span>");
+        var petsIndex = pathTree.indexOf("data-toggle-value=\"pets\"");
+        var adminIndex = pathTree.indexOf("data-toggle-value=\"admin\"");
+        var ownersIndex = pathTree.indexOf("data-toggle-value=\"owners\"");
         then(petsIndex).as("pets should come before admin").isLessThan(adminIndex);
         then(adminIndex).as("admin should come before owners").isLessThan(ownersIndex);
     }
