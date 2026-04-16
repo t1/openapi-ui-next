@@ -1210,34 +1210,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.body.addEventListener('htmx:load', function(e) {
         if (!pendingMethod || !detail || !detail.contains(e.target)) return;
-        // Ignore htmx:load for stale swaps — if #detail has been re-swapped since this
-        // load event was queued, the content no longer matches the pending navigation
-        var loadedForm = detail.querySelector('form[data-fragment-path]');
-        if (loadedForm && window._pendingNavPath && loadedForm.getAttribute('data-fragment-path') !== window._pendingNavPath) return;
         const method = pendingMethod;
         pendingMethod = null;
         const tabLinks = detail.querySelectorAll('.tabs li a');
         var tabClicked = false;
-        var tabSkipped = false;
         tabLinks.forEach(function(a) {
-            if (a.textContent.trim() === method) {
-                // Skip clicking an already-active tab when restoring focus,
-                // because the redundant swap would destroy the just-restored focus element
-                if (a.closest('li.is-active') && window._pendingRestoreFocus) {
-                    tabSkipped = true;
-                } else {
-                    a.click();
-                }
-                tabClicked = true;
-            }
+            if (a.textContent.trim() === method) { a.click(); tabClicked = true; }
         });
-        // If no tab was clicked (single-method path or skipped), apply pending focus now
-        if (!tabClicked || tabSkipped) {
+        // If no tab was clicked (single-method path), apply pending focus now
+        if (!tabClicked) {
             if (window._pendingRestoreFocus) {
                 var selector = window._pendingRestoreFocus;
                 window._pendingRestoreFocus = null;
-                var el = document.querySelector('#detail ' + selector);
-                if (el) el.focus({preventScroll: true});
+                setupFocusRestore(selector);
             } else if (window._pendingFocusFirst) {
                 window._pendingFocusFirst = false;
                 var targetForm = document.querySelector('#detail form[data-path]');
@@ -1394,8 +1379,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (window._pendingRestoreFocus && !pendingMethod) {
             var selector = window._pendingRestoreFocus;
             window._pendingRestoreFocus = null;
-            var el = document.querySelector('#detail ' + selector);
-            if (el) el.focus({preventScroll: true});
+            setupFocusRestore(selector);
         } else if (window._pendingFocusFirst && !pendingMethod) {
             window._pendingFocusFirst = false;
             var targetForm = document.querySelector('#detail form[data-path]');
@@ -2384,7 +2368,6 @@ document.addEventListener('DOMContentLoaded', function() {
             item.setAttribute('aria-selected', 'true');
         }
         if (methodFromHash && !tagFromHash) pendingMethod = methodFromHash;
-        window._pendingNavPath = treePath;
         if (Object.keys(queryParams).length > 0) {
             window._pendingParams = queryParams;
         }
@@ -2406,6 +2389,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // Disable browser's automatic scroll restoration — we handle it manually
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+    // Focus restore via MutationObserver — event-order-independent.
+    // When popstate provides a focusSelector, watch #detail until the element appears,
+    // then focus it. This avoids races between htmx:afterSwap/load event ordering.
+    var focusObserver = null;
+    function setupFocusRestore(selector) {
+        if (focusObserver) { focusObserver.disconnect(); focusObserver = null; }
+        var el = document.querySelector('#detail ' + selector);
+        if (el) { el.focus({preventScroll: true}); return; }
+        focusObserver = new MutationObserver(function() {
+            var el = document.querySelector('#detail ' + selector);
+            if (el) {
+                focusObserver.disconnect();
+                focusObserver = null;
+                el.focus({preventScroll: true});
+            }
+        });
+        focusObserver.observe(detail, {childList: true, subtree: true});
+    }
 
     window.addEventListener('popstate', function(e) {
         if (e.state && e.state.focusSelector) {
