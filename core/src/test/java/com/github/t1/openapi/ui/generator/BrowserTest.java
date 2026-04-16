@@ -1466,6 +1466,68 @@ class BrowserTest {
 
                 then(app.customHeaderGlobeUsesFontAwesomeIcon(0)).isTrue();
             }
+
+            @Test void shouldActivateGlobeToggleOnEnter() {
+                app.waitForDetailContent("List pets");
+                app.clickButton("+ Add custom header");
+                app.fillCustomHeader(0, "X-Test", "value1");
+
+                app.focusCustomHeaderGlobeToggle(0);
+                app.pressKey("Enter");
+
+                then(app.isCustomHeaderGlobeActive(0)).isTrue();
+                then(app.activeElementSelector()).contains("globe-toggle");
+            }
+
+            @Test void shouldDeactivateGlobeToggleOnSpace() {
+                app.waitForDetailContent("List pets");
+                app.clickButton("+ Add custom header");
+                app.fillCustomHeader(0, "X-Test", "value1");
+                app.clickCustomHeaderGlobeToggle(0); // Make global
+
+                app.focusCustomHeaderGlobeToggle(0);
+                app.pressKey(" ");
+
+                then(app.isCustomHeaderGlobeActive(0)).isFalse();
+                then(app.activeElementSelector()).contains("globe-toggle");
+            }
+
+            @Test void shouldToggleGlobeWithShortcutFromNameField() {
+                app.waitForDetailContent("List pets");
+                app.clickButton("+ Add custom header");
+                app.fillCustomHeader(0, "X-Test", "value1");
+
+                app.focusCustomHeaderName(0);
+                app.pressKey(MOD + "+g");
+
+                then(app.isCustomHeaderGlobeActive(0)).isTrue();
+                then(app.activeElementSelector()).contains("custom-header-name");
+            }
+
+            @Test void shouldToggleGlobeWithShortcutFromValueField() {
+                app.waitForDetailContent("List pets");
+                app.clickButton("+ Add custom header");
+                app.fillCustomHeader(0, "X-Test", "value1");
+
+                app.focusCustomHeaderValue(0);
+                app.pressKey(MOD + "+g");
+
+                then(app.isCustomHeaderGlobeActive(0)).isTrue();
+                then(app.activeElementSelector()).contains("custom-header-value");
+            }
+
+            @Test void shouldDeactivateGlobeWithShortcutWhenAlreadyGlobal() {
+                app.waitForDetailContent("List pets");
+                app.clickButton("+ Add custom header");
+                app.fillCustomHeader(0, "X-Test", "value1");
+                app.clickCustomHeaderGlobeToggle(0); // Make global
+
+                app.focusCustomHeaderName(0);
+                app.pressKey(MOD + "+g");
+
+                then(app.isCustomHeaderGlobeActive(0)).isFalse();
+                then(app.activeElementSelector()).contains("custom-header-name");
+            }
         }
     }
 

@@ -1385,6 +1385,18 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.locator("#detail .custom-header-row").nth(index).locator(".globe-toggle").click();
     }
 
+    void focusCustomHeaderName(int index) {
+        page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-name").focus();
+    }
+
+    void focusCustomHeaderValue(int index) {
+        page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-value").focus();
+    }
+
+    void focusCustomHeaderGlobeToggle(int index) {
+        page.locator("#detail .custom-header-row").nth(index).locator(".globe-toggle").focus();
+    }
+
     boolean isCustomHeaderGlobeActive(int index) {
         return page.locator("#detail .custom-header-row").nth(index).locator(".globe-toggle.is-info").count() > 0;
     }

@@ -1020,6 +1020,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
         });
+        globalHeadersPanel.addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            const removeBtn = e.target.closest('.custom-header-remove');
+            if (removeBtn) {
+                e.preventDefault();
+                removeBtn.click();
+            }
+        });
     }
 
     function addGlobalHeaderRow(name, value, persisted) {
@@ -1551,6 +1559,34 @@ document.addEventListener('DOMContentLoaded', function() {
         if (form) saveFields(form);
     });
 
+    function toggleGlobe(globeToggle) {
+        const row = globeToggle.closest('.custom-header-row');
+        const name = row.querySelector('.custom-header-name').value.trim();
+        const value = row.querySelector('.custom-header-value').value;
+        const isGlobal = globeToggle.getAttribute('data-global') === 'true';
+
+        if (isGlobal) {
+            // Make operation-specific
+            globeToggle.setAttribute('data-global', 'false');
+            globeToggle.classList.remove('is-info');
+            globeToggle.setAttribute('title', 'Make global');
+            if (name) {
+                localStorage.removeItem('openapi-ui-global-header:' + name);
+                row.removeAttribute('data-prev-name');
+            }
+        } else {
+            // Make global
+            globeToggle.setAttribute('data-global', 'true');
+            globeToggle.classList.add('is-info');
+            globeToggle.setAttribute('title', 'Make operation-specific');
+            if (name) {
+                localStorage.setItem('openapi-ui-global-header:' + name, value);
+                row.setAttribute('data-prev-name', name);
+            }
+        }
+        applyGlobalHeaderPlaceholders();
+    }
+
     // Schema box toggle + custom header management
     detail.addEventListener('click', function(e) {
         const addBtn = e.target.closest('.custom-header-add');
@@ -1563,31 +1599,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const globeToggle = e.target.closest('.globe-toggle');
         if (globeToggle) {
-            const row = globeToggle.closest('.custom-header-row');
-            const name = row.querySelector('.custom-header-name').value.trim();
-            const value = row.querySelector('.custom-header-value').value;
-            const isGlobal = globeToggle.getAttribute('data-global') === 'true';
-            
-            if (isGlobal) {
-                // Make operation-specific
-                globeToggle.setAttribute('data-global', 'false');
-                globeToggle.classList.remove('is-info');
-                globeToggle.setAttribute('title', 'Make global');
-                if (name) {
-                    localStorage.removeItem('openapi-ui-global-header:' + name);
-                    row.removeAttribute('data-prev-name');
-                }
-            } else {
-                // Make global
-                globeToggle.setAttribute('data-global', 'true');
-                globeToggle.classList.add('is-info');
-                globeToggle.setAttribute('title', 'Make operation-specific');
-                if (name) {
-                    localStorage.setItem('openapi-ui-global-header:' + name, value);
-                    row.setAttribute('data-prev-name', name);
-                }
-            }
-            applyGlobalHeaderPlaceholders();
+            toggleGlobe(globeToggle);
             return;
         }
         const removeBtn = e.target.closest('.custom-header-remove');
@@ -1979,13 +1991,34 @@ document.addEventListener('DOMContentLoaded', function() {
         grid.appendChild(valueEl);
     }
 
-    // event delegation for response-area toggle/show-all clicks
+    // Enter/Space activation for detail-pane components (event delegation)
     detail.addEventListener('keydown', function(e) {
         if (e.key !== 'Enter' && e.key !== ' ') return;
-        const toggle = e.target.closest('.response-headers-toggle');
+        const el = e.target;
+        const toggle = el.closest('.response-headers-toggle');
         if (toggle) {
             e.preventDefault();
             toggle.click();
+            return;
+        }
+        const removeBtn = el.closest('.custom-header-remove');
+        if (removeBtn) {
+            e.preventDefault();
+            removeBtn.click();
+            return;
+        }
+        const globeToggle = el.closest('.globe-toggle');
+        if (globeToggle) {
+            e.preventDefault();
+            toggleGlobe(globeToggle);
+            return;
+        }
+        var link = (el.tagName === 'A' && el.hasAttribute('href')) ? el
+            : el.querySelector && el.querySelector('a[href]');
+        if (link) {
+            e.preventDefault();
+            link.click();
+            return;
         }
     });
     detail.addEventListener('click', function(e) {
@@ -2039,6 +2072,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (persistBtn) {
                 persistBtn.click();
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }
+    });
+
+    // Globe shortcut (Ctrl+G / Alt+G) — toggles global on custom header name/value fields
+    document.addEventListener('keydown', function(e) {
+        const mod = /Mac/.test(navigator.platform) ? e.ctrlKey : e.altKey;
+        if (e.code === 'KeyG' && mod) {
+            const el = document.activeElement;
+            const row = el.closest('.custom-header-row');
+            var globeToggle = row ? row.querySelector('.globe-toggle') : null;
+            if (globeToggle) {
+                toggleGlobe(globeToggle);
                 e.preventDefault();
                 e.stopPropagation();
             }
@@ -2123,7 +2171,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * This handler only fires for keys that no component claimed — typically
      * arrow keys at component boundaries, or arrow keys on plain form fields.
      *
-     * Also handles Enter/Space activation and Tab routing (not spatial nav, but co-located).
+     * Also handles Tab routing and Escape (not spatial nav, but co-located).
+     * Enter/Space activation is handled by individual components.
      */
     document.addEventListener('keydown', function(e) {
         const el = document.activeElement;
@@ -2202,24 +2251,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 const bumpDir = (direction === 'left' || direction === 'right') ? 'h' : 'v';
                 bump(el, bumpDir);
-            }
-            e.preventDefault();
-        } else if (e.key === 'Enter' || e.key === ' ') {
-            var link = (el.tagName === 'A' && el.hasAttribute('href')) ? el
-                : el.querySelector && el.querySelector('a[href]');
-            if (link) {
-                link.click();
-            } else if (e.key === 'Enter' && el.classList.contains('schema-toggle')) {
-                el.click();
-            } else if (e.key === 'Enter' && el.tagName === 'BUTTON') {
-                el.click();
-            } else if (el.classList.contains('custom-header-remove')) {
-                el.click();
-            } else if (e.key === 'Enter' && el.tagName !== 'SELECT') {
-                const sendBtn = document.querySelector('.mode-send-button');
-                if (sendBtn) sendBtn.click();
-            } else {
-                return;
             }
             e.preventDefault();
         } else if (e.key === 'Escape') {
@@ -2438,8 +2469,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Send button handler (delegated from detail pane)
     if (detail) {
         detail.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && e.target.closest('form[data-path]') && e.target.tagName !== 'BUTTON') {
+            if (e.key === 'Enter' && e.target.closest('form[data-path]') && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT') {
                 e.preventDefault();
+                const sendBtn = document.querySelector('.mode-send-button');
+                if (sendBtn) sendBtn.click();
             }
         });
         detail.addEventListener('submit', function(e) {
