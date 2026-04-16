@@ -23,6 +23,10 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -97,11 +101,15 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         navigateHome();
     }
 
+    private static final DateTimeFormatter TIMESTAMP_FORMAT =
+            DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.systemDefault());
+
     @Override public void afterEach(@NonNull ExtensionContext extensionContext) {
         extensionContext.getExecutionException().ifPresent(ex -> {
             var testName = getFullTestName(extensionContext);
             var context = lastWaitContext != null ? "-" + lastWaitContext : "";
-            var filename = "failure-" + testName + sanitizeFilename(context);
+            var timestamp = TIMESTAMP_FORMAT.format(Instant.now());
+            var filename = "failure-" + timestamp + "-" + testName + sanitizeFilename(context);
 
             publishScreenshot(filename, currentContext);
         });
@@ -1410,7 +1418,28 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         context.publishFile(name + ".png", IMAGE_PNG, this::screenshot);
     }
 
-    private void screenshot(Path path) {page.screenshot(new ScreenshotOptions().setPath(path).setFullPage(true));}
+    private void screenshot(Path path) {
+        page.screenshot(new ScreenshotOptions().setPath(path).setFullPage(true));
+        if (path.getFileName().toString().startsWith("failure-")) {
+            cleanOldFailureScreenshots(path.getParent());
+        }
+    }
+
+    /// Delete failure screenshots older than 24 hours.
+    private static void cleanOldFailureScreenshots(Path dir) {
+        var cutoff = Instant.now().minus(Duration.ofHours(24));
+        try (var files = Files.list(dir)) {
+            files.filter(p -> p.getFileName().toString().startsWith("failure-"))
+                    .filter(p -> {
+                        try { return Files.getLastModifiedTime(p).toInstant().isBefore(cutoff); }
+                        catch (IOException e) { return false; }
+                    })
+                    .forEach(p -> {
+                        try { Files.delete(p); }
+                        catch (IOException ignored) {}
+                    });
+        } catch (IOException ignored) {}
+    }
 
     private static class TestServer {
         private final HttpServer server;
