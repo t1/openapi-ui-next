@@ -309,17 +309,18 @@ Initial MVP release
     - keyboard
       navigation ([#21](https://github.com/t1/openapi-ui-next/issues/21), [#23](https://github.com/t1/openapi-ui-next/issues/23))
 
-### 1.2 - not yet released
+### 1.2 - 2026-04-16
 
 - **Security schemes**: apiKey, http bearer, and info-only rows for browser-handled
   auth ([#34](https://github.com/t1/openapi-ui-next/issues/34), [#35](https://github.com/t1/openapi-ui-next/issues/35), [#36](https://github.com/t1/openapi-ui-next/issues/36), [#37](https://github.com/t1/openapi-ui-next/issues/37))
-- **Server selector**: dropdown in the header with server items, template variable presets, custom URLs, and localStorage
-  persistence ([#39](https://github.com/t1/openapi-ui-next/issues/39), [#41](https://github.com/t1/openapi-ui-next/issues/41), [#44](https://github.com/t1/openapi-ui-next/issues/44), [#45](https://github.com/t1/openapi-ui-next/issues/45), [#46](https://github.com/t1/openapi-ui-next/issues/46))
+- **Server selector**: dropdown in the header with server items, template variable presets, custom URLs,
+  per-operation overrides, and localStorage
+  persistence ([#39](https://github.com/t1/openapi-ui-next/issues/39), [#41](https://github.com/t1/openapi-ui-next/issues/41), [#42](https://github.com/t1/openapi-ui-next/issues/42), [#44](https://github.com/t1/openapi-ui-next/issues/44), [#45](https://github.com/t1/openapi-ui-next/issues/45), [#46](https://github.com/t1/openapi-ui-next/issues/46))
 - **Cross-origin security**: auto-show/hide security inputs based on server origin
   ([#43](https://github.com/t1/openapi-ui-next/issues/43))
 - **Tag filtering**: pill-based filter panel with keyboard navigation and localStorage
   persistence ([#47](https://github.com/t1/openapi-ui-next/issues/47), [#48](https://github.com/t1/openapi-ui-next/issues/48), [#49](https://github.com/t1/openapi-ui-next/issues/49))
-- **Code generators**: scalable mode selector with 8 generators — curl, HTTPie, JS fetch,
+- **Code generators**: scalable mode selector with 10 generators — curl, HTTPie, JS fetch,
   Java HttpClient, JAX-RS, Python requests, Go net/http, MP Rest Client, Spring WebClient,
   Spring
   RestTemplate ([#50](https://github.com/t1/openapi-ui-next/issues/50), [#51](https://github.com/t1/openapi-ui-next/issues/51), [#52](https://github.com/t1/openapi-ui-next/issues/52), [#53](https://github.com/t1/openapi-ui-next/issues/53), [#54](https://github.com/t1/openapi-ui-next/issues/54), [#55](https://github.com/t1/openapi-ui-next/issues/55))
@@ -327,6 +328,11 @@ Initial MVP release
   `application/x-www-form-urlencoded` ([#7](https://github.com/t1/openapi-ui-next/issues/7))
 - **Globe toggle for custom headers**: in-place controls to make headers operation-specific or global
   across all operations with visual state indicators (gray/blue badge)
+- **Bug fixes**:
+    - request body schema tree not showing when using `$ref`
+    - double-submit on Send button
+    - Enter/Space on custom header delete
+    - focus restore races after HTMX swaps
 
 ## Contributing
 
