@@ -911,7 +911,7 @@ class BrowserTest {
 
             then(app.isFilterActive("users")).isTrue();
 
-            app.navigateToHash("invoices/GET");
+            app.navigateToHashInPage("invoices/GET");
             app.waitForDetailContent("List invoices");
 
             then(app.isFilterActive("users")).isFalse();

@@ -1317,12 +1317,18 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return "true".equals(page.locator("#detail .field:has([name='" + paramName + "']) .persist-toggle").getAttribute("aria-pressed"));
     }
 
+    /// Navigate to a hash route by reloading the page with the hash in the URL.
+    /// This avoids a race between the initial auto-load and hash navigation.
     void navigateToHash(String hash) {
         lastWaitContext = "navigateToHash(\"" + hash + "\")";
-        // wait for the tree to be fully rendered before navigating
+        page.navigate(testServer.baseUrl() + "/index.html#" + hash);
+    }
+
+    /// Navigate to a hash route in-page without reloading (preserves page state like filters).
+    void navigateToHashInPage(String hash) {
+        lastWaitContext = "navigateToHashInPage(\"" + hash + "\")";
         page.waitForSelector("[hx-get]");
         page.evaluate("location.hash = '#" + hash + "'");
-        // trigger popstate since programmatic hash change doesn't fire it
         page.evaluate("window.dispatchEvent(new PopStateEvent('popstate'))");
     }
 

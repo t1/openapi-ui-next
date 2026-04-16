@@ -1210,15 +1210,29 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.body.addEventListener('htmx:load', function(e) {
         if (!pendingMethod || !detail || !detail.contains(e.target)) return;
+        // Ignore htmx:load for stale swaps — if #detail has been re-swapped since this
+        // load event was queued, the content no longer matches the pending navigation
+        var loadedForm = detail.querySelector('form[data-fragment-path]');
+        if (loadedForm && window._pendingNavPath && loadedForm.getAttribute('data-fragment-path') !== window._pendingNavPath) return;
         const method = pendingMethod;
         pendingMethod = null;
         const tabLinks = detail.querySelectorAll('.tabs li a');
         var tabClicked = false;
+        var tabSkipped = false;
         tabLinks.forEach(function(a) {
-            if (a.textContent.trim() === method) { a.click(); tabClicked = true; }
+            if (a.textContent.trim() === method) {
+                // Skip clicking an already-active tab when restoring focus,
+                // because the redundant swap would destroy the just-restored focus element
+                if (a.closest('li.is-active') && window._pendingRestoreFocus) {
+                    tabSkipped = true;
+                } else {
+                    a.click();
+                }
+                tabClicked = true;
+            }
         });
-        // If no tab was clicked (single-method path), apply pending focus now
-        if (!tabClicked) {
+        // If no tab was clicked (single-method path or skipped), apply pending focus now
+        if (!tabClicked || tabSkipped) {
             if (window._pendingRestoreFocus) {
                 var selector = window._pendingRestoreFocus;
                 window._pendingRestoreFocus = null;
@@ -1260,9 +1274,26 @@ document.addEventListener('DOMContentLoaded', function() {
             modeSel.style.display = 'none';
         }
     }
+    // Stamp each htmx request with the current detail nav generation,
+    // so stale responses can be cancelled in htmx:beforeSwap
+    document.body.addEventListener('htmx:beforeSend', function(e) {
+        if (e.detail.xhr) {
+            e.detail.xhr._navGen = window._navGen || 0;
+        }
+    });
     // Rescue mode selector back to detail-pane before HTMX replaces content inside detail
     document.body.addEventListener('htmx:beforeSwap', function(e) {
         if (!e.detail.target || !detail.contains(e.detail.target)) return;
+        // Cancel stale swaps: if _navGen on #detail was bumped after this request started,
+        // another navigateFromHash has been issued — discard this response
+        if (e.detail.target === detail && e.detail.xhr) {
+            var reqGen = e.detail.xhr._navGen;
+            var curGen = parseInt(detail.getAttribute('data-nav-gen') || '0');
+            if (reqGen != null && reqGen < curGen) {
+                e.detail.shouldSwap = false;
+                return;
+            }
+        }
         // Save non-global custom headers to in-memory cache before DOM is destroyed
         var form = detail.querySelector('form[data-path]');
         if (form) {
@@ -2353,9 +2384,11 @@ document.addEventListener('DOMContentLoaded', function() {
             item.setAttribute('aria-selected', 'true');
         }
         if (methodFromHash && !tagFromHash) pendingMethod = methodFromHash;
+        window._pendingNavPath = treePath;
         if (Object.keys(queryParams).length > 0) {
             window._pendingParams = queryParams;
         }
+        detail.setAttribute('data-nav-gen', String(window._navGen = (window._navGen || 0) + 1));
         htmx.ajax('GET', hxGet, {target: '#detail', swap: 'innerHTML'});
         return true;
     }
@@ -2363,7 +2396,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const firstHxEl = document.querySelector('#tree-container [hx-get]');
         if (firstHxEl) {
             const hxGet = firstHxEl.getAttribute('hx-get');
-            htmx.ajax('GET', hxGet, '#detail');
+            detail.setAttribute('data-nav-gen', String(window._navGen = (window._navGen || 0) + 1));
+            htmx.ajax('GET', hxGet, {target: '#detail', swap: 'innerHTML'});
             const route = hxGetToRoute(hxGet);
             const tag = firstHxEl.getAttribute('data-tag');
             const hash = tag ? '#[' + tag + ']' + route : '#' + route;
