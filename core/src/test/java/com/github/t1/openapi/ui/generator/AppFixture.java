@@ -382,7 +382,34 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void clickMethodTab(int index) {page.locator(".tabs li:nth-child(" + index + ") a").click();}
 
-    void focusTab(int index) {page.locator("[data-tab-bar]").focus();}
+    void focusTab(int index) {
+        page.locator("[data-tab-bar]").focus();
+        waitForContentBelowTabBar();
+    }
+
+    /// Wait for at least one focusable element below the tab bar to have a valid bounding rect.
+    /// Spatial navigation relies on `getBoundingClientRect()` — this ensures layout is complete.
+    void waitForContentBelowTabBar() {
+        page.waitForFunction("""
+                () => {
+                    var tabBar = document.querySelector('[data-tab-bar]');
+                    if (!tabBar) return false;
+                    var rect = tabBar.getBoundingClientRect();
+                    if (rect.height === 0) return false;
+                    var centerY = rect.top + rect.height / 2;
+                    var candidates = document.querySelectorAll(
+                        '#detail input:not(:disabled), #detail select:not(:disabled), #detail textarea:not(:disabled),'
+                        + ' #detail button:not(:disabled), #detail a[href], #detail [tabindex="0"]');
+                    for (var i = 0; i < candidates.length; i++) {
+                        var c = candidates[i];
+                        if (c.offsetParent && !c.closest('[data-tab-bar]')) {
+                            var cr = c.getBoundingClientRect();
+                            if (cr.top + cr.height / 2 > centerY) return true;
+                        }
+                    }
+                    return false;
+                }""");
+    }
 
     boolean isTabActive(int index) {
         var cls = page.locator(".tabs li:nth-child(" + index + ")").getAttribute("class");

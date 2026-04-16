@@ -2116,13 +2116,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Tab/Shift+Tab on a tab bar: jump into content or back to tree
         if (e.key === 'Tab' && el.closest('[data-tab-bar]')) {
-            e.preventDefault();
             if (e.shiftKey) {
                 var tree = document.querySelector('[role="tree"]');
-                if (tree) tree.focus();
+                if (tree) {
+                    e.preventDefault();
+                    tree.focus();
+                }
             } else {
                 var target = findSpatialTarget(el, 'down');
-                if (target) target.focus();
+                if (!target) {
+                    // DOM fallback when spatial navigation finds nothing (e.g. during layout)
+                    var content = document.getElementById('detail');
+                    if (content) {
+                        var focusable = content.querySelectorAll(
+                            'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]');
+                        for (var i = 0; i < focusable.length; i++) {
+                            if (focusable[i].offsetParent !== null && !focusable[i].closest('[data-tab-bar]')) {
+                                target = focusable[i];
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (target) {
+                    e.preventDefault();
+                    target.focus();
+                }
             }
             return;
         }
@@ -2162,7 +2181,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const direction = e.key === 'ArrowDown' ? 'down'
                 : e.key === 'ArrowUp' ? 'up'
                 : e.key === 'ArrowRight' ? 'right' : 'left';
-            const target = findSpatialTarget(el, direction);
+            var target = findSpatialTarget(el, direction);
             if (target) {
                 target.focus();
             } else {

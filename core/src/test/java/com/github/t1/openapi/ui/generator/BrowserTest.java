@@ -1133,10 +1133,9 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowDown"); // select {id}
             app.waitForInput("id");
-            app.pressKey("ArrowRight"); // expand {id} node
-            app.pressKey("ArrowRight"); // enter tabs
-            app.pressKey("ArrowRight"); // switch to DELETE tab
-            app.waitForDetailContent("Delete a pet"); // wait for tab swap
+            app.clickMethodTab(2); // switch to DELETE tab
+            app.waitForDetailContent("Delete a pet");
+            app.focusTab(1); // focus tab bar (with layout wait)
             app.pressKey("ArrowDown"); // enter fields
 
             then(app.activeElementTag()).isEqualTo("INPUT");
@@ -1157,8 +1156,8 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowDown"); // select {id}
             app.waitForInput("id");
-            app.pressKey("ArrowRight"); // expand {id} node
-            app.pressKey("ArrowRight"); // enter tabs
+            app.focusTab(1); // focus tab bar (with layout wait)
+
             app.pressKey("ArrowDown"); // enter fields
             app.pressKey("ArrowUp"); // back to tabs
 
@@ -1182,10 +1181,9 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowDown"); // select {id}
             app.waitForInput("id");
-            app.pressKey("ArrowRight"); // expand {id} node
-            app.pressKey("ArrowRight"); // enter tabs on GET (first)
-            app.pressKey("ArrowRight"); // switch to DELETE tab
+            app.clickMethodTab(2); // switch to DELETE tab
             app.waitForDetailContent("Delete a pet");
+            app.focusTab(1); // focus tab bar (with layout wait)
             app.pressKey("ArrowDown"); // enter fields
             app.pressKey("ArrowUp"); // back to tabs — should land on DELETE (active), not switch to GET
 
@@ -1226,8 +1224,7 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowDown"); // select {id}
             app.waitForDetailContent("Get pet by ID");
-            app.pressKey("ArrowRight"); // expand {id} node
-            app.pressKey("ArrowRight"); // enter tabs
+            app.focusTab(1); // focus tab bar (with layout wait)
             app.pressKey("ArrowDown"); // enter fields
             app.pressKey("Escape"); // back to tree
 
