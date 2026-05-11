@@ -1,5 +1,0 @@
-#!/usr/bin/env zsh
-# Update git-based OpenCode plugins before starting OpenCode.
-# Workaround for https://github.com/anomalyco/opencode/issues/6774
-bun update tdder superpowers --cwd ~/.cache/opencode --silent 2>/dev/null
-exec opencode "$@"
