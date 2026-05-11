@@ -390,7 +390,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     void clickMethodTab(int index) {page.locator(".tabs li:nth-child(" + index + ") a").click();}
 
-    void focusTab(int index) {
+    void focusTab() {
         page.locator("[data-tab-bar]").focus();
         waitForContentBelowTabBar();
     }
@@ -511,7 +511,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.locator(".schema-box[data-box='response'] .schema-status-tab:text('" + code + "')").click();
     }
 
-    void focusStatusCodeTab(String code) {
+    void focusStatusCodeTab() {
         page.locator(".schema-box[data-box='response'] .schema-status-tabs[data-tab-bar]").focus();
     }
 

@@ -1110,7 +1110,7 @@ class BrowserTest {
 
         @Test void shouldJumpIntoContentOnTabKeyFromMethodTab() {
             app.waitForDetailContent("List pets");
-            app.focusTab(1);
+            app.focusTab();
 
             app.pressKey("Tab");
 
@@ -1121,7 +1121,7 @@ class BrowserTest {
 
         @Test void shouldJumpToTreeOnShiftTabFromMethodTab() {
             app.waitForDetailContent("List pets");
-            app.focusTab(1);
+            app.focusTab();
 
             app.pressKey("Shift+Tab");
 
@@ -1135,7 +1135,7 @@ class BrowserTest {
             app.waitForInput("id");
             app.clickMethodTab(2); // switch to DELETE tab
             app.waitForDetailContent("Delete a pet");
-            app.focusTab(1); // focus tab bar (with layout wait)
+            app.focusTab(); // focus tab bar (with layout wait)
             app.pressKey("ArrowDown"); // enter fields
 
             then(app.activeElementTag()).isEqualTo("INPUT");
@@ -1144,7 +1144,7 @@ class BrowserTest {
 
         @Test void shouldFocusFirstButtonOnArrowDownFromTabWithoutParams() {
             app.waitForDetailContent("List pets");
-            app.focusTab(1);
+            app.focusTab();
 
             app.pressKey("ArrowDown");
 
@@ -1156,7 +1156,7 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowDown"); // select {id}
             app.waitForInput("id");
-            app.focusTab(1); // focus tab bar (with layout wait)
+            app.focusTab(); // focus tab bar (with layout wait)
 
             app.pressKey("ArrowDown"); // enter fields
             app.pressKey("ArrowUp"); // back to tabs
@@ -1166,7 +1166,7 @@ class BrowserTest {
 
         @Test void shouldReturnToActiveTabOnShiftTabFromFirstField() {
             app.waitForDetailContent("List pets"); // GET is first/active tab
-            app.focusTab(1);
+            app.focusTab();
             app.pressKey("ArrowDown"); // enter fields
 
             app.pressKey("Shift+Tab"); // back to tabs — should land on GET (active), not DELETE (last)
@@ -1183,7 +1183,7 @@ class BrowserTest {
             app.waitForInput("id");
             app.clickMethodTab(2); // switch to DELETE tab
             app.waitForDetailContent("Delete a pet");
-            app.focusTab(1); // focus tab bar (with layout wait)
+            app.focusTab(); // focus tab bar (with layout wait)
             app.pressKey("ArrowDown"); // enter fields
             app.pressKey("ArrowUp"); // back to tabs — should land on DELETE (active), not switch to GET
 
@@ -1224,7 +1224,7 @@ class BrowserTest {
             app.pressKey("ArrowRight"); // expand collapsed node
             app.pressKey("ArrowDown"); // select {id}
             app.waitForDetailContent("Get pet by ID");
-            app.focusTab(1); // focus tab bar (with layout wait)
+            app.focusTab(); // focus tab bar (with layout wait)
             app.pressKey("ArrowDown"); // enter fields
             app.pressKey("Escape"); // back to tree
 
@@ -2339,7 +2339,7 @@ class BrowserTest {
             navigateToPetDetail();
             app.toggleSchema("response");
 
-            app.focusStatusCodeTab("200");
+            app.focusStatusCodeTab();
             app.pressKey("ArrowRight");
 
             then(app.activeStatusCodeTab()).isEqualTo("404");
@@ -2349,7 +2349,7 @@ class BrowserTest {
             navigateToPetDetail();
             app.toggleSchema("response");
 
-            app.focusStatusCodeTab("404");
+            app.focusStatusCodeTab();
             app.pressKey("ArrowLeft");
 
             then(app.activeStatusCodeTab()).isEqualTo("200");
@@ -2359,7 +2359,7 @@ class BrowserTest {
             navigateToPetDetail();
             app.toggleSchema("response");
 
-            app.focusStatusCodeTab("200");
+            app.focusStatusCodeTab();
             app.pressKey("Tab");
 
             // Tab should move to next focusable element, not stay on status tabs
@@ -2371,7 +2371,7 @@ class BrowserTest {
             navigateToPetDetail();
             app.toggleSchema("response");
 
-            app.focusStatusCodeTab("200");
+            app.focusStatusCodeTab();
             app.pressKey("Tab"); // move past status tabs
 
             app.pressKey("Shift+Tab"); // back to status tabs container
@@ -3041,7 +3041,7 @@ class BrowserTest {
             app.focusTree();
             app.pressKey("Enter");
             app.waitForDetailContent("List pets");
-            app.focusTab(1);
+            app.focusTab();
 
             app.pressKey("ArrowDown"); // should skip disabled cookie input
 
