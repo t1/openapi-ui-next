@@ -19,10 +19,6 @@
         <module>runtime</module>
     </modules>
 
-    <properties>
-        <quarkus.version>3.35.2</quarkus.version>
-    </properties>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
