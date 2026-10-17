@@ -12,11 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 
 /**
@@ -56,10 +53,9 @@ public class OpenApiUiProcessor {
 
         log.info("Generating OpenAPI UI from OpenAPI document");
 
-        // Write to classes/META-INF/resources/ so Quarkus serves them as static resources,
-        // and produce GeneratedResourceBuildItem so Quarkus re-runs this step on hot-reload.
+        // Keep the existing directory in place because Quarkus scans it for static resources
+        // during augmentation, which can overlap this build step on repeated runs.
         var outputDir = outputTarget.getOutputDirectory().resolve("classes/META-INF/resources/openapi-ui");
-        deleteRecursively(outputDir);
 
         var openApi = defaultDoc.getSmallRyeOpenAPI().model();
         new OpenApiUiGenerator(openApi, (name, content) -> {
@@ -78,20 +74,5 @@ public class OpenApiUiProcessor {
         } catch (IOException e) {
             throw new RuntimeException("could not write file: " + name, e);
         }
-    }
-
-    private static void deleteRecursively(Path dir) throws IOException {
-        if (!Files.exists(dir)) return;
-        Files.walkFileTree(dir, new SimpleFileVisitor<>() {
-            @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-        });
     }
 }
