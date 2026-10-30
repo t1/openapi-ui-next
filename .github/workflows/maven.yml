@@ -3,7 +3,8 @@ name: Java CI
 on:
   push:
     branches: [trunk]
-  schedule: [ cron: '38 16 * * 5' ]
+  schedule:
+    - cron: '38 16 * * 5'
 
 jobs:
   build:
