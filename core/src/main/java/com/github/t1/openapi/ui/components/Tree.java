@@ -235,7 +235,10 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                     group.style.display = expand ? '' : 'none';
                 }
             
-                // Delegate click from tree-container (survives HTMX swaps)
+                // Delegate click from tree-container (survives HTMX swaps).
+                // Capture phase: the tree-label's own hx-get native htmx listener is on the
+                // label element itself (bubble phase), so we must stopPropagation before the
+                // event reaches it — a bubble-phase handler here would fire too late.
                 var clickTarget = treeContainer || document;
                 clickTarget.addEventListener('click', function(e) {
                     var tree = getTree();
@@ -251,10 +254,12 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                     }
                     var item = e.target.closest('[role="treeitem"]');
                     if (item) {
+                        // Suppress the tree-label's own htmx click trigger; selectItem does the ajax
+                        if (e.target.closest('[hx-get]')) e.stopPropagation();
                         selectItem(item);
                         tree.focus();
                     }
-                });
+                }, true);
             
                 // Delegate keydown from tree-container
                 clickTarget.addEventListener('keydown', function(e) {

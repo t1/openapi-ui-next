@@ -315,7 +315,15 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 + " return parseFloat(getComputedStyle(icon).right); }")).doubleValue();
     }
 
-    void fillRequestBody(String body) {page.locator("#detail textarea[data-request-body]").fill(body);}
+    void fillRequestBody(String body) {
+        var locator = page.locator("#detail textarea[data-request-body]");
+        locator.fill(body);
+        // fill() resolves as soon as the element is actionable, but htmx may still be
+        // mid-swap on #detail; wait until no swap is in progress so the element is stable.
+        page.waitForFunction(
+                "() => !document.getElementById('detail').classList.contains('htmx-swapping')"
+                        + " && !document.querySelector('.htmx-swapping')");
+    }
 
     void clearRequestBody() {page.locator("#detail textarea[data-request-body]").clear();}
 
