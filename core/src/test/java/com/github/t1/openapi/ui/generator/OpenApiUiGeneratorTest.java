@@ -94,6 +94,33 @@ class OpenApiUiGeneratorTest {
         then(indexHtml).contains("hx-target=");
     }
 
+    @Test void shouldConfigureHtmxToNotSwapErrorResponses() throws Exception {
+        generate("/one-get.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        // htmx 4 swaps 4xx/5xx responses by default; restore the 2.x behavior,
+        // as fragments are static files and error banners are handled by our retry logic
+        then(indexHtml).contains("<meta name=\"htmx-config\" content=\"{&quot;noSwap&quot;:[204,304,&quot;4xx&quot;,&quot;5xx&quot;]}\">");
+    }
+
+    @Test void shouldUseHtmx4EventNamesOnly() throws Exception {
+        generate("/one-get.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).doesNotContain("htmx:afterRequest");
+        then(indexHtml).doesNotContain("htmx:afterSettle");
+        then(indexHtml).doesNotContain("htmx:load'"); // e.g. addEventListener('htmx:load', ...)
+        then(indexHtml).doesNotContain("htmx:beforeSend");
+        then(indexHtml).doesNotContain("htmx:beforeSwap");
+        then(indexHtml).doesNotContain("htmx:afterSwap");
+        then(indexHtml).doesNotContain("htmx:oobAfterSwap");
+        then(indexHtml).doesNotContain("htmx:sendError");
+        then(indexHtml).doesNotContain("htmx:responseError");
+        then(indexHtml).contains("htmx:after:swap");
+        then(indexHtml).contains("htmx:before:swap");
+        then(indexHtml).contains("htmx:response:error");
+    }
+
     @Test void shouldGenerateParameterInputs() throws Exception {
         generate("/params.yaml");
 

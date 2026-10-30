@@ -141,4 +141,11 @@ class TreeTest {
                 .contains("ArrowDown")
                 .contains("ArrowUp");
     }
+
+    @Test void shouldReattachTreeApiAfterHtmxSwap() {
+        var js = Tree.js();
+
+        then(js).contains("htmx:after:swap");
+        then(js).doesNotContain("htmx:afterSwap");
+    }
 }

@@ -302,6 +302,7 @@ public class OpenApiUiGenerator {
 
     private static Renderable htmlDocument(String pageTitle, Renderable body, Map<String, String[]> operationIdMap) {
         return html(pageTitle)
+                .metaName("htmx-config", "{\"noSwap\":[204,304,\"4xx\",\"5xx\"]}")
                 .stylesheet("vendor/bulma.min.css")
                 .stylesheet("vendor/css/fontawesome.min.css")
                 .stylesheet("vendor/css/solid.min.css")

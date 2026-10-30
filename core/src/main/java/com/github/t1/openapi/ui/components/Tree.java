@@ -410,8 +410,8 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                     });
                 }
                 attachTreeApi();
-                document.body.addEventListener('htmx:afterSwap', function(e) {
-                    if (e.detail.target && e.detail.target.id === 'tree-container') attachTreeApi();
+                document.body.addEventListener('htmx:after:swap', function(e) {
+                    if (e.detail.ctx.target && e.detail.ctx.target.id === 'tree-container') attachTreeApi();
                 });
 
                 document.addEventListener('keydown', function(e) {

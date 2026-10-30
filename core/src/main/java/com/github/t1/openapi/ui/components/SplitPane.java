@@ -125,6 +125,6 @@ public class SplitPane extends AbstractElement<SplitPane> {
                 });
             }
             document.addEventListener('DOMContentLoaded', function() { initSplitPanes(); });
-            document.body.addEventListener('htmx:afterSettle', function(e) { initSplitPanes(e.detail.elt); });
+            document.body.addEventListener('htmx:after:settle', function(e) { initSplitPanes(e.target); });
             """;
 }

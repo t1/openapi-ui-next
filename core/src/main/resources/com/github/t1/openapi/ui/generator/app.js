@@ -1175,8 +1175,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Tab switching — toggle is-active when HTMX swaps method content
-    document.body.addEventListener('htmx:afterRequest', function(e) {
-        const tabLink = e.detail.elt;
+    document.body.addEventListener('htmx:after:request', function(e) {
+        const tabLink = e.detail.ctx.sourceElement;
         if (tabLink && tabLink.closest && tabLink.closest('.tabs')) {
             const tabs = tabLink.closest('.tabs');
             tabs.querySelectorAll('li').forEach(function(li) { li.classList.remove('is-active'); });
@@ -1205,8 +1205,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    document.body.addEventListener('htmx:afterSettle', function(e) {
-        if (e.detail.target && e.detail.target.id === 'tree-container') {
+    document.body.addEventListener('htmx:after:swap', function(e) {
+        if (e.detail.ctx.target && e.detail.ctx.target.id === 'tree-container') {
             initFilterIcon();
             if (window._hashNavPending) {
                 window._hashNavPending = false;
@@ -1216,29 +1216,48 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-    document.body.addEventListener('htmx:load', function(e) {
-        if (!pendingMethod || !detail || !detail.contains(e.target)) return;
-        const method = pendingMethod;
-        pendingMethod = null;
-        const tabLinks = detail.querySelectorAll('.tabs li a');
-        var tabClicked = false;
-        tabLinks.forEach(function(a) {
-            if (a.textContent.trim() === method) { a.click(); tabClicked = true; }
-        });
-        // If no tab was clicked (single-method path), apply pending focus now
-        if (!tabClicked) {
-            if (window._pendingRestoreFocus) {
-                var selector = window._pendingRestoreFocus;
-                window._pendingRestoreFocus = null;
-                setupFocusRestore(selector);
-            } else if (window._pendingFocusFirst) {
-                window._pendingFocusFirst = false;
-                var targetForm = document.querySelector('#detail form[data-path]');
-                if (targetForm) {
-                    var firstInput = targetForm.querySelector('input, select, textarea');
-                    if (firstInput) firstInput.focus();
-                    else if (modeContainer) modeContainer.focus();
+    document.body.addEventListener('htmx:after:process', function(e) {
+        if (!detail || !detail.contains(e.target)) return;
+        if (pendingMethod) {
+            const method = pendingMethod;
+            pendingMethod = null;
+            const tabLinks = detail.querySelectorAll('.tabs li a');
+            var tabClicked = false;
+            tabLinks.forEach(function(a) {
+                if (a.textContent.trim() === method) { a.click(); tabClicked = true; }
+            });
+            // If a tab was clicked, the method-content swap's after:process applies the pending state
+            if (tabClicked) return;
+        }
+        // Fill parameters from hash query string or body link navigation.
+        // Wait until method tab selection is done (pendingMethod is null) so params go into the right form.
+        if (window._pendingParams) {
+            var params = window._pendingParams;
+            window._pendingParams = null;
+            var targetForm = document.querySelector('#detail form[data-path]');
+            var lastFilled = null;
+            if (targetForm) {
+                for (var name in params) {
+                    var input = targetForm.querySelector('[name="' + name + '"]');
+                    if (input) {
+                        input.value = params[name];
+                        input.dispatchEvent(new Event('input', {bubbles: true}));
+                        lastFilled = input;
+                    }
                 }
+            }
+            if (lastFilled) lastFilled.focus();
+        } else if (window._pendingRestoreFocus) {
+            var selector = window._pendingRestoreFocus;
+            window._pendingRestoreFocus = null;
+            setupFocusRestore(selector);
+        } else if (window._pendingFocusFirst) {
+            window._pendingFocusFirst = false;
+            var targetForm = document.querySelector('#detail form[data-path]');
+            if (targetForm) {
+                var firstInput = targetForm.querySelector('input, select, textarea');
+                if (firstInput) firstInput.focus();
+                else if (modeContainer) modeContainer.focus();
             }
         }
         // Restore scroll position after back navigation
@@ -1268,22 +1287,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     // Stamp each htmx request with the current detail nav generation,
-    // so stale responses can be cancelled in htmx:beforeSwap
-    document.body.addEventListener('htmx:beforeSend', function(e) {
-        if (e.detail.xhr) {
-            e.detail.xhr._navGen = window._navGen || 0;
-        }
+    // so stale responses can be cancelled in htmx:before:swap
+    document.body.addEventListener('htmx:before:request', function(e) {
+        e.detail.ctx._navGen = window._navGen || 0;
     });
     // Rescue mode selector back to detail-pane before HTMX replaces content inside detail
-    document.body.addEventListener('htmx:beforeSwap', function(e) {
-        if (!e.detail.target || !detail.contains(e.detail.target)) return;
+    document.body.addEventListener('htmx:before:swap', function(e) {
+        if (!e.detail.ctx.target || !detail.contains(e.detail.ctx.target)) return;
         // Cancel stale swaps: if _navGen on #detail was bumped after this request started,
         // another navigateFromHash has been issued — discard this response
-        if (e.detail.target === detail && e.detail.xhr) {
-            var reqGen = e.detail.xhr._navGen;
+        if (e.detail.ctx.target === detail) {
+            var reqGen = e.detail.ctx._navGen;
             var curGen = parseInt(detail.getAttribute('data-nav-gen') || '0');
             if (reqGen != null && reqGen < curGen) {
-                e.detail.shouldSwap = false;
+                e.preventDefault();
                 return;
             }
         }
@@ -1308,7 +1325,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var modeRow = document.querySelector('.mode-row');
         if (modeRow) modeRow.remove();
     });
-    document.body.addEventListener('htmx:afterSwap', function(e) {
+    document.body.addEventListener('htmx:after:swap', function(e) {
         moveModeSelector();
         const currentMode = modeContainer ? modeContainer.getAttribute('data-mode') : 'try';
         const isTry = currentMode === 'try';
@@ -1366,37 +1383,6 @@ document.addEventListener('DOMContentLoaded', function() {
             new ResizeObserver(function() { autoGrow(ta); }).observe(ta);
             autoGrow(ta);
         });
-        // Fill parameters from hash query string or body link navigation.
-        // Wait until method tab selection is done (pendingMethod is null) so params go into the right form.
-        if (window._pendingParams && !pendingMethod) {
-            var params = window._pendingParams;
-            window._pendingParams = null;
-            var targetForm = document.querySelector('#detail form[data-path]');
-            var lastFilled = null;
-            if (targetForm) {
-                for (var name in params) {
-                    var input = targetForm.querySelector('[name="' + name + '"]');
-                    if (input) {
-                        input.value = params[name];
-                        input.dispatchEvent(new Event('input', {bubbles: true}));
-                        lastFilled = input;
-                    }
-                }
-            }
-            if (lastFilled) lastFilled.focus();
-        } else if (window._pendingRestoreFocus && !pendingMethod) {
-            var selector = window._pendingRestoreFocus;
-            window._pendingRestoreFocus = null;
-            setupFocusRestore(selector);
-        } else if (window._pendingFocusFirst && !pendingMethod) {
-            window._pendingFocusFirst = false;
-            var targetForm = document.querySelector('#detail form[data-path]');
-            if (targetForm) {
-                var firstInput = targetForm.querySelector('input, select, textarea');
-                if (firstInput) firstInput.focus();
-                else if (modeContainer) modeContainer.focus();
-            }
-        }
     });
 
     function prettyPrintXml(xml) {
@@ -2368,7 +2354,7 @@ document.addEventListener('DOMContentLoaded', function() {
             hxGet = route + '.html';
             hxEl = document.querySelector('[data-tag="' + tagFromHash + '"][hx-get="' + hxGet + '"]');
             if (!hxEl) {
-                // Tag tree may not be loaded yet — switch to tags view; afterSettle will retry
+                // Tag tree may not be loaded yet — switch to tags view; after:settle will retry
                 window._hashNavPending = true;
                 const vt = document.querySelector('[data-toggle="view"]');
                 if (vt) {
@@ -2423,21 +2409,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Focus restore via MutationObserver — event-order-independent.
     // When popstate provides a focusSelector, watch #detail until the element appears,
-    // then focus it. This avoids races between htmx:afterSwap/load event ordering.
+    // then focus it. This avoids races between htmx:after:swap/process event ordering.
     var focusObserver = null;
+    function focusable(el) {
+        // Elements hidden by CSS (e.g. inside a collapsed schema box) are found by
+        // querySelector, but focus() silently fails on them — treat them as not ready.
+        return !!(el && (el.offsetWidth || el.offsetHeight || el.getClientRects().length));
+    }
     function setupFocusRestore(selector) {
         if (focusObserver) { focusObserver.disconnect(); focusObserver = null; }
         var el = document.querySelector('#detail ' + selector);
-        if (el) { el.focus({preventScroll: true}); return; }
+        if (focusable(el)) { el.focus({preventScroll: true}); return; }
         focusObserver = new MutationObserver(function() {
             var el = document.querySelector('#detail ' + selector);
-            if (el) {
+            if (focusable(el)) {
                 focusObserver.disconnect();
                 focusObserver = null;
                 el.focus({preventScroll: true});
             }
         });
-        focusObserver.observe(detail, {childList: true, subtree: true});
+        focusObserver.observe(detail, {childList: true, subtree: true, attributes: true,
+            attributeFilter: ['class', 'style', 'aria-expanded', 'hidden']});
     }
 
     window.addEventListener('popstate', function(e) {
@@ -2680,11 +2672,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1000);
     }
     function htmxErrorUrl(e) {
-        return (e.detail.pathInfo && e.detail.pathInfo.requestPath)
-            || (e.detail.elt && e.detail.elt.getAttribute('hx-get'));
+        var ctx = e.detail.ctx;
+        return ctx && ctx.request && ctx.request.action;
     }
-    document.body.addEventListener('htmx:oobAfterSwap', function(e) {
-        const target = e.detail.target;
+    document.body.addEventListener('htmx:after:settle', function(e) {
+        const target = e.target;
         if (target && target.id === 'server-override') {
             const serverSelector = document.getElementById('server-selector');
             if (!serverSelector) return;
@@ -2870,15 +2862,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    document.body.addEventListener('htmx:sendError', function(e) {
+    document.body.addEventListener('htmx:error', function(e) {
         const url = htmxErrorUrl(e);
         if (!url) return;
-        retryHtmx(url, e.detail.target || document.getElementById('detail'));
+        retryHtmx(url, e.detail.ctx.target || document.getElementById('detail'));
     });
-    document.body.addEventListener('htmx:responseError', function(e) {
+    document.body.addEventListener('htmx:response:error', function(e) {
         const url = htmxErrorUrl(e);
         if (!url) return;
-        retryHtmx(url, e.detail.target || document.getElementById('detail'));
+        retryHtmx(url, e.detail.ctx.target || document.getElementById('detail'));
     });
 
     // Restore global and operation-specific headers on initial page load if content exists

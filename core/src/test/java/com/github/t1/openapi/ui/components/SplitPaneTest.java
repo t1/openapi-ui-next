@@ -43,8 +43,9 @@ class SplitPaneTest {
     @Test void shouldReinitializeAfterHtmxSwap() {
         var js = SplitPane.js();
 
-        then(js).contains("htmx:afterSettle");
+        then(js).contains("htmx:after:settle");
         then(js).contains("initSplitPanes");
+        then(js).doesNotContain("htmx:afterSettle");
     }
 
     @Test void shouldAddPersistDataAttribute() {
