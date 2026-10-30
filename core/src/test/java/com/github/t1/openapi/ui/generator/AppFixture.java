@@ -340,7 +340,14 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return locator.boundingBox().height;
     }
 
-    void focusRequestBody() {page.locator("#detail textarea[data-request-body]").focus();}
+    void focusRequestBody() {
+        var locator = page.locator("#detail textarea[data-request-body]");
+        locator.waitFor();
+        // Wait until htmx has finished swapping into #detail so the focused element is stable
+        page.waitForFunction(
+                "() => !document.querySelector('.htmx-swapping') && !document.getElementById('detail').classList.contains('htmx-swapping')");
+        locator.focus();
+    }
 
     void setCursorAtStart() {
         page.evaluate("() => { var el = document.activeElement; el.setSelectionRange(0, 0); }");
