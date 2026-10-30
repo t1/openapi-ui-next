@@ -1395,7 +1395,9 @@ document.addEventListener('DOMContentLoaded', function() {
             '</xsl:stylesheet>', 'application/xml');
         const processor = new XSLTProcessor();
         processor.importStylesheet(xslt);
-        const result = processor.transformToDocument(doc);
+        // transformToFragment avoids Chrome injecting an xslt-warning-banner element
+        // into the result of transformToDocument
+        const result = processor.transformToFragment(doc, document);
         return new XMLSerializer().serializeToString(result);
     }
 
