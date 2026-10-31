@@ -2207,7 +2207,8 @@ class BrowserTest {
                 app.clickSend();
                 app.waitForResponse();
 
-                then(app.responseText()).contains("<format>xml</format>");
+                then(app.responseText()).doesNotContain("json");
+                then(app.responseText()).contains("xml");
             }
 
             @Test void shouldSendAcceptHeaderForSelectedJson() {
@@ -2222,6 +2223,7 @@ class BrowserTest {
                 app.clickSend();
                 app.waitForResponse();
 
+                then(app.responseText()).doesNotContain("xml");
                 then(app.responseText()).contains("json");
             }
         }
