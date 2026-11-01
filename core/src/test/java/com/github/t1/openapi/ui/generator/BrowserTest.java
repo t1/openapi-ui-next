@@ -455,7 +455,8 @@ class BrowserTest {
 
                 navigateToListPetsAndSend();
 
-                then(app.responseText()).contains("Failed to fetch");
+                // Chromium reports "Failed to fetch", WebKit reports "Load failed"
+                then(app.responseText()).containsAnyOf("Failed to fetch", "Load failed");
             }
 
             @Test void shouldNotAddBodyWhenCustomHeaderPresent() {
@@ -1665,7 +1666,7 @@ class BrowserTest {
                 app.expandFirstNode();
                 app.clickTreeNode("pets/{petId}/index.html");
                 app.waitForInput("petId");
-                app.clickSend();
+                app.clickSendExpectingNoWrite();
 
 
                 then(app.hasResponseStatus()).isFalse();
@@ -1690,7 +1691,7 @@ class BrowserTest {
             app.clickTreeNode("pets/{petId}/index.html");
             app.waitForInput("petId");
             app.clearClipboard();
-            app.clickSend();
+            app.clickSendExpectingNoWrite();
 
             then(app.readClipboard()).isEmpty();
         }
@@ -1861,7 +1862,7 @@ class BrowserTest {
             then(app.requestBodyHasRequiredAttribute()).as("textarea should have required attribute").isTrue();
 
             app.clearRequestBody();
-            app.clickSend();
+            app.clickSendExpectingNoWrite();
 
             // Wait briefly to ensure form validation blocks submission (no response should appear)
             app.waitForTimeout(500);

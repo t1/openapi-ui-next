@@ -2103,6 +2103,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const candidates = Array.from(document.querySelectorAll(candidateSelector)).filter(function(c) {
             if (c === el) return false;
             if (!c.offsetParent) return false;
+            // Skip elements hidden by the collapsible-description clamp: the desc-toggle
+            // is only interactive when the wrapper is clamped/expanded, and WebKit still
+            // reports it as visible (offsetParent set) even when its purpose is only
+            // visual clamping — Chromium's focus lands elsewhere because the toggle is
+            // not in the corridor. Exclude it unless the description is actually clamped.
+            var wrapper = c.closest('.op-description-wrapper');
+            if (c.classList.contains('desc-toggle') && wrapper && !wrapper.classList.contains('is-clamped')) return false;
             return true;
         });
 

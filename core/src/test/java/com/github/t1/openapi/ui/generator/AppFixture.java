@@ -93,7 +93,11 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         this.lastWaitContext = null;
 
         var options = new Browser.NewContextOptions();
-        if (!browser.browserType().name().equals("webkit")) {
+        if (browser.browserType().name().equals("webkit")) {
+            // WebKit rejects "clipboard-write" as an unknown permission (writes require a
+            // user gesture, which the send-button click provides), so grant read only.
+            options.setPermissions(List.of("clipboard-read"));
+        } else {
             options.setPermissions(List.of("clipboard-read", "clipboard-write"));
         }
         context = browser.newContext(options);
@@ -194,7 +198,17 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return ((Number) result).doubleValue();
     }
 
-    void clickTreeNode(String hxGetPath) {page.locator("[hx-get='" + hxGetPath + "']").click();}
+    void clickTreeNode(String hxGetPath) {
+        page.locator("[hx-get='" + hxGetPath + "']").click();
+        // Wait until the htmx swap into #detail has fully settled, so subsequent
+        // interactions (fill, focus, click) don't race the DOM replacement.
+        page.waitForFunction(
+                "() => !document.querySelector('.htmx-swapping, .htmx-settling, .htmx-request')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-swapping')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-request')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-settling')"
+                        + " && document.querySelector('#detail form[data-path]') !== null");
+    }
 
     void clickMethodBadge(String hxGetPath, String method) {
         page.locator("[hx-get='" + hxGetPath + "'] .tag:text('" + method + "')").click();
@@ -203,6 +217,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     void waitForDetailContent(String text) {
         lastWaitContext = "waitForDetailContent(\"" + text + "\")";
         page.waitForSelector("#detail :text('" + text + "')");
+        // Also wait until htmx has finished swapping into #detail, so the DOM is stable
+        page.waitForFunction(
+                "() => !document.querySelector('.htmx-swapping, .htmx-settling, .htmx-request')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-swapping')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-request')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-settling')");
     }
 
     void waitForDetailEmpty() {
@@ -322,7 +342,9 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         // mid-swap on #detail; wait until no swap is in progress so the element is stable.
         page.waitForFunction(
                 "() => !document.getElementById('detail').classList.contains('htmx-swapping')"
-                        + " && !document.querySelector('.htmx-swapping')");
+                        + " && !document.getElementById('detail').classList.contains('htmx-request')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-settling')"
+                        + " && !document.querySelector('.htmx-swapping, .htmx-settling, .htmx-request')");
     }
 
     void clearRequestBody() {page.locator("#detail textarea[data-request-body]").clear();}
@@ -336,7 +358,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         // boundingBox() returns null while htmx is mid-swap; wait for a stable element
         page.waitForFunction(
                 "() => { var el = document.querySelector('#detail textarea[data-request-body]');"
-                        + " return el && el.offsetParent !== null && !document.querySelector('.htmx-swapping'); }");
+                        + " return el && el.offsetParent !== null && !document.querySelector('.htmx-swapping, .htmx-settling, .htmx-request'); }");
         return locator.boundingBox().height;
     }
 
@@ -345,7 +367,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         locator.waitFor();
         // Wait until htmx has finished swapping into #detail so the focused element is stable
         page.waitForFunction(
-                "() => !document.querySelector('.htmx-swapping') && !document.getElementById('detail').classList.contains('htmx-swapping')");
+                "() => !document.querySelector('.htmx-swapping, .htmx-settling, .htmx-request')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-swapping')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-request')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-settling')");
         locator.focus();
     }
 
@@ -360,13 +385,35 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     void waitForInput(String name) {
         lastWaitContext = "waitForInput(\"" + name + "\")";
         page.waitForSelector("#detail input[name='" + name + "']");
+        page.waitForFunction(
+                "() => !document.querySelector('.htmx-swapping, .htmx-settling, .htmx-request')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-swapping')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-request')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-settling')");
     }
 
     void waitForFocusedInput(String name) {
         page.waitForFunction("name => document.activeElement && document.activeElement.getAttribute('name') === name", name);
     }
 
-    void clickSend() {page.locator(".mode-send-button").click();}
+    void clickSend() {
+        // Snapshot the clipboard so we can detect the write triggered by this click.
+        // `navigator.clipboard.writeText` is async and not awaited by the handler, and the
+        // "Copied!" button label reverts after 1.5s, so polling the clipboard for a change
+        // is the only reliable signal that the copy ran.
+        page.evaluate("() => navigator.clipboard.readText().then(t => window.__clip = t, () => window.__clip = '')");
+        page.locator(".mode-send-button").click();
+        page.waitForFunction(
+                "() => navigator.clipboard.readText().then(t => t !== window.__clip, () => false)",
+                null, new Page.WaitForFunctionOptions().setTimeout(10000));
+    }
+
+    void clickSendExpectingNoWrite() {
+        page.evaluate("() => navigator.clipboard.readText().then(t => window.__clip = t, () => window.__clip = '')");
+        page.locator(".mode-send-button").click();
+        // Give the (blocked) handler a chance to run: if it had written, the clipboard would change
+        page.waitForTimeout(300);
+    }
 
     String sendButtonText() {return page.locator(".mode-send-button").textContent();}
 
@@ -410,7 +457,18 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     String noBodyMessageText() {return page.locator("#detail .response-area .response-empty.box").textContent();}
 
-    void clickMethodTab(int index) {page.locator(".tabs li:nth-child(" + index + ") a").click();}
+    void clickMethodTab(int index) {
+        page.locator(".tabs li:nth-child(" + index + ") a").click();
+        // The method tab swap targets #method-content (inside #detail); wait until no htmx
+        // swap/settle is in progress anywhere, so the swapped-in form (and its restored
+        // fields, e.g. custom headers) is stable before the test interacts with it.
+        page.waitForFunction(
+                "() => !document.querySelector('.htmx-swapping, .htmx-settling, .htmx-request')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-swapping')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-request')"
+                        + " && !document.getElementById('detail').classList.contains('htmx-settling')"
+                        + " && !document.querySelector('#method-content.htmx-swapping, #method-content.htmx-settling, #method-content.htmx-request')");
+    }
 
     void focusTab() {
         page.locator("[data-tab-bar]").focus();
@@ -1069,6 +1127,9 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     void selectServer(int index) {
         page.locator("#server-selector input[type='radio'][name='server']").nth(index).click();
         page.waitForTimeout(100); // Wait for JavaScript updateAuthFieldVisibility to execute
+        // WebKit doesn't move focus to a radio on click the way Chromium does; the app's
+        // ArrowUp/Down handler is bound to the focused element, so focus the checked radio.
+        page.evaluate("() => { var r = document.querySelector('#server-selector input[type=radio]:checked'); if (r) r.focus(); }");
     }
 
     boolean isBrowserHandledAuthFieldVisible(String schemeName) {
@@ -1206,7 +1267,9 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         page.locator("#detail .custom-header-row").nth(index).locator(".custom-header-remove").click();
     }
 
-    void clearClipboard() {page.evaluate("() => navigator.clipboard.writeText('')");}
+    void clearClipboard() {
+        page.evaluate("() => { window.__clip = ''; return navigator.clipboard.writeText(''); }");
+    }
 
     String readClipboard() {return (String) page.evaluate("() => navigator.clipboard.readText()");}
 
