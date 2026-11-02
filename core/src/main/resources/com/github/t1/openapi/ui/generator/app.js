@@ -1176,6 +1176,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Tab switching — toggle is-active when HTMX swaps method content
     document.body.addEventListener('htmx:after:request', function(e) {
+        // A tab request finished (in flight flag cleared) — allow the next one.
+        var rt = e.detail && e.detail.ctx && e.detail.ctx.target;
+        if (rt && rt.id === 'method-content') window.__inFlightTabAjax = null;
         const tabLink = e.detail.ctx.sourceElement;
         if (tabLink && tabLink.closest && tabLink.closest('.tabs')) {
             const tabs = tabLink.closest('.tabs');
@@ -1305,14 +1308,10 @@ document.addEventListener('DOMContentLoaded', function() {
             var g = srcEl0.getAttribute('hx-get');
             var t0 = e.detail && e.detail.ctx && e.detail.ctx.target;
             if (g && t0 && t0.id === 'method-content') {
-                // Drop the focusin-triggered duplicate when a request for this exact tab URL
-                // is already in flight (htmx-request still on #method-content).
+                // Drop any tab request while another tab request is still in flight
+                // (htmx-request on #method-content). The click handler's request goes
+                // first; the focusin-triggered duplicate arrives while it is in flight.
                 if (t0.classList.contains('htmx-request')) {
-                    e.preventDefault();
-                    return;
-                }
-                // Also drop when this exact URL was already swapped in before (data-swap-url).
-                if (t0.getAttribute('data-swap-url') === g) {
                     e.preventDefault();
                     return;
                 }
@@ -1323,15 +1322,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     // Rescue mode selector back to detail-pane before HTMX replaces content inside detail
     document.body.addEventListener('htmx:before:swap', function(e) {
-        var bs = e.detail && e.detail.ctx && e.detail.ctx.target;
-        var bsSrc = e.detail && e.detail.ctx && e.detail.ctx.sourceElement;
-        if (bs && bs.id === 'method-content' && bsSrc && bsSrc.getAttribute('hx-get')) {
-            bs.setAttribute('data-swap-url', bsSrc.getAttribute('hx-get'));
-        }
-        // Stamp pending URL at request time so a later duplicate for the same URL can be dropped
-        if (bs && bs.id === 'method-content' && bsSrc && bsSrc.getAttribute('hx-get')) {
-            bs.setAttribute('data-pending-swap-url', bsSrc.getAttribute('hx-get'));
-        }
         if (!e.detail.ctx.target || !detail.contains(e.detail.ctx.target)) return;
         // Cancel stale swaps: if _navGen on #detail was bumped after this request started,
         // another navigateFromHash has been issued — discard this response
