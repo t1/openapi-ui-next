@@ -1303,20 +1303,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Stamp each htmx request with the current detail nav generation,
     // so stale responses can be cancelled in htmx:before:swap
     document.body.addEventListener('htmx:before:request', function(e) {
+        var t0 = e.detail && e.detail.ctx && e.detail.ctx.target;
+        // Dedup method-tab requests: the click handler and the focusin handler can both
+        // fire for one tab click (WebKit fires both); drop the second while the first is
+        // still in flight. Match on the request path, which is the same for both triggers.
+        // Drop a duplicate method-tab request while another is still in flight
+        // (click + focusin double-fire in WebKit). Only for tab-bar triggers (the
+        // source element is the tab link or the tab-bar div itself) so arrow-key
+        // tabchange re-requests and tree navigation are unaffected.
         var srcEl0 = e.detail && e.detail.ctx && e.detail.ctx.sourceElement;
-        if (srcEl0 && srcEl0.closest && srcEl0.closest('[data-tab-bar="method-tabs"]')) {
-            var g = srcEl0.getAttribute('hx-get');
-            var t0 = e.detail && e.detail.ctx && e.detail.ctx.target;
-            if (g && t0 && t0.id === 'method-content') {
-                // Drop any tab request while another tab request is still in flight
-                // (htmx-request on #method-content). The click handler's request goes
-                // first; the focusin-triggered duplicate arrives while it is in flight.
-                if (t0.classList.contains('htmx-request')) {
-                    e.preventDefault();
-                    return;
-                }
-                window.__inFlightTabAjax = g;
-            }
+        var srcTag = srcEl0 ? srcEl0.tagName : '';
+        var fromTab = srcEl0 && (srcTag === 'A' || srcTag === 'DIV')
+            && srcEl0.closest && srcEl0.closest('[data-tab-bar="method-tabs"]');
+        if (t0 && t0.id === 'method-content' && fromTab && t0.classList.contains('htmx-request')) {
+            e.preventDefault();
+            return;
         }
         e.detail.ctx._navGen = window._navGen || 0;
     });
