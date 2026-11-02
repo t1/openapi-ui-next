@@ -1312,10 +1312,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // source element is the tab link or the tab-bar div itself) so arrow-key
         // tabchange re-requests and tree navigation are unaffected.
         var srcEl0 = e.detail && e.detail.ctx && e.detail.ctx.sourceElement;
-        var srcTag = srcEl0 ? srcEl0.tagName : '';
-        var fromTab = srcEl0 && (srcTag === 'A' || srcTag === 'DIV')
-            && srcEl0.closest && srcEl0.closest('[data-tab-bar="method-tabs"]');
-        if (t0 && t0.id === 'method-content' && fromTab && t0.classList.contains('htmx-request')) {
+        // The focusin handler calls htmx.ajax with the target as source, so its
+        // sourceElement IS #method-content itself. The click handler passes the tab <a>.
+        // Only drop the focusin duplicate (sourceElement === target) while the click's
+        // request is still in flight; never drop click/tabchange requests.
+        var isFocusinDup = srcEl0 && srcEl0 === t0;
+        if (t0 && t0.id === 'method-content' && isFocusinDup && t0.classList.contains('htmx-request')) {
             e.preventDefault();
             return;
         }
@@ -2307,7 +2309,7 @@ document.addEventListener('DOMContentLoaded', function() {
         clearPreviousResponse();
         var hxGet = tab.getAttribute('hx-get');
         if (hxGet) {
-            htmx.ajax('GET', hxGet, tab.getAttribute('hx-target'));
+            htmx.ajax('GET', hxGet, {target: tab.getAttribute('hx-target'), source: tab});
             history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
         }
     });
@@ -2326,7 +2328,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (hxGet) {
             window.__lastTabAjax = hxGet;
             window.__lastTabAjaxTime = performance.now();
-            htmx.ajax('GET', hxGet, link.getAttribute('hx-target'));
+            htmx.ajax('GET', hxGet, {target: link.getAttribute('hx-target'), source: link});
             history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
         }
     });
