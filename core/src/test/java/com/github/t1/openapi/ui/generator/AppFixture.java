@@ -68,7 +68,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     @Override public void beforeAll(ExtensionContext extensionContext) {
         extensionContext.getStore(GLOBAL).computeIfAbsent(this, key -> {
             playwright = Playwright.create();
-            var browserType = System.getProperty("playwright.browser", "chromium");
+            var browserType = System.getProperty("playwright.browser", "webkit");
             browser = switch (browserType) {
                 case "webkit" -> playwright.webkit().launch();
                 case "firefox" -> playwright.firefox().launch();

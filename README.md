@@ -352,10 +352,10 @@ just:
 mvn
 ```
 
-Browser tests run in Chromium by default. To test with WebKit (Safari) or Firefox:
+Browser tests run in WebKit (Safari) by default. To test with Chromium or Firefox:
 
 ```bash
-mvn test -pl core -Dplaywright.browser=webkit
+mvn test -pl core -Dplaywright.browser=chromium
 mvn test -pl core -Dplaywright.browser=firefox
 ```
 
