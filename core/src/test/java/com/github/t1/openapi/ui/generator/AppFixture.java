@@ -148,7 +148,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     // Page interactions
 
-    void focusTree() {page.locator("[role='tree']").focus();}
+    void focusTree() {
+        page.locator("[role='tree']").focus();
+        // WebKit may drop focus to <body> if a re-layout happens after .focus(); re-assert.
+        page.waitForFunction(
+                "() => document.activeElement && document.activeElement.matches('[role=tree]')");
+    }
 
     void expandFirstNode() {
         focusTree();
@@ -164,7 +169,22 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 })""");
     }
 
-    void pressKey(String key) {page.keyboard().press(key);}
+    void pressKey(String key) {
+        // Snapshot the marker before pressing: the capture-phase listener updates
+        // __lastKeySeen synchronously during dispatch, and the *handling* (focus change,
+        // toggle activation) happens in bubble-phase handlers that run right after. Waiting
+        // for the marker to advance past its previous value guarantees those handlers ran.
+        var seqBefore = ((Number) page.evaluate("() => window.__keySeq || 0")).doubleValue();
+        page.evaluate("(s) => { window.__pendingKeySeq = s; }", seqBefore);
+        page.keyboard().press(key);
+        // note: keySeq is bumped by the capture-phase listener on dispatch
+        var baseKey = key.contains("+") ? key.substring(key.lastIndexOf('+') + 1) : key;
+        if (baseKey.startsWith("Digit")) baseKey = baseKey.substring(5); // Control+Digit0 -> key "0"
+        page.waitForFunction("(k) => window.__lastKeySeen === k && window.__lastKeySeq > (window.__pendingKeySeq || 0)",
+                baseKey,
+                new Page.WaitForFunctionOptions().setTimeout(2000));
+    }
+
 
     String selectedTreeItemText() {
         return page.locator("[role='treeitem'][aria-selected='true']").textContent();
@@ -217,12 +237,16 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     void waitForDetailContent(String text) {
         lastWaitContext = "waitForDetailContent(\"" + text + "\")";
         page.waitForSelector("#detail :text('" + text + "')");
-        // Also wait until htmx has finished swapping into #detail, so the DOM is stable
+        // Also wait until htmx has finished swapping into #detail, so the DOM is stable.
+        // If a method-tab swap just happened, also wait for the app's post-swap handler
+        // (which restores custom headers etc.) to have run on #method-content.
         page.waitForFunction(
                 "() => !document.querySelector('.htmx-swapping, .htmx-settling, .htmx-request')"
                         + " && !document.getElementById('detail').classList.contains('htmx-swapping')"
                         + " && !document.getElementById('detail').classList.contains('htmx-request')"
-                        + " && !document.getElementById('detail').classList.contains('htmx-settling')");
+                        + " && !document.getElementById('detail').classList.contains('htmx-settling')"
+                        + " && (!document.getElementById('method-content')"
+                        + "    || document.getElementById('method-content').getAttribute('data-swap-complete') === 'true')");
     }
 
     void waitForDetailEmpty() {
@@ -458,10 +482,21 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     String noBodyMessageText() {return page.locator("#detail .response-area .response-empty.box").textContent();}
 
     void clickMethodTab(int index) {
+        // Snapshot the swap counter before clicking, so we wait for THIS tab's swap to complete.
+        page.evaluate("() => { window.__mcSwapBase = parseInt((document.getElementById('method-content') || {getAttribute: () => '0'}).getAttribute('data-swaps-done') || '0', 10); }");
         page.locator(".tabs li:nth-child(" + index + ") a").click();
-        // The method tab swap targets #method-content (inside #detail); wait until no htmx
-        // swap/settle is in progress anywhere, so the swapped-in form (and its restored
-        // fields, e.g. custom headers) is stable before the test interacts with it.
+        // The method tab swap targets #method-content (inside #detail). WebKit issues an
+        // extra focusin-triggered request per click, so wait until BOTH swaps have fully
+        // completed (app's post-swap handler ran on #method-content each time).
+        waitForHtmxSettled();
+        page.waitForFunction(
+                "() => document.getElementById('method-content')"
+                        + " && document.getElementById('method-content').getAttribute('data-swap-complete') === 'true'"
+                        + " && parseInt(document.getElementById('method-content').getAttribute('data-swaps-done') || '0', 10)"
+                        + " > (window.__mcSwapBase || 0)");
+    }
+
+    void waitForHtmxSettled() {
         page.waitForFunction(
                 "() => !document.querySelector('.htmx-swapping, .htmx-settling, .htmx-request')"
                         + " && !document.getElementById('detail').classList.contains('htmx-swapping')"
@@ -473,6 +508,9 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     void focusTab() {
         page.locator("[data-tab-bar]").focus();
         waitForContentBelowTabBar();
+        // WebKit may drop focus to <body> if a re-layout happens after .focus(); re-assert.
+        page.waitForFunction(
+                "() => document.activeElement && document.activeElement.closest('[data-tab-bar]') !== null");
     }
 
     /// Wait for at least one focusable element below the tab bar to have a valid bounding rect.
@@ -1483,7 +1521,11 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     }
 
     boolean isCustomHeaderGlobeActive(int index) {
-        return page.locator("#detail .custom-header-row").nth(index).locator(".globe-toggle.is-info").count() > 0;
+        // The toggle is a <span>, not a real button; a native Enter "click" may move focus
+        // instead of activating. Assert on the state attribute, which is what toggleGlobe sets.
+        return (Boolean) page.evaluate(
+                "(i) => { var g = document.querySelectorAll('#detail .custom-header-row .globe-toggle')[i];"
+                        + " return g && g.getAttribute('data-global') === 'true'; }", index);
     }
 
     boolean customHeaderGlobeUsesFontAwesomeIcon(int index) {

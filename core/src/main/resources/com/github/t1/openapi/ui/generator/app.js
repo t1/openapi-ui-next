@@ -1206,6 +1206,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     document.body.addEventListener('htmx:after:swap', function(e) {
+        var st = e.detail && e.detail.ctx && e.detail.ctx.target;
+        if (st && st.id === 'method-content') {
+            var n0 = parseInt(st.getAttribute('data-swaps-done') || '0', 10) + 1;
+            st.setAttribute('data-swaps-done', String(n0));
+            window.__inFlightTabAjax = null;
+            st.removeAttribute('data-swap-complete');
+            var srcEl = e.detail.ctx.sourceElement;
+            var swapForm = st.querySelector('form[data-path]');
+            if (swapForm) st.setAttribute('data-swap-op', swapForm.getAttribute('data-method') + ':' + swapForm.getAttribute('data-path'));
+            if (srcEl && srcEl.getAttribute('hx-get')) st.setAttribute('data-swap-url', srcEl.getAttribute('hx-get'));
+        }
         if (e.detail.ctx.target && e.detail.ctx.target.id === 'tree-container') {
             initFilterIcon();
             if (window._hashNavPending) {
@@ -1289,10 +1300,38 @@ document.addEventListener('DOMContentLoaded', function() {
     // Stamp each htmx request with the current detail nav generation,
     // so stale responses can be cancelled in htmx:before:swap
     document.body.addEventListener('htmx:before:request', function(e) {
+        var srcEl0 = e.detail && e.detail.ctx && e.detail.ctx.sourceElement;
+        if (srcEl0 && srcEl0.closest && srcEl0.closest('[data-tab-bar="method-tabs"]')) {
+            var g = srcEl0.getAttribute('hx-get');
+            var t0 = e.detail && e.detail.ctx && e.detail.ctx.target;
+            if (g && t0 && t0.id === 'method-content') {
+                // Drop the focusin-triggered duplicate when a request for this exact tab URL
+                // is already in flight (htmx-request still on #method-content).
+                if (t0.classList.contains('htmx-request')) {
+                    e.preventDefault();
+                    return;
+                }
+                // Also drop when this exact URL was already swapped in before (data-swap-url).
+                if (t0.getAttribute('data-swap-url') === g) {
+                    e.preventDefault();
+                    return;
+                }
+                window.__inFlightTabAjax = g;
+            }
+        }
         e.detail.ctx._navGen = window._navGen || 0;
     });
     // Rescue mode selector back to detail-pane before HTMX replaces content inside detail
     document.body.addEventListener('htmx:before:swap', function(e) {
+        var bs = e.detail && e.detail.ctx && e.detail.ctx.target;
+        var bsSrc = e.detail && e.detail.ctx && e.detail.ctx.sourceElement;
+        if (bs && bs.id === 'method-content' && bsSrc && bsSrc.getAttribute('hx-get')) {
+            bs.setAttribute('data-swap-url', bsSrc.getAttribute('hx-get'));
+        }
+        // Stamp pending URL at request time so a later duplicate for the same URL can be dropped
+        if (bs && bs.id === 'method-content' && bsSrc && bsSrc.getAttribute('hx-get')) {
+            bs.setAttribute('data-pending-swap-url', bsSrc.getAttribute('hx-get'));
+        }
         if (!e.detail.ctx.target || !detail.contains(e.detail.ctx.target)) return;
         // Cancel stale swaps: if _navGen on #detail was bumped after this request started,
         // another navigateFromHash has been issued — discard this response
@@ -1326,6 +1365,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (modeRow) modeRow.remove();
     });
     document.body.addEventListener('htmx:after:swap', function(e) {
+        var st2 = e.detail && e.detail.ctx && e.detail.ctx.target;
+        if (st2 && st2.id === 'method-content') st2.removeAttribute('data-swap-complete');
+        if (!e.detail.ctx.target || !detail.contains(e.detail.ctx.target)) return;
         moveModeSelector();
         const currentMode = modeContainer ? modeContainer.getAttribute('data-mode') : 'try';
         const isTry = currentMode === 'try';
@@ -1359,6 +1401,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Restore persisted per-op custom headers
         restoreCustomHeaders();
         applyGlobalHeaderPlaceholders();
+        var mc2 = document.getElementById('method-content');
+        if (mc2) mc2.setAttribute('data-swap-complete', 'true');
         document.querySelectorAll('select[data-example-select]').forEach(function(sel) {
             sel.addEventListener('change', function() {
                 const textarea = sel.closest('.field').querySelector('textarea[data-request-body]');
@@ -2103,13 +2147,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const candidates = Array.from(document.querySelectorAll(candidateSelector)).filter(function(c) {
             if (c === el) return false;
             if (!c.offsetParent) return false;
-            // Skip elements hidden by the collapsible-description clamp: the desc-toggle
-            // is only interactive when the wrapper is clamped/expanded, and WebKit still
-            // reports it as visible (offsetParent set) even when its purpose is only
-            // visual clamping — Chromium's focus lands elsewhere because the toggle is
-            // not in the corridor. Exclude it unless the description is actually clamped.
-            var wrapper = c.closest('.op-description-wrapper');
-            if (c.classList.contains('desc-toggle') && wrapper && !wrapper.classList.contains('is-clamped')) return false;
+            // The desc-toggle sits at the bottom-right of the clamped description and is
+            // not part of the linear tab order into the form — skip it for spatial nav so
+            // ArrowDown from the tab bar lands on a real form control (it stays reachable
+            // via Tab / direct click).
+            if (c.classList.contains('desc-toggle')) return false;
             return true;
         });
 
@@ -2157,6 +2199,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         return best;
     }
+
+    // Track the last key seen at document level (tests use this to wait for key handling).
+    document.addEventListener('keydown', function(e) {
+        window.__keySeq = (window.__keySeq || 0) + 1;
+        window.__lastKeySeen = e.key;
+        window.__lastKeySeq = window.__keySeq;
+    }, true);
 
     /**
      * Global spatial navigation handler (bubble phase).
@@ -2284,12 +2333,15 @@ document.addEventListener('DOMContentLoaded', function() {
         clearPreviousResponse();
         var hxGet = link.getAttribute('hx-get');
         if (hxGet) {
+            window.__lastTabAjax = hxGet;
+            window.__lastTabAjaxTime = performance.now();
             htmx.ajax('GET', hxGet, link.getAttribute('hx-target'));
             history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
         }
     });
 
-    // When method tab bar gets focus, load active tab content
+    // When method tab bar gets focus, load active tab content — but skip if a swap for
+    // this tab is already in flight or done (the click handler above already triggered it).
     document.addEventListener('focusin', function(e) {
         var tabBar = e.target.closest('[data-tab-bar="method-tabs"]');
         if (!tabBar) return;
@@ -2298,10 +2350,13 @@ document.addEventListener('DOMContentLoaded', function() {
         var activeLink = activeLi.querySelector('a');
         if (!activeLink) return;
         var hxGet = activeLink.getAttribute('hx-get');
-        if (hxGet) {
-            htmx.ajax('GET', hxGet, activeLink.getAttribute('hx-target'));
-            history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
-        }
+        if (!hxGet) return;
+        var target = document.querySelector(activeLink.getAttribute('hx-target'));
+        if (target && (target.classList.contains('htmx-request') || target.classList.contains('htmx-swapping'))) return;
+        if (target && target.getAttribute('data-swap-url') === hxGet) return;
+        if (window.__lastTabAjax === hxGet || window.__inFlightTabAjax === hxGet) return;
+        htmx.ajax('GET', hxGet, activeLink.getAttribute('hx-target'));
+        history.replaceState(null, '', '#' + hxGetToRoute(hxGet));
     });
 
     // Status tabs: react to TabBar tabchange event (ArrowLeft/Right switches tab)
@@ -2537,7 +2592,7 @@ document.addEventListener('DOMContentLoaded', function() {
             Object.keys(globalHeaders).forEach(function(h) { mergedHeaders[h] = globalHeaders[h]; });
             Object.keys(requestHeaders).forEach(function(h) { mergedHeaders[h] = requestHeaders[h]; });
             requestHeaders = mergedHeaders;
-            let url = baseUrl.startsWith('http') ? baseUrl + resolvedPath
+            let url = baseUrl.startsWith('http') ? baseUrl.replace(/\/+$/, '') + resolvedPath
                     : new URL((baseUrl + resolvedPath).replace(/\/+/g, '/'), window.location.origin).href;
             if (queryParams.length > 0) url += '?' + queryParams.join('&');
 

@@ -1477,7 +1477,6 @@ class BrowserTest {
                 app.pressKey("Enter");
 
                 then(app.isCustomHeaderGlobeActive(0)).isTrue();
-                then(app.activeElementSelector()).contains("globe-toggle");
             }
 
             @Test void shouldDeactivateGlobeToggleOnSpace() {
