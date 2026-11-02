@@ -34,4 +34,12 @@ class OpenApiUiTest {
                 .statusCode(200)
                 .body(containsString("htmx"));
     }
+
+    @Test void shouldKeepTrailingSlashServerUrlInBaseUrlAttribute() {
+        given()
+                .when().get("/openapi-ui/index.html")
+                .then()
+                .statusCode(200)
+                .body(containsString("data-base-url=\"http://localhost:8080/\""));
+    }
 }

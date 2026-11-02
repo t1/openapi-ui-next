@@ -1,0 +1,19 @@
+openapi: 3.0.3
+info:
+  title: Trailing Slash Server API
+  version: 1.0.0
+servers:
+  - url: https://example.com/
+paths:
+  /i18n/{lang}:
+    get:
+      summary: Get translations
+      parameters:
+        - name: lang
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Translations

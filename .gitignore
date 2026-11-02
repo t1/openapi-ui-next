@@ -13,3 +13,4 @@ target/
 /.playwright-mcp/
 
 TODO.md
+/.pi/settings/jdtls.json

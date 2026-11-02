@@ -19,7 +19,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                 description = "A pet store API with owners, pets, and veterinary visits for demonstrating the OpenAPI UI generator.",
                 contact = @Contact(name = "OpenAPI UI", url = "https://github.com/t1/openapi-ui-next")),
         servers = {
-                @Server(url = "http://localhost:8080", description = "Local development server"),
+                @Server(url = "http://localhost:8080/", description = "Local development server"),
                 @Server(
                         url = "https://{environment}.petstore.example.com",
                         description = "Environment-specific server",

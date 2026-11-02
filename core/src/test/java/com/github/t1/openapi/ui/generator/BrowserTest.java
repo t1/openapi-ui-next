@@ -1850,6 +1850,36 @@ class BrowserTest {
         }
     }
 
+    @ResourceLock("trailing-slash-server") @Nested class GivenAppWithTrailingSlashServer {
+        @RegisterExtension static AppFixture app = launch("trailing-slash-server.yaml");
+
+        @Test void shouldNotDuplicateSlashInCurlCommand() {
+            app.clickModeButton("curl");
+            app.expandFirstNode();
+            app.clickTreeNode("i18n/{lang}/index.html");
+            app.waitForInput("lang");
+            app.fillInput("lang", "de");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .contains("https://example.com/i18n/de")
+                    .doesNotContain("//i18n");
+        }
+
+        @Test void shouldNotDuplicateSlashInHttpieCommand() {
+            app.clickModeButton("httpie");
+            app.expandFirstNode();
+            app.clickTreeNode("i18n/{lang}/index.html");
+            app.waitForInput("lang");
+            app.fillInput("lang", "de");
+            app.clickSend();
+
+            then(app.readClipboard())
+                    .contains("example.com/i18n/de")
+                    .doesNotContain("//i18n");
+        }
+    }
+
     @ResourceLock("request-body") @Nested class GivenAppWithRequestBody {
         @RegisterExtension static AppFixture app =
                 launch("request-body.yaml").withBaseUrlOverride();
