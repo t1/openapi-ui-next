@@ -44,6 +44,7 @@ import static com.github.t1.bulmajava.elements.Title.title;
 import static com.github.t1.bulmajava.form.Field.field;
 import static com.github.t1.bulmajava.form.Form.form;
 import static com.github.t1.bulmajava.form.Input.input;
+import static com.github.t1.bulmajava.form.InputType.RADIO;
 import static com.github.t1.bulmajava.form.InputType.TEXT;
 import static com.github.t1.bulmajava.form.Select.select;
 import static com.github.t1.bulmajava.form.Textarea.textarea;
@@ -138,17 +139,16 @@ class OperationFragmentGenerator {
         for (var i = 0; i < effectiveServers.size(); i++) {
             var server = effectiveServers.get(i);
             var radioId = "server-override-" + i;
-            var label = element("label").classes("radio-label").attr("for", radioId);
-            var radio = element("input").attr("type", "radio").attr("name", "server-override")
-                .attr("id", radioId).attr("value", server.getUrl());
-            if (i == 0) radio.attr("checked", "checked");
-            
+            var radio = input(RADIO).notClasses("input").fieldName("server-override")
+                .id(radioId).value(server.getUrl());
+            if (i == 0) radio.attr("checked");
+            var label = element("label").classes("radio").attr("for", radioId);
             label.content(radio);
             label.content(span(server.getUrl()));
             if (server.getDescription() != null && !server.getDescription().isEmpty()) {
-                label.content(span(" - " + server.getDescription()).classes("has-text-grey"));
+                label.content(span(" - " + server.getDescription()).classes("help"));
             }
-            
+
             oob.content(div().classes("control").content(label));
         }
         

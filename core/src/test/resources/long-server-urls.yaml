@@ -1,0 +1,17 @@
+openapi: 3.0.3
+info:
+  title: Long Server URL API
+  version: 1.0.0
+servers:
+  - url: https://example-api.production.eu-central-1.example.com/v2
+    description: Production environment (EU central)
+  - url: https://example-api-development.eu-central-1.example.com/v2
+    description: Development environment (EU central)
+paths:
+  /pets:
+    get:
+      summary: List pets
+      operationId: listPets
+      responses:
+        '200':
+          description: A list of pets

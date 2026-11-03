@@ -3595,6 +3595,22 @@ class BrowserTest {
             then(app.isServerDropdownInHeader()).isTrue();
         }
 
+        @Test void shouldRightAlignDropdownWithTriggerAt800px() {
+            app.setViewportSize(800, 720);
+            app.clickServerToggle();
+            then(app.isServerDropdownInsideViewport()).isTrue();
+            then(app.isServerTriggerRightAlignedInHeader()).isTrue();
+            then(app.isServerDropdownRightAlignedWithTrigger()).isTrue();
+            app.screenshot("server-dropdown-800px");
+        }
+
+        @Test void shouldRightAlignDropdownWithTriggerOnWideScreen() {
+            app.setViewportSize(1280, 720);
+            app.clickServerToggle();
+            then(app.isServerDropdownInsideViewport()).isTrue();
+            then(app.isServerDropdownRightAlignedWithTrigger()).isTrue();
+        }
+
         @Test void shouldShowServerItems() {
             app.clickServerToggle();
             then(app.serverItemCount()).isEqualTo(3);
@@ -3613,6 +3629,49 @@ class BrowserTest {
         @Test void shouldShowServerDescriptionBelowUrl() {
             app.clickServerToggle();
             then(app.isServerDescriptionBelowUrl(0)).isTrue();
+        }
+
+        @Test void shouldShowServerRadioOnSameLineAsUrl() {
+            app.clickServerToggle();
+            then(app.isServerRadioOnSameLineAsUrl(0)).isTrue();
+            then(app.isServerRadioOnSameLineAsUrl(1)).isTrue();
+            app.screenshot("server-dropdown-radio-inline");
+        }
+
+        @Test void shouldUseBulmaMediaContentForServerRows() {
+            app.clickServerToggle();
+            then(app.serverRowUsesBulmaMediaContent(0)).isTrue();
+        }
+
+        @Test void shouldUseBulmaMediaComponentForServerRows() {
+            app.clickServerToggle();
+            then(app.serverRowUsesBulmaMedia(0)).isTrue();
+            then(app.serverRadioUsesBulmaInput(0)).isTrue();
+        }
+
+        @Test void shouldUseBulmaHelpForServerDescription() {
+            app.clickServerToggle();
+            then(app.serverDescriptionUsesBulmaHelpers(0)).isTrue();
+        }
+
+        @Test void shouldUseBulmaButtonForCustomUrlAdd() {
+            app.clickServerToggle();
+            then(app.customUrlButtonUsesBulmaButton()).isTrue();
+        }
+
+        @Test void shouldShowCustomUrlAddButtonVisibly() {
+            app.clickServerToggle();
+            then(app.isCustomUrlButtonVisible()).isTrue();
+            then(app.isCustomUrlButtonStyledAsLink()).isTrue();
+            app.screenshot("server-dropdown-custom-url-add-visible");
+        }
+
+        @Test void shouldKeepServerDropdownInsideViewportOnNarrowWindow() {
+            app.setViewportSize(500, 720);
+            app.clickServerToggle();
+            then(app.isServerDropdownInsideViewport()).isTrue();
+            then(app.isServerRadioOnSameLineAsUrl(0)).isTrue();
+            app.screenshot("server-dropdown-narrow-window");
         }
 
         @Test void shouldMarkFirstServerAsActive() {
@@ -3733,6 +3792,28 @@ class BrowserTest {
         }
     }
 
+    @ResourceLock("long-server-urls") @Nested class GivenAppWithLongServerUrls {
+        @RegisterExtension static AppFixture app = launch("long-server-urls.yaml");
+
+        @Test void shouldShowLongServerUrlsWithoutWrappingOnWideWindow() {
+            app.setViewportSize(1280, 720);
+            app.clickServerToggle();
+            then(app.isServerDropdownInsideViewport()).isTrue();
+            then(app.isServerUrlOnOneLine(0)).isTrue();
+            then(app.isServerUrlOnOneLine(1)).isTrue();
+            then(app.isServerRadioOnSameLineAsUrl(0)).isTrue();
+            app.screenshot("server-dropdown-long-urls-wide");
+        }
+
+        @Test void shouldWrapLongServerUrlsAndStayInViewportOnNarrowWindow() {
+            app.setViewportSize(500, 720);
+            app.clickServerToggle();
+            then(app.isServerDropdownInsideViewport()).isTrue();
+            then(app.isServerUrlWrapped(0)).isTrue();
+            app.screenshot("server-dropdown-long-urls-narrow");
+        }
+    }
+
     @ResourceLock("custom-server-urls") @Nested class CustomServerUrls {
         @RegisterExtension static AppFixture app = launch("multiple-servers.yaml");
 
@@ -3740,6 +3821,7 @@ class BrowserTest {
             app.clickServerToggle();
 
             then(app.hasCustomUrlButton()).isTrue();
+            then(app.isCustomUrlButtonVisible()).isTrue();
         }
 
         @Test void shouldAddCustomUrlRow() {
@@ -3771,6 +3853,13 @@ class BrowserTest {
             then(app.customUrlDeleteButtonUsesBulmaDelete()).isTrue();
         }
 
+        @Test void shouldUseBulmaRadioForCustomUrlRow() {
+            app.clickServerToggle();
+            app.clickCustomUrlButton();
+
+            then(app.customUrlRowUsesBulmaRadio()).isTrue();
+        }
+
         @Test void shouldDeleteCustomUrl() {
             app.clickServerToggle();
             app.clickCustomUrlButton();
@@ -3798,6 +3887,26 @@ class BrowserTest {
 
             then(app.customUrlRowCount()).isEqualTo(1);
             then(app.getCustomUrlValue(0)).isEqualTo("https://custom.example.com");
+        }
+
+        @Test void shouldShowRestoredCustomUrlRowWithoutClickingAdd() {
+            app.setLocalStorageItem("openapi-ui-custom-urls", "[\"https://custom.example.com\"]");
+
+            app.reload();
+            app.clickServerToggle();
+
+            then(app.isCustomUrlRowVisible(0)).isTrue();
+            then(app.isCustomUrlInputVisible(0)).isTrue();
+            then(app.customUrlInputValue(0)).isEqualTo("https://custom.example.com");
+            app.screenshot("server-dropdown-custom-url-restored");
+        }
+
+        @Test void shouldShowNewCustomUrlRowImmediatelyOnAddClick() {
+            app.clickServerToggle();
+            app.clickCustomUrlButton();
+
+            then(app.isCustomUrlRowVisible(0)).isTrue();
+            then(app.isCustomUrlInputVisible(0)).isTrue();
         }
 
         @Test void shouldSelectCustomUrl() {
@@ -3898,6 +4007,14 @@ class BrowserTest {
             then(app.presetDeleteButtonUsesBulmaDelete(0, 1)).isTrue();
         }
 
+        @Test void shouldShowTemplateServerPresetForm() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+
+            then(app.hasTemplateServerPresetForm(0)).isTrue();
+            app.screenshot("server-dropdown-template-preset-form");
+        }
+
         @Test void shouldNotHaveBorderBetweenTemplateHeadingAndPresets() {
             then(app.templateGroupHeadingHasBottomBorder(0)).isFalse();
         }
@@ -3910,6 +4027,16 @@ class BrowserTest {
 
         @Test void shouldHaveAddPresetButton() {
             then(app.templateServerHasAddPresetButton(0)).isTrue();
+        }
+
+        @Test void shouldUseBulmaButtonForAddPreset() {
+            app.clickServerToggle();
+            then(app.addPresetButtonUsesBulmaButton(0)).isTrue();
+        }
+
+        @Test void shouldUseBulmaRadioForPresetLabel() {
+            app.clickServerToggle();
+            then(app.templatePresetLabelUsesBulmaRadio(0, 0)).isTrue();
         }
 
         @Test void shouldOpenFormOnAddPresetClick() {

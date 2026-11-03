@@ -538,13 +538,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function createCustomUrlRow(url) {
         const row = document.createElement('label');
-        row.className = 'custom-url-row server-radio-label';
+        row.className = 'custom-url-row radio';
         const escapedUrl = escapeHtmlAttribute(url);
         const radioId = 'custom-url-' + randomName();
         row.setAttribute('for', radioId);
         row.innerHTML =
             '<input type="radio" name="server" id="' + radioId + '" value="' + escapedUrl + '">' +
-            '<input type="text" class="custom-url-input" placeholder="Server URL" value="' + escapedUrl + '">' +
+            '<input type="text" class="input is-small custom-url-input" placeholder="Server URL" value="' + escapedUrl + '">' +
             '<button type="button" class="delete is-small"></button>';
         return row;
     }
@@ -582,7 +582,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             html += '</div>';
         });
-        html += '</div>';
         html += '<div class="buttons">';
         html += '<button type="button" class="button is-small is-primary template-preset-save">Save</button>';
         html += '<button type="button" class="button is-small template-preset-cancel">Cancel</button>';
@@ -617,7 +616,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function createTemplatePresetLabel(serverIndex, presetIndex, resolvedUrl, isDeletable) {
         const presetId = 'server-' + serverIndex + '-preset-' + presetIndex;
         const label = document.createElement('label');
-        label.className = 'template-preset-label';
+        label.className = 'radio template-preset-label';
         label.setAttribute('for', presetId);
         const deleteBtn = isDeletable ? '<button type="button" class="delete is-small"></button>' : '';
         label.innerHTML =

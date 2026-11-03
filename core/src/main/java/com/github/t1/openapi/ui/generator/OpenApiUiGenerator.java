@@ -27,15 +27,23 @@ import static com.github.t1.bulmajava.basic.Color.INFO;
 import static com.github.t1.bulmajava.basic.Color.LINK;
 import static com.github.t1.bulmajava.basic.Color.SUCCESS;
 import static com.github.t1.bulmajava.basic.Color.WARNING;
+import static com.github.t1.bulmajava.basic.Size.SMALL;
+import static com.github.t1.bulmajava.basic.Style.FULLWIDTH;
+import static com.github.t1.bulmajava.basic.Style.OUTLINED;
 import static com.github.t1.bulmajava.elements.Box.box;
+import static com.github.t1.bulmajava.elements.Button.button;
 import static com.github.t1.bulmajava.elements.Tag.tag;
 import static com.github.t1.bulmajava.elements.Tag.tagsAddon;
 import static com.github.t1.bulmajava.elements.Title.title;
+import static com.github.t1.bulmajava.form.Input.input;
+import static com.github.t1.bulmajava.form.InputType.RADIO;
 import static com.github.t1.bulmajava.layout.Container.container;
+import static com.github.t1.bulmajava.layout.Media.media;
 import static com.github.t1.bulmajava.layout.Section.section;
 import static com.github.t1.htmljava.Html.html;
 import static com.github.t1.htmljava.HtmlBasics.div;
 import static com.github.t1.htmljava.HtmlBasics.element;
+import static com.github.t1.htmljava.HtmlBasics.p;
 import static com.github.t1.htmljava.HtmlBasics.span;
 import static com.github.t1.openapi.ui.components.SplitPane.splitPane;
 import static com.github.t1.openapi.ui.components.Toggle.toggle;
@@ -169,12 +177,13 @@ public class OpenApiUiGenerator {
         if (servers == null || servers.isEmpty()) {
             // No servers case — single radio item resolved from origin
             var radioId = "server-0";
-            var radio = element("input").attr("type", "radio").attr("name", "server")
-                    .attr("id", radioId).attr("value", "").attr("checked", "");
+            var radio = input(RADIO).notClasses("input").fieldName("server")
+                    .id(radioId).value("").attr("checked");
             var label = element("label").attr("for", radioId).classes("dropdown-item", "server-row");
-            label.content(radio);
-            label.content(div().classes("server-item-url"));
-            label.content(div().classes("server-item-description").content("resolved from origin"));
+            var itemMedia = media().left(radio).content(div().classes("media-content", "server-item-content")
+                    .content(div().classes("server-item-url"))
+                    .content(p().classes("help", "server-item-description").content("resolved from origin")));
+            label.content(itemMedia);
             dropdownContent.content(label);
         } else {
             for (var i = 0; i < servers.size(); i++) {
@@ -190,7 +199,7 @@ public class OpenApiUiGenerator {
                     var heading = div().classes("template-group-heading");
                     heading.content(div().classes("server-item-url").content(url));
                     if (description != null && !description.isEmpty()) {
-                        heading.content(div().classes("server-item-description").content(description));
+                        heading.content(p().classes("help", "server-item-description").content(description));
                     }
                     templateGroup.content(heading);
 
@@ -200,21 +209,21 @@ public class OpenApiUiGenerator {
                     if (allVariablesHaveDefaults) {
                         var resolvedUrl = resolveTemplateVariables(url, server.getVariables());
                         var presetId = "server-" + i + "-preset-0";
-                        var radio = element("input").attr("type", "radio").attr("name", "server").attr("id", presetId)
-                                .attr("value", resolvedUrl);
-                        if (isFirstServer) radio.attr("checked", "");
+                        var radio = input(RADIO).notClasses("input").fieldName("server").id(presetId)
+                                .value(resolvedUrl);
+                        if (isFirstServer) radio.attr("checked");
 
-                        var label = element("label").attr("for", presetId).classes("template-preset-label");
+                        var label = element("label").attr("for", presetId).classes("radio", "template-preset-label");
                         label.content(radio, span().classes("server-item-url").content(resolvedUrl));
                         templateGroup.content(label);
 
-                        var addPresetBtn = element("button").attr("type", "button")
+                        var addPresetBtn = button("+ Add preset").is(SMALL, FULLWIDTH, OUTLINED, LINK)
                                 .classes("template-preset-add")
+                                .attr("type", "button")
                                 .attr("data-server-index", String.valueOf(i))
                                 .attr("data-url-template", url);
                         var variablesJson = serializeVariables(server.getVariables());
                         addPresetBtn.attr("data-variables", variablesJson);
-                        addPresetBtn.content("+ Add preset");
                         templateGroup.content(addPresetBtn);
                     }
 
@@ -222,16 +231,17 @@ public class OpenApiUiGenerator {
                 } else {
                     // Non-template server — radio item in dropdown
                     var radioId = "server-" + i;
-                    var radio = element("input").attr("type", "radio").attr("name", "server")
-                            .attr("id", radioId).attr("value", url);
-                    if (isFirstServer) radio.attr("checked", "");
+                    var radio = input(RADIO).notClasses("input").fieldName("server")
+                            .id(radioId).value(url);
+                    if (isFirstServer) radio.attr("checked");
 
                     var label = element("label").attr("for", radioId).classes("dropdown-item", "server-row");
-                    label.content(radio);
-                    label.content(div().classes("server-item-url").content(url));
+                    var itemContent = div().classes("media-content", "server-item-content")
+                            .content(div().classes("server-item-url").content(url));
                     if (description != null && !description.isEmpty()) {
-                        label.content(div().classes("server-item-description").content(description));
+                        itemContent.content(p().classes("help", "server-item-description").content(description));
                     }
+                    label.content(media().left(radio).content(itemContent));
                     dropdownContent.content(label);
                 }
             }
@@ -243,8 +253,9 @@ public class OpenApiUiGenerator {
         // Custom URL section
         dropdownContent.content(element("hr").classes("dropdown-divider"));
         dropdownContent.content(div().classes("custom-url-block")
-                .content(element("button").attr("type", "button").classes("custom-url-add")
-                        .content("+ Add custom URL")));
+                .content(button("+ Add custom URL").is(SMALL, FULLWIDTH, OUTLINED, LINK)
+                        .classes("custom-url-add")
+                        .attr("type", "button")));
 
         var menu = div().classes("dropdown-menu").attr("role", "menu").content(dropdownContent);
 

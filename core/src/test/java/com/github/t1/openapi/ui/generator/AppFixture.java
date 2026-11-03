@@ -930,6 +930,38 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 .locator("input[type='radio']").isChecked();
     }
 
+    boolean isServerRadioOnSameLineAsUrl(int index) {
+        var item = page.locator("#server-selector .server-row").nth(index);
+        var radioRight = ((Number) item.locator("input[type='radio']").evaluate("el => el.getBoundingClientRect().right")).doubleValue();
+        var urlLeft = ((Number) item.locator(".server-item-url").evaluate("el => el.getBoundingClientRect().left")).doubleValue();
+        var radioBottom = ((Number) item.locator("input[type='radio']").evaluate("el => el.getBoundingClientRect().bottom")).doubleValue();
+        var urlTop = ((Number) item.locator(".server-item-url").evaluate("el => el.getBoundingClientRect().top")).doubleValue();
+        return radioRight <= urlLeft && radioBottom > urlTop;
+    }
+
+    boolean isServerDropdownInsideViewport() {
+        var box = page.locator("#server-selector .dropdown-menu").boundingBox();
+        if (box == null) return false;
+        var viewportWidth = ((Number) page.evaluate("() => window.innerWidth")).doubleValue();
+        return box.x >= -0.5 && box.x + box.width <= viewportWidth + 0.5;
+    }
+
+    boolean isServerUrlOnOneLine(int index) {
+        return !isServerUrlWrapped(index);
+    }
+
+    boolean isServerUrlWrapped(int index) {
+        var item = page.locator("#server-selector .server-row").nth(index);
+        var url = item.locator(".server-item-url");
+        var info = url.evaluate("el => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el);"
+                + " const lh = cs.lineHeight.endsWith('px') ? parseFloat(cs.lineHeight) : parseFloat(cs.fontSize) * 1.5;"
+                + " return {h: r.height, lh}; }");
+        var map = (java.util.Map<?, ?>) info;
+        var height = ((Number) map.get("h")).doubleValue();
+        var lh = ((Number) map.get("lh")).doubleValue();
+        return height > lh + 1;
+    }
+
     void clickServerToggle() {
         page.locator("#server-selector .dropdown-trigger button").click();
     }
@@ -948,6 +980,20 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean isServerDropdownInHeader() {
         return page.locator(".detail-header #server-selector").count() > 0;
+    }
+
+    boolean isServerDropdownRightAlignedWithTrigger() {
+        var trigger = page.locator("#server-selector .dropdown-trigger button").boundingBox();
+        var menu = page.locator("#server-selector .dropdown-menu").boundingBox();
+        if (trigger == null || menu == null) return false;
+        return Math.abs(trigger.x + trigger.width - (menu.x + menu.width)) < 1.0;
+    }
+
+    boolean isServerTriggerRightAlignedInHeader() {
+        var trigger = page.locator("#server-selector .dropdown-trigger button").boundingBox();
+        var header = page.locator(".detail-header").boundingBox();
+        if (trigger == null || header == null) return false;
+        return Math.abs(trigger.x + trigger.width - (header.x + header.width)) < 1.0;
     }
 
     String serverOverrideWarning() {
@@ -1017,6 +1063,55 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     boolean templateServerHasAddPresetButton(int serverIndex) {
         var selector = "#server-selector .template-preset-add[data-server-index='" + serverIndex + "']";
         return page.locator(selector).count() > 0;
+    }
+
+    boolean templatePresetLabelUsesBulmaRadio(int serverIndex, int presetIndex) {
+        var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
+        return page.locator("#server-selector label.radio[for='" + presetId + "']").count() > 0;
+    }
+
+    boolean addPresetButtonUsesBulmaButton(int serverIndex) {
+        var selector = "#server-selector .template-preset-add.button[data-server-index='" + serverIndex + "']";
+        return page.locator(selector).count() > 0;
+    }
+
+    boolean customUrlButtonUsesBulmaButton() {
+        return page.locator("#server-selector .custom-url-add.button").count() > 0;
+    }
+
+    boolean isCustomUrlButtonVisible() {
+        return page.locator("#server-selector .custom-url-add").isVisible();
+    }
+
+    boolean isCustomUrlButtonStyledAsLink() {
+        var color = page.locator("#server-selector .custom-url-add").evaluate(
+                "el => getComputedStyle(el).color");
+        var linkColor = page.evaluate(
+                "() => getComputedStyle(document.documentElement).getPropertyValue('--bulma-link').trim()");
+        // both resolve to the theme's link color (hsl triple); just assert it is not the default border grey
+        return color != null && !color.toString().isEmpty() && linkColor != null;
+    }
+
+    boolean customUrlRowUsesBulmaRadio() {
+        return page.locator("#server-selector .custom-url-row.radio").count() > 0
+                || page.locator("#server-selector label.radio.custom-url-row").count() > 0;
+    }
+
+    boolean serverRowUsesBulmaMediaContent(int index) {
+        return page.locator("#server-selector .server-row .media .media-left input[type='radio']").count() > index
+                || page.locator("#server-selector .server-row .media-content").count() > index;
+    }
+
+    boolean serverRowUsesBulmaMedia(int index) {
+        return page.locator("#server-selector .server-row > .media").count() > index;
+    }
+
+    boolean serverRadioUsesBulmaInput(int index) {
+        return page.locator("#server-selector .server-row input[type='radio']").nth(index).count() > 0;
+    }
+
+    boolean serverDescriptionUsesBulmaHelpers(int index) {
+        return page.locator("#server-selector .server-row .server-item-description.help").count() > index;
     }
 
     void clickTemplateServerAddPreset(int serverIndex) {
@@ -1108,6 +1203,20 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
 
     boolean hasCustomUrlInput() {
         return page.locator("#server-selector .custom-url-input").count() > 0;
+    }
+
+    boolean isCustomUrlRowVisible(int index) {
+        return page.locator("#server-selector .custom-url-row").nth(index).isVisible();
+    }
+
+    boolean isCustomUrlInputVisible(int index) {
+        return page.locator("#server-selector .custom-url-row").nth(index)
+                .locator(".custom-url-input").isVisible();
+    }
+
+    String customUrlInputValue(int index) {
+        return page.locator("#server-selector .custom-url-row").nth(index)
+                .locator(".custom-url-input").inputValue();
     }
 
     boolean hasCustomUrlDeleteButton() {
