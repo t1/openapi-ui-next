@@ -3,6 +3,7 @@ package com.github.t1.openapi.ui.generator;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator.FilterOptions;
+import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.ScreenshotOptions;
 import com.microsoft.playwright.Playwright;
@@ -102,6 +103,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         }
         context = browser.newContext(options);
         page = context.newPage();
+        page.setDefaultTimeout(45000);
         navigateHome();
     }
 
@@ -122,7 +124,14 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         context.close();
     }
 
-    void navigateHome() {page.navigate(testServer.baseUrl());}
+    void navigateHome() {
+        // retry once: WebKit occasionally races the ephemeral test server on goto
+        try {
+            page.navigate(testServer.baseUrl());
+        } catch (PlaywrightException e) {
+            page.navigate(testServer.baseUrl());
+        }
+    }
 
     void mockEndpoint(String path, String contentType, String body) {testServer.mockEndpoint(path, contentType, body);}
 
@@ -939,6 +948,39 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return radioRight <= urlLeft && radioBottom > urlTop;
     }
 
+    boolean isServerDropdownNarrowerThanHeader() {
+        return (Boolean) page.evaluate("() => {"
+                + " const menu = document.querySelector('#server-selector .dropdown-menu').getBoundingClientRect();"
+                + " const header = document.querySelector('.detail-header').getBoundingClientRect();"
+                + " return menu.width < header.width - 1;"
+                + " }");
+    }
+
+    boolean isServerDropdownOverlayingContent() {
+        return (Boolean) page.evaluate("() => {"
+                + " const menu = document.querySelector('#server-selector .dropdown-menu');"
+                + " if (!menu || !menu.isConnected) return false;"
+                + " const cs = getComputedStyle(menu);"
+                + " if (cs.position !== 'absolute') return false;"
+                + " const triggerBottom = document.querySelector('#server-selector .dropdown-trigger button').getBoundingClientRect().bottom;"
+                + " const menuTop = menu.getBoundingClientRect().top;"
+                + " return menuTop >= triggerBottom - 2 && menuTop <= triggerBottom + 10;"
+                + " }");
+    }
+
+    boolean isTreeNotPushedDownByDropdown() {
+        return (Boolean) page.evaluate("() => {"
+                + " const tree = document.querySelector('#tree-container');"
+                + " const btn = document.querySelector('#server-selector .dropdown-trigger button');"
+                + " const before = tree.getBoundingClientRect().top;"
+                + " btn.click();"
+                + " const during = tree.getBoundingClientRect().top;"
+                + " const open = document.querySelector('#server-selector .dropdown-menu').getBoundingClientRect();"
+                + " btn.click();"
+                + " return Math.abs(during - before) < 1 && open.height > 0;"
+                + " }");
+    }
+
     boolean isServerDropdownInsideViewport() {
         var box = page.locator("#server-selector .dropdown-menu").boundingBox();
         if (box == null) return false;
@@ -1036,6 +1078,18 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("#server-selector " + presetPattern).count();
     }
 
+    boolean areTemplatePresetLabelsStackedVertically(int serverIndex) {
+        return (Boolean) page.evaluate("""
+                (serverIndex) => {
+                    const labels = [...document.querySelectorAll(
+                        "#server-selector .template-group input[id^='server-" + serverIndex + "-preset-']")]
+                        .map(i => i.closest('label').getBoundingClientRect());
+                    if (labels.length < 2) return true;
+                    return labels.every((r, i) => i === 0 || r.left === labels[0].left && r.top >= labels[i - 1].bottom - 1);
+                }
+                """, serverIndex);
+    }
+
     String templateServerPresetLabel(int serverIndex, int presetIndex) {
         var presetId = "server-" + serverIndex + "-preset-" + presetIndex;
         var label = page.locator("#server-selector label[for='" + presetId + "']");
@@ -1058,6 +1112,36 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         var heading = page.locator("#server-selector .template-group").nth(serverIndex).locator(".template-group-heading");
         return (Boolean) heading.evaluate(
                 "el => window.getComputedStyle(el).borderBottomWidth !== '0px'");
+    }
+
+    boolean areAddButtonsInsideDropdown(int serverIndex) {
+        return (Boolean) page.evaluate("""
+                (serverIndex) => {
+                    const menu = document.querySelector('#server-selector .dropdown-menu').getBoundingClientRect();
+                    const preset = document.querySelector("#server-selector .template-preset-add[data-server-index='" + serverIndex + "']");
+                    const custom = document.querySelector('#server-selector .custom-url-add');
+                    const inside = (el) => { if (!el) return true;
+                        const r = el.getBoundingClientRect();
+                        return r.left >= menu.left - 1 && r.right <= menu.right + 1; };
+                    return inside(preset) && inside(custom);
+                }
+                """, serverIndex);
+    }
+
+    String addButtonsOverflowReport(int serverIndex) {
+        return (String) page.evaluate("""
+                (serverIndex) => {
+                    const menu = document.querySelector('#server-selector .dropdown-menu').getBoundingClientRect();
+                    const preset = document.querySelector("#server-selector .template-preset-add[data-server-index='" + serverIndex + "']");
+                    const custom = document.querySelector('#server-selector .custom-url-add');
+                    const report = (name, el) => { if (!el) return name + ':missing';
+                        const r = el.getBoundingClientRect();
+                        return name + ': left overflow=' + (menu.left - r.left).toFixed(1)
+                            + ' right overflow=' + (r.right - menu.right).toFixed(1); };
+                    return report('preset', preset) + '; ' + report('custom', custom)
+                        + '; menu=' + menu.left.toFixed(1) + '..' + menu.right.toFixed(1);
+                }
+                """, serverIndex);
     }
 
     boolean templateServerHasAddPresetButton(int serverIndex) {
@@ -1524,7 +1608,10 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return tag.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-+|-+$", "");
     }
 
-    void setViewportSize(int width, int height) {page.setViewportSize(width, height);}
+    void setViewportSize(int width, int height) {
+        page.setViewportSize(width, height);
+        page.waitForLoadState(com.microsoft.playwright.options.LoadState.NETWORKIDLE);
+    }
 
     void waitMs(double ms) {page.waitForTimeout(ms);}
 
@@ -1534,6 +1621,218 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         publishScreenshot(name + "-dark", currentContext);
         page.emulateMedia(new Page.EmulateMediaOptions().setColorScheme(LIGHT));
     }
+
+    boolean isServerSelectorVisibleWhenDescriptionExpanded() {
+        clickApiDescriptionSummary();
+        return isServerSelectorOnTitleRowExpanded();
+    }
+
+    String headerGeometryReport() {
+        return (String) page.evaluate("() => {"
+                + " const r = (s) => { const el = document.querySelector(s);"
+                + " if (!el) return s + ':missing'; const b = el.getBoundingClientRect();"
+                + " return s + '=' + b.left.toFixed(0) + '..' + b.right.toFixed(0) + ' w=' + b.width.toFixed(0); };"
+                + " return [r('.detail-header'), r('.detail-header .level-left'), r('.detail-header .level-left > .level-item'),"
+                + " r('.detail-header .api-title-block'), r('.api-title-row .title'), r('.detail-header .level-right'),"
+                + " r('.detail-header #server-selector')].join(' | ');"
+                + " }");
+    }
+
+    boolean isTitleOnOneLine() {
+        return (Boolean) page.evaluate("() => {"
+                + " const t = document.querySelector('.api-title-row .title');"
+                + " const cs = getComputedStyle(t);"
+                + " const h = t.getBoundingClientRect().height;"
+                + " return h < 60 && cs.whiteSpace === 'nowrap';"
+                + " }");
+    }
+
+    boolean isTitleFullyVisibleAtWideViewport() {
+        // at 2384px the full title must fit without truncation
+        return (Boolean) page.evaluate("() => {"
+                + " const t = document.querySelector('.api-title-row .title');"
+                + " return t.scrollWidth <= t.clientWidth + 1;"
+                + " }");
+    }
+
+    String titleRowReport() {
+        return (String) page.evaluate("() => {"
+                + " const t = document.querySelector('.api-title-row .title').getBoundingClientRect();"
+                + " const items = [...document.querySelectorAll('.api-title-row > *')].map(el => {"
+                + " const r = el.getBoundingClientRect();"
+                + " return el.className + ':top=' + r.top.toFixed(1) + ',bottom=' + r.bottom.toFixed(1); }).join(' | ');"
+                + " return 'title top=' + t.top.toFixed(1) + ' bottom=' + t.bottom.toFixed(1) + ' || ' + items;"
+                + " }");
+    }
+
+    boolean isTitleRowOnOneLine() {
+        return (Boolean) page.evaluate("() => {"
+                + " const t = document.querySelector('.api-title-row .title').getBoundingClientRect();"
+                + " const items = [...document.querySelectorAll('.api-title-row > *')].map(el => el.getBoundingClientRect());"
+                + " return items.every(r => r.bottom <= t.bottom + 2 && r.top >= t.top - 2);"
+                + " }");
+    }
+
+    boolean isTitleFullyVisible() {
+        return (Boolean) page.evaluate("() => {"
+                + " const t = document.querySelector('.api-title-row .title');"
+                + " const h1 = t.tagName === 'H1' ? t : t.querySelector('h1') || t;"
+                + " const row = document.querySelector('.api-title-row').getBoundingClientRect();"
+                + " const tr = h1.getBoundingClientRect();"
+                + " return tr.width >= h1.scrollWidth - 1 && tr.right <= row.right + 1;"
+                + " }");
+    }
+
+    String titleGeometryReport() {
+        return (String) page.evaluate("() => {"
+                + " const t = document.querySelector('.api-title-row .title');"
+                + " const row = document.querySelector('.api-title-row');"
+                + " const b = t.getBoundingClientRect();"
+                + " const chain = ['.detail-header', '.detail-header .level-left', '.detail-header .level-left > .level-item',"
+                + " '.api-title-block', '.api-title-row', '.api-title-row > .level-left', '.api-title-row > .level-left > .level-item',"
+                + " '.api-title-row .title'].map(s => { const el = document.querySelector(s); if (!el) return s + ':missing';"
+                + " const r = el.getBoundingClientRect(); const cs = getComputedStyle(el);"
+                + " return s.split(' ').pop() + ':w=' + r.width.toFixed(0) + ',flex=' + cs.flex + ',minW=' + cs.minWidth; }).join(' | ');"
+                + " return 'title w=' + b.width.toFixed(0) + ' scrollW=' + t.scrollWidth"
+                + " + ' rowW=' + row.getBoundingClientRect().width.toFixed(0)"
+                + " + ' titleText=' + JSON.stringify(t.textContent) + ' || ' + chain;"
+                + " }");
+    }
+
+    boolean isServerSelectorOnTitleRowExpanded() {
+        return (Boolean) page.evaluate("() => {"
+                + " const header = document.querySelector('.detail-header').getBoundingClientRect();"
+                + " const r = document.querySelector('.detail-header #server-selector').getBoundingClientRect();"
+                + " const titleBlock = document.querySelector('.detail-header .api-title-block').getBoundingClientRect();"
+                + " const descText = document.querySelector('details.api-description .api-description-text');"
+                + " const descRight = descText ? descText.getBoundingClientRect().right : 0;"
+                + " return r.right <= window.innerWidth + 0.5 && r.left >= 0 && r.width > 0"
+                + " && r.top < header.bottom && titleBlock.right <= r.left + 1"
+                + " && descRight <= r.left + 1;"
+                + " }");
+    }
+
+    String serverRowReport() {
+        return (String) page.evaluate("() => {"
+                + " const header = document.querySelector('.detail-header').getBoundingClientRect();"
+                + " const r = document.querySelector('.detail-header #server-selector').getBoundingClientRect();"
+                + " const tb = document.querySelector('.detail-header .api-title-block').getBoundingClientRect();"
+                + " const dt = document.querySelector('details.api-description .api-description-text');"
+                + " const dr = dt ? dt.getBoundingClientRect().right : 0;"
+                + " return 'headerBottom=' + header.bottom.toFixed(1) + ' serverTop=' + r.top.toFixed(1)"
+                + " + ' serverLeft=' + r.left.toFixed(1) + ' titleBlockRight=' + tb.right.toFixed(1)"
+                + " + ' descRight=' + dr.toFixed(1) + ' innerW=' + window.innerWidth"
+                + " + ' cond=' + (r.right <= window.innerWidth + 0.5) + (r.top < header.bottom)"
+                + " + (tb.right <= r.left + 1) + (dr <= r.left + 1);"
+                + " }");
+    }
+
+    String baselineReport() {
+        return (String) page.evaluate("() => {"
+                + " const t = document.querySelector('.api-title-row .title').getBoundingClientRect();"
+                + " const v = document.querySelector('.api-title-row .api-version').getBoundingClientRect();"
+                + " return 'titleCenter=' + ((t.top + t.bottom) / 2).toFixed(1)"
+                + " + ' badgeCenter=' + ((v.top + v.bottom) / 2).toFixed(1)"
+                + " + ' diff=' + (((v.top + v.bottom) / 2) - ((t.top + t.bottom) / 2)).toFixed(1);"
+                + " }");
+    }
+
+    boolean isVersionBadgeCenterAlignedWithTitle() {
+        return (Boolean) page.evaluate("() => {"
+                + " const t = document.querySelector('.api-title-row .title').getBoundingClientRect();"
+                + " const v = document.querySelector('.api-title-row .api-version').getBoundingClientRect();"
+                + " return Math.abs(((v.top + v.bottom) / 2) - ((t.top + t.bottom) / 2)) < 2;"
+                + " }");
+    }
+
+    boolean isVersionBadgeImmediatelyRightOfTitle() {
+        return (Boolean) page.evaluate("() => {"
+                + " const t = document.querySelector('.api-title-row .title').getBoundingClientRect();"
+                + " const v = document.querySelector('.api-title-row .api-version-addon').getBoundingClientRect();"
+                + " const gap = v.left - t.right;"
+                + " return gap >= 0 && gap < 20;"
+                + " }");
+    }
+
+    String versionGapReport() {
+        return (String) page.evaluate("() => {"
+                + " const t = document.querySelector('.api-title-row .title').getBoundingClientRect();"
+                + " const v = document.querySelector('.api-title-row .api-version').getBoundingClientRect();"
+                + " const row = document.querySelector('.api-title-row').getBoundingClientRect();"
+                + " const range = document.createRange(); range.selectNodeContents(document.querySelector('.api-title-row .title'));"
+                + " const textRight = range.getBoundingClientRect().right;"
+                + " return 'titleBoxRight=' + t.right.toFixed(1) + ' textRight=' + textRight.toFixed(1)"
+                + " + ' badgeLeft=' + v.left.toFixed(1) + ' gap=' + (v.left - textRight).toFixed(1)"
+                + " + ' rowRight=' + row.right.toFixed(1);"
+                + " }");
+    }
+
+    String versionBadgeGeometryReport() {
+        return (String) page.evaluate("() => {"
+                + " const t = document.querySelector('.api-title-row .title').getBoundingClientRect();"
+                + " const v = document.querySelector('.api-title-row .api-version').getBoundingClientRect();"
+                + " return 'title bottom=' + t.bottom.toFixed(1) + ' badge bottom=' + v.bottom.toFixed(1)"
+                + " + ' diff=' + (v.bottom - t.bottom).toFixed(1) + ' badge top=' + v.top.toFixed(1);"
+                + " }");
+    }
+
+    boolean isServerSelectorBottomAlignedWithTitleBlock() {
+        return (Boolean) page.evaluate("() => {"
+                + " const title = document.querySelector('.detail-header .api-title-block').getBoundingClientRect();"
+                + " const server = document.querySelector('.detail-header #server-selector').getBoundingClientRect();"
+                + " return server.top < title.bottom - 1 && Math.abs(server.bottom - title.bottom) < 2;"
+                + " }");
+    }
+
+    boolean isApiVersionBadgeVisible() {return page.locator(".detail-header .api-version").isVisible();}
+
+    String apiVersionBadgeText() {return page.locator(".detail-header .api-version").textContent().trim();}
+
+    String apiSpecVersionBadgeText() {return page.locator(".detail-header .api-spec-version").textContent().trim();}
+
+    boolean areVersionBadgesFullyPainted() {
+        return (Boolean) page.evaluate("() => {"
+                + " const row = document.querySelector('.api-title-row').getBoundingClientRect();"
+                + " const badges = [...document.querySelectorAll('.api-title-row .api-version, .api-title-row .api-spec-version')]"
+                + " .map(el => el.getBoundingClientRect());"
+                + " return badges.length === 2 && badges.every(b => b.bottom <= row.bottom + 0.5 && b.top >= row.top - 0.5);"
+                + " }");
+    }
+
+    String versionBadgeClipReport() {
+        return (String) page.evaluate("() => {"
+                + " const row = document.querySelector('.api-title-row').getBoundingClientRect();"
+                + " return [...document.querySelectorAll('.api-title-row .api-version, .api-title-row .api-spec-version')]"
+                + " .map(el => { const b = el.getBoundingClientRect();"
+                + " return el.className + ' top=' + b.top.toFixed(1) + ' bottom=' + b.bottom.toFixed(1); })"
+                + " .join(' | ') + ' || row top=' + row.top.toFixed(1) + ' bottom=' + row.bottom.toFixed(1);"
+                + " }");
+    }
+
+    boolean isApiSpecVersionBadgeNextToVersionBadge() {
+        return (Boolean) page.evaluate("() => {"
+                + " const v = document.querySelector('.api-title-row .api-version').getBoundingClientRect();"
+                + " const s = document.querySelector('.api-title-row .api-spec-version').getBoundingClientRect();"
+                + " const gap = s.left - v.right;"
+                + " return gap >= -1 && gap < 20 && s.left >= v.right - 1;" // has-addons joins them seamlessly (gap 0)
+                + " }");
+    }
+
+    String apiDescriptionSummaryText() {return page.locator("details.api-description summary").textContent().trim();}
+
+    int countApiSummaryOccurrences() {
+        return (int) page.evaluate("() => document.querySelector('.api-title-block').textContent.split('Short API summary').length - 1");
+    }
+
+    boolean isApiDescriptionExpanded() {
+        return (Boolean) page.evaluate("() => document.querySelector('details.api-description')?.open === true");
+    }
+
+    boolean isApiDescriptionTextVisible() {return page.locator("details.api-description .api-description-text").isVisible();}
+
+    String apiDescriptionText() {return page.locator("details.api-description .api-description-text").textContent();}
+
+    void clickApiDescriptionSummary() {page.locator("details.api-description summary").click();}
 
     String locationHash() {return (String) page.evaluate("() => location.hash");}
 

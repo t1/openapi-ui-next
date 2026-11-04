@@ -38,6 +38,7 @@ import static com.github.t1.bulmajava.elements.Title.title;
 import static com.github.t1.bulmajava.form.Input.input;
 import static com.github.t1.bulmajava.form.InputType.RADIO;
 import static com.github.t1.bulmajava.layout.Container.container;
+import static com.github.t1.bulmajava.layout.Level.level;
 import static com.github.t1.bulmajava.layout.Media.media;
 import static com.github.t1.bulmajava.layout.Section.section;
 import static com.github.t1.htmljava.Html.html;
@@ -106,7 +107,9 @@ public class OpenApiUiGenerator {
 
         var pageTitle = openApi.getInfo().getTitle();
         var detail = div().id("detail");
-        var detailHeader = div().classes("detail-header").content(title(pageTitle), serverSelector(openApi));
+        var detailHeader = level().classes("detail-header", "is-flex-wrap-nowrap", "is-align-items-flex-end")
+                .left(apiTitleBlock(openApi))
+                .right(serverSelector(openApi));
         var detailPane = div().classes("detail-pane").content(detail, modeSelector);
         var splitLayout = splitPane()
                 .first(box().content(viewToggle, treeContainer))
@@ -117,6 +120,31 @@ public class OpenApiUiGenerator {
                 splitLayout
         ), errorBanner());
         return htmlDocument(pageTitle, body, operationIdMap);
+    }
+
+    private static Renderable apiTitleBlock(OpenAPI openApi) {
+        var info = openApi.getInfo();
+        var titleRow = div().classes("api-title-row", "is-flex", "is-align-items-center", "is-flex-wrap-nowrap").content(title(info.getTitle()));
+        var versionBadge = info.getVersion() != null && !info.getVersion().isEmpty()
+                ? tag(info.getVersion()).classes("api-version").is(INFO) : null;
+        var specVersion = openApi.getOpenapi();
+        var specBadge = specVersion != null && !specVersion.isEmpty()
+                ? tag("OpenAPI " + specVersion).classes("api-spec-version") : null;
+        if (versionBadge != null || specBadge != null) {
+            var addon = tagsAddon().classes("api-version-addon", "ml-2");
+            if (versionBadge != null) addon.content(versionBadge);
+            if (specBadge != null) addon.content(specBadge);
+            titleRow.content(addon);
+        }
+        var block = div().classes("api-title-block").content(titleRow);
+        if (info.getDescription() != null && !info.getDescription().isEmpty()) {
+            var summaryText = info.getSummary() != null && !info.getSummary().isEmpty()
+                    ? info.getSummary() : "Description";
+            block.content(element("details").classes("api-description")
+                    .content(element("summary").content(summaryText))
+                    .content(p().classes("api-description-text").content(info.getDescription())));
+        }
+        return block;
     }
 
     private Toggle viewToggle(boolean defaultToTags) {
@@ -224,7 +252,8 @@ public class OpenApiUiGenerator {
                                 .attr("data-url-template", url);
                         var variablesJson = serializeVariables(server.getVariables());
                         addPresetBtn.attr("data-variables", variablesJson);
-                        templateGroup.content(addPresetBtn);
+                        templateGroup.content(div().classes("template-preset-add-wrap", "px-3", "py-1")
+                                .content(addPresetBtn));
                     }
 
                     dropdownContent.content(templateGroup);
@@ -252,10 +281,11 @@ public class OpenApiUiGenerator {
 
         // Custom URL section
         dropdownContent.content(element("hr").classes("dropdown-divider"));
-        dropdownContent.content(div().classes("custom-url-block")
-                .content(button("+ Add custom URL").is(SMALL, FULLWIDTH, OUTLINED, LINK)
-                        .classes("custom-url-add")
-                        .attr("type", "button")));
+        dropdownContent.content(div().classes("custom-url-block", "p-4")
+                .content(div().classes("custom-url-add-wrap")
+                        .content(button("+ Add custom URL").is(SMALL, FULLWIDTH, OUTLINED, LINK)
+                                .classes("custom-url-add")
+                                .attr("type", "button"))));
 
         var menu = div().classes("dropdown-menu").attr("role", "menu").content(dropdownContent);
 

@@ -3989,6 +3989,38 @@ class BrowserTest {
             then(app.templateServerPresetCount(0)).isEqualTo(1);
         }
 
+        @Test void shouldNotMakeServerDropdownFullHeaderWidth() {
+            app.clickServerToggle();
+
+            then(app.isServerDropdownNarrowerThanHeader()).isTrue();
+            app.screenshot("server-dropdown-shrink-to-fit");
+        }
+
+        @Test void shouldKeepAddButtonsInsideDropdownWidth() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            app.setTemplatePresetFormValue(0, "environment", "staging");
+            app.clickTemplatePresetSave(0);
+
+            var report = app.addButtonsOverflowReport(0);
+            then(app.areAddButtonsInsideDropdown(0)).as("overflow: %s", report).isTrue();
+            app.screenshot("server-dropdown-add-buttons-fit");
+        }
+
+        @Test void shouldStackPresetRadiosStrictlyBelowEachOther() {
+            app.clickServerToggle();
+            app.clickTemplateServerAddPreset(0);
+            app.setTemplatePresetFormValue(0, "environment", "staging");
+            app.clickTemplatePresetSave(0);
+            app.clickTemplateServerAddPreset(0);
+            app.setTemplatePresetFormValue(0, "environment", "dev");
+            app.clickTemplatePresetSave(0);
+
+            then(app.templateServerPresetCount(0)).isEqualTo(3);
+            then(app.areTemplatePresetLabelsStackedVertically(0)).isTrue();
+            app.screenshot("server-dropdown-template-presets-stacked");
+        }
+
         @Test void shouldLabelDefaultPresetWithResolvedUrl() {
             then(app.templateServerPresetLabel(0, 0)).isEqualTo("https://api.example.com");
         }
@@ -4368,6 +4400,94 @@ class BrowserTest {
 
             then(shownOnCrossOrigin).isTrue();
             then(hiddenOnSameOrigin).isFalse();
+        }
+    }
+
+    @ResourceLock("api-info-long-title") @Nested class GivenAppWithLongTitle {
+        @RegisterExtension static AppFixture app = launch("api-info-long-title.yaml");
+
+        @Test void shouldKeepLongTitleOnOneLineWhenDescriptionExpanded() {
+            app.setViewportSize(2384, 800);
+            app.clickApiDescriptionSummary();
+
+            then(app.isTitleFullyVisibleAtWideViewport()).as(app.titleGeometryReport()).isTrue();
+            then(app.isTitleRowOnOneLine()).as(app.titleRowReport()).isTrue();
+            then(app.isServerSelectorOnTitleRowExpanded()).as(app.titleRowReport()).isTrue();
+            then(app.isServerSelectorOnTitleRowExpanded()).isTrue();
+            app.screenshot("long-title-expanded");
+        }
+    }
+
+    @ResourceLock("api-info") @Nested class GivenAppWithApiInfo {
+        @RegisterExtension static AppFixture app = launch("api-info.yaml");
+
+        @Test void shouldBottomAlignServerSelectorWithTitleBlock() {
+            then(app.isServerSelectorBottomAlignedWithTitleBlock()).isTrue();
+        }
+
+        @Test void shouldCenterAlignVersionBadgeWithTitle() {
+            then(app.isVersionBadgeCenterAlignedWithTitle()).as(app.baselineReport()).isTrue();
+            then(app.isVersionBadgeImmediatelyRightOfTitle()).as(app.versionGapReport()).isTrue();
+        }
+
+        @Test void shouldShowVersionBadgeAndCollapsedDescription() {
+            then(app.isApiVersionBadgeVisible()).isTrue();
+            then(app.apiVersionBadgeText()).isEqualTo("2.3.4");
+            then(app.apiSpecVersionBadgeText()).isEqualTo("OpenAPI 3.1.0");
+            then(app.isApiSpecVersionBadgeNextToVersionBadge()).isTrue();
+            then(app.areVersionBadgesFullyPainted()).as(app.versionBadgeClipReport()).isTrue();
+            then(app.apiDescriptionSummaryText()).isEqualTo("Short API summary");
+            then(app.countApiSummaryOccurrences()).isEqualTo(1);
+            then(app.isApiDescriptionExpanded()).isFalse();
+            then(app.isApiDescriptionTextVisible()).isFalse();
+            app.screenshot("api-info-collapsed");
+        }
+
+        @Test void shouldExpandDescriptionOnSummaryClick() {
+            app.clickApiDescriptionSummary();
+
+            then(app.isApiDescriptionExpanded()).isTrue();
+            then(app.isApiDescriptionTextVisible()).isTrue();
+            then(app.apiDescriptionText()).contains("A long API description");
+            app.screenshot("api-info-expanded");
+        }
+
+        @Test void shouldWrapLongUnbreakableDescriptionTokenLeftOfServerSelector() {
+            app.setViewportSize(1280, 720);
+            app.clickApiDescriptionSummary();
+
+            then(app.isServerSelectorOnTitleRowExpanded()).as(app.headerGeometryReport()).isTrue();
+            app.screenshot("api-info-expanded-long-token");
+        }
+
+        @Test void shouldKeepTitleOnOneLineWhenDescriptionExpanded() {
+            app.setViewportSize(2384, 800);
+            app.clickApiDescriptionSummary();
+
+            then(app.isServerSelectorOnTitleRowExpanded()).as(app.serverRowReport()).isTrue();
+            app.screenshot("api-info-expanded-title-one-line");
+        }
+
+        @Test void shouldKeepServerSelectorVisibleWhenDescriptionExpanded() {
+            then(app.isServerSelectorVisibleWhenDescriptionExpanded()).isTrue();
+            app.screenshot("api-info-expanded-server-visible");
+        }
+
+        @Test void shouldKeepServerSelectorOnTitleRowAtWideViewportWhenExpanded() {
+            app.setViewportSize(2384, 800);
+            app.clickApiDescriptionSummary();
+
+            then(app.isServerSelectorOnTitleRowExpanded()).isTrue();
+            app.screenshot("api-info-expanded-server-visible-wide");
+        }
+
+        @Test void shouldOpenServerDropdownAsOverlayWithoutPushingContent() {
+            then(app.isTreeNotPushedDownByDropdown()).isTrue();
+            app.clickServerToggle();
+            then(app.isServerDropdownOverlayingContent()).isTrue();
+            app.clickApiDescriptionSummary();
+            then(app.isServerDropdownOverlayingContent()).isTrue();
+            app.screenshot("api-info-expanded-dropdown-overlay");
         }
     }
 }

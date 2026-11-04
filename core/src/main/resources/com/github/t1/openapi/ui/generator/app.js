@@ -635,10 +635,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const urls = JSON.parse(stored);
             const addBtn = serverSelector.querySelector('.custom-url-add');
             if (!addBtn) return;
-            const customUrlBlock = addBtn.closest('.custom-url-block');
+            const addWrap = addBtn.closest('.custom-url-add-wrap');
             urls.forEach(function(url) {
                 const row = createCustomUrlRow(url);
-                customUrlBlock.insertBefore(row, addBtn);
+                addWrap.parentNode.insertBefore(row, addWrap);
             });
         } catch (e) {
             console.error('Failed to restore custom URLs:', e);
@@ -670,7 +670,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const label = createTemplatePresetLabel(serverIndex, nextIndex, preset.resolvedUrl, true);
                     
                     // Insert before the "Add preset" button
-                    templateGroup.insertBefore(label, addBtn);
+                    templateGroup.insertBefore(label, addBtn.closest('.template-preset-add-wrap'));
                     nextIndex++;
                 });
             } catch (e) {
@@ -801,9 +801,9 @@ document.addEventListener('DOMContentLoaded', function() {
         serverSelector.addEventListener('click', function(e) {
             const addBtn = e.target.closest('.custom-url-add');
             if (addBtn) {
-                const customUrlBlock = addBtn.closest('.custom-url-block');
+                const addWrap = addBtn.closest('.custom-url-add-wrap');
                 const row = createCustomUrlRow('');
-                customUrlBlock.insertBefore(row, addBtn);
+                addWrap.parentNode.insertBefore(row, addWrap);
                 var radio = row.querySelector('input[type="radio"]');
                 if (radio) {
                     radio.checked = true;
@@ -839,7 +839,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const variables = JSON.parse(addPresetBtn.getAttribute('data-variables'));
                 const form = createTemplatePresetForm(serverIndex, urlTemplate, variables);
                 const templateGroup = addPresetBtn.closest('.template-group');
-                templateGroup.insertBefore(form, addPresetBtn);
+                templateGroup.insertBefore(form, addPresetBtn.closest('.template-preset-add-wrap'));
                 var firstField = form.querySelector('input, select');
                 if (firstField) firstField.focus();
                 return;
@@ -1290,7 +1290,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var modeRow = document.querySelector('.mode-row');
             if (!modeRow) {
                 modeRow = document.createElement('div');
-                modeRow.className = 'mode-row';
+                modeRow.className = 'mode-row is-flex is-justify-content-space-between is-align-items-center';
             }
             responseArea.parentNode.insertBefore(modeRow, responseArea);
             modeRow.appendChild(modeSel);

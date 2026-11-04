@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info:
+  title: Test API
+  version: 1.0.0
+  description: Only a description, no summary.
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    get:
+      summary: List pets
+      operationId: listPets
+      responses:
+        '200':
+          description: A list of pets

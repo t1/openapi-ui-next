@@ -50,6 +50,8 @@ backend, so they load instantly. The dynamic UX is provided mainly by HTMX, e.g.
 
 **API Documentation**
 
+- API title with always-visible monospace version badge; long `info.description` in a
+  collapsed disclosure labeled with `info.summary` ("Description" as fallback) in the header
 - Operation summary, description, deprecated badge, tags, external docs
 - Parameter inputs with type (path/query/header) and required badges
 - Request body editor with JSON skeleton and schema documentation

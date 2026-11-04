@@ -1,0 +1,19 @@
+openapi: 3.1.0
+info:
+  title: Test API
+  version: 2.3.4
+  summary: Short API summary
+  description: |
+    A long API description
+    spanning multiple lines.
+    With a very long unbreakable token like https://missions-api.rescuetablet.com/some/very/long/path/segment/that/does/not/wrap that must not overflow into the server selector area.
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    get:
+      summary: List pets
+      operationId: listPets
+      responses:
+        '200':
+          description: A list of pets

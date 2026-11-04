@@ -1,8 +1,10 @@
 package com.github.t1.openapi.ui.generator;
 
-import com.github.t1.openapi.ui.generator.OpenApiUiFileGenerator;
-import com.microsoft.playwright.*;
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
 import org.junit.jupiter.api.Test;
+
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.file.Files;

@@ -70,22 +70,76 @@ section > .container > .split-layout > .split-first > .box {
 }
 /* --- Detail pane --- */
 .detail-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.75rem;
     margin-bottom: 1.25rem;
     padding-bottom: 0.75rem;
     border-bottom: 2px solid var(--bulma-border);
     position: relative;
 }
-/* Keep the server selector on the right when the header wraps on narrow screens */
-.detail-header #server-selector {
-    margin-left: auto;
+/* let the title block shrink so an expanded description wraps instead of
+   wrapping the whole header and pushing the server selector off-screen
+   (.level-item has flex-shrink:0 by default, so override both levels) */
+.detail-header .level-left,
+.detail-header .level-left > .level-item {
+    min-width: 0;
+    flex: 1 1 0;
+    flex-shrink: 1;
+}
+/* the nowrap title's min-content width propagates up the flex chain;
+   overflow:hidden on the level items lets them shrink below it */
+.detail-header .level-left,
+.detail-header .level-left > .level-item,
+.api-title-block {
+    overflow: hidden;
+}
+.detail-header .level-right,
+.detail-header .level-right > .level-item {
+    flex: 0 0 auto;
+    flex-shrink: 0;
 }
 .detail-header .title {
     margin-bottom: 0;
+}
+/* the title's version addon sits right of the h1, not pushed to the right edge
+   like the header badges that share .tags.has-addons */
+.api-title-row .tags.has-addons {
+    margin-left: 0.5rem;
+}
+.api-title-row .api-version,
+.api-title-row .api-spec-version {
+    font-family: var(--mono-font);
+    font-weight: 500;
+    flex: 0 0 auto;
+    margin-left: 0;
+}
+.api-title-row .api-spec-version {
+    color: var(--bulma-text-weak);
+    background: transparent;
+    border: 1px solid var(--bulma-border);
+}
+/* let the title block shrink below the nowrap title's min-content width */
+.api-title-block {
+    min-width: 0;
+    flex: 1 1 0;
+}
+details.api-description {
+    margin-top: 0.25rem;
+}
+details.api-description summary {
+    cursor: pointer;
+    color: var(--bulma-text-weak);
+    font-size: 0.875rem;
+}
+details.api-description .api-description-text {
+    margin-top: 0.25rem;
+    color: var(--bulma-text-weak);
+    line-height: 1.6;
+    white-space: pre-line;
+    /* wrap within the title block so the text never slides under the server selector */
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+.api-title-block {
+    min-width: 0;
 }
 .split-second {
     padding-left: 1rem;
@@ -611,20 +665,20 @@ pre.response code.hljs {
 #server-selector .dropdown-arrow {
     margin-left: 0.25rem;
 }
-#server-selector {
-    position: static;
-}
 #server-selector .dropdown-menu {
-    width: max-content;
-    max-width: min(44rem, 100vw - 1rem);
+    /* top-anchored absolute overlay (Bulma default), so it never pushes layout */
+    position: absolute !important;
+    top: 100% !important;
     left: auto !important;
     right: 0 !important;
+    width: max-content;
+    max-width: min(44rem, 100vw - 1rem);
 }
-/* On narrow viewports the detail-header does not span the full width, so anchor
-   the menu to the header and clamp it into the viewport instead. */
+/* On narrow viewports clamp the menu into the viewport (anchored to the selector's
+   right edge, which is inside the viewport) */
 @media (max-width: 60rem) {
     #server-selector .dropdown-menu {
-        right: max(0px, calc(100% - 100vw + 1rem)) !important;
+        right: 0 !important;
         max-width: calc(100vw - 1rem) !important;
     }
 }
@@ -684,6 +738,10 @@ pre.response code.hljs {
     background: var(--bulma-scheme-main-bis);
 }
 .template-preset-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    width: 100%;
     padding: 0.75em 1em;
 }
 .template-preset-label:hover {
@@ -692,18 +750,20 @@ pre.response code.hljs {
 .template-preset-label .delete {
     margin-left: auto;
 }
-.template-preset-add {
-    margin: 0.3em 0.75em;
+/* preset rows are full-width flex rows; app.js builds them as label.radio */
+.template-preset-label > .server-item-url {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .template-preset-form {
     padding: 0.6em 0.75em;
     background: var(--bulma-scheme-main-bis);
     border-top: 1px solid var(--bulma-border-weak);
 }
-/* custom URL block inside dropdown */
-.custom-url-block {
-    padding: 0.5rem 1rem;
-}
+/* custom URL block inside dropdown (p-4 added in markup) */
 
 /* Tag filter */
 .filter-pill-panel {
@@ -716,12 +776,8 @@ pre.response code.hljs {
     color: hsl(204, 86%, 53%); /* Bulma link color */
 }
 
-/* Detail pane layout */
-.mode-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
+/* Detail pane layout (is-flex is-flex-wrap-wrap is-justify-content-space-between
+   is-align-items-center added in markup) */
 .mode-row .response-info {
     display: flex;
     flex-direction: column;

@@ -85,6 +85,49 @@ class OpenApiUiGeneratorTest {
         then(fragment).contains("GET");
     }
 
+    @Test void shouldRenderApiVersionBadgeNextToTitle() throws Exception {
+        generate("/api-info.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("tags has-addons api-version-addon");
+        then(indexHtml).contains("api-version");
+        then(indexHtml).contains("2.3.4");
+        then(indexHtml).contains("api-spec-version");
+        then(indexHtml).contains("OpenAPI 3.1.0");
+    }
+
+    @Test void shouldRenderApiDescriptionCollapsedInHeader() throws Exception {
+        generate("/api-info.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("<details class=\"api-description\">");
+        then(indexHtml).contains("A long API description");
+    }
+
+    @Test void shouldRenderApiSummaryOnlyAsDescriptionToggle() throws Exception {
+        generate("/api-info.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).doesNotContain("api-summary");
+        then(indexHtml).contains("<summary>Short API summary</summary>");
+        var summaryCount = indexHtml.split("Short API summary", -1).length - 1;
+        then(summaryCount).as("summary should appear exactly once").isEqualTo(1);
+    }
+
+    @Test void shouldUseDescriptionAsSummaryFallback() throws Exception {
+        generate("/api-description-only.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).contains("<summary>Description</summary>");
+    }
+
+    @Test void shouldNotRenderApiDescriptionWhenMissing() throws Exception {
+        generate("/one-get.yaml");
+
+        var indexHtml = Files.readString(outputDir.resolve("index.html"));
+        then(indexHtml).doesNotContain("api-description");
+    }
+
     @Test void shouldIncludeHtmxAttributes() throws Exception {
         generate("/one-get.yaml");
 
