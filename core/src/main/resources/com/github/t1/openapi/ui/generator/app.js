@@ -2839,7 +2839,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     detail.innerHTML = '';
                     var firstVisible = Array.from(tree.querySelectorAll('[role="treeitem"]'))
                         .find(visibleUnderFilter);
-                    if (firstVisible && tree._selectItem) tree._selectItem(firstVisible);
+                    if (firstVisible && tree._selectItem) tree._selectItem(firstVisible, false);
                 }
             }
             updateFilterStatusLine();
