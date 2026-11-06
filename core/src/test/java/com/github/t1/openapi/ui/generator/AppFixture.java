@@ -352,8 +352,11 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     String selectValue(String name) {return page.locator("#detail select[name='" + name + "']").inputValue();}
 
     int pinIconRotationAfterTransition(String name) {
-        // wait for transition to complete (150ms CSS transition + margin)
-        page.waitForTimeout(200);
+        page.waitForFunction(
+                "(name) => { var el = document.querySelector(\"#detail [name='\" + name + \"']\");"
+                        + " var toggle = el && el.closest('.field').querySelector('.persist-toggle');"
+                + " return toggle && toggle.getAnimations().every(function(a) { return a.playState === 'finished'; }); }",
+                name);
         return readPinRotation(name);
     }
 

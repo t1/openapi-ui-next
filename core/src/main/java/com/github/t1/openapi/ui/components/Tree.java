@@ -379,7 +379,7 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                     if (first) first.focus();
                 }
             
-                function selectItem(item) {
+                function selectItem(item, loadDetail) {
                     var tree = getTree();
                     if (tree) {
                         tree.querySelectorAll('[aria-selected="true"]').forEach(function(el) {
@@ -393,7 +393,7 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                         var route = hxGetToRoute(hxGet);
                         var tag = hxEl.getAttribute('data-tag');
                         var hash = tag ? '#[' + tag + ']' + route : '#' + route;
-                        htmx.ajax('GET', hxGet, {target: '#detail', swap: 'innerHTML'});
+                        if (loadDetail !== false) htmx.ajax('GET', hxGet, {target: '#detail', swap: 'innerHTML'});
                         history.pushState(null, '', hash);
                     }
                 }

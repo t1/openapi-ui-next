@@ -883,6 +883,7 @@ class BrowserTest {
             app.clickPill("users");
 
             app.waitForDetailEmpty();
+            then(app.selectedItemIsVisible()).isTrue();
             then(app.detailText()).doesNotContain("List invoices");
         }
 
