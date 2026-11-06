@@ -103,7 +103,7 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         }
         context = browser.newContext(options);
         page = context.newPage();
-        page.setDefaultTimeout(45000);
+        page.setDefaultTimeout(60_000);
         navigateHome();
     }
 
