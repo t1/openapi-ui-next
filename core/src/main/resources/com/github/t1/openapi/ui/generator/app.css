@@ -10,6 +10,11 @@
     outline-offset: 2px;
     border-radius: 2px;
 }
+/* The clamped desc-toggle sits flush with the wrapper's right/bottom edge, so a
+   positive outline-offset would be clipped — draw the ring inside the button. */
+.desc-toggle:focus {
+    outline-offset: -2px;
+}
 .section {
     padding-top: 1.5rem;
     padding-left: 0.5rem;
@@ -129,6 +134,13 @@ details.api-description summary {
     color: var(--bulma-text-weak);
     font-size: 0.875rem;
 }
+/* The header's level-item has overflow:hidden, which clips a positive
+   outline-offset — draw the ring inside the summary instead. */
+details.api-description summary:focus {
+    outline: 2px solid var(--bulma-link);
+    outline-offset: -2px;
+    border-radius: 2px;
+}
 details.api-description .api-description-text {
     margin-top: 0.25rem;
     color: var(--bulma-text-weak);
@@ -244,6 +256,11 @@ section > .container > .split-layout > .split-second {
 }
 [data-toggle="view"] {
     margin-bottom: 0.75rem;
+}
+.toggle:focus {
+    outline: 2px solid var(--bulma-link);
+    outline-offset: 2px;
+    border-radius: 6px;
 }
 .response-status {
     font-family: var(--mono-font);
@@ -765,15 +782,19 @@ pre.response code.hljs {
 }
 /* custom URL block inside dropdown (p-4 added in markup) */
 
-/* Tag filter */
-.filter-pill-panel {
-    display: none;
+/* Tag filter: pill addon row is always visible above the paths tree and wraps
+   (Bulma's .tags already sets flex-wrap: wrap; the global .tags.has-addons
+   nowrap override above only applies to header badges) */
+div.toggle.filter-pill-panel {
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: 0.25rem;
+    margin-bottom: 0.5rem;
 }
-.filter-pill-panel.is-active {
-    display: inline-flex;
-}
-.filter-icon.is-active {
-    color: hsl(204, 86%, 53%); /* Bulma link color */
+.filter-pill-panel:focus {
+    outline: 2px solid var(--bulma-link);
+    outline-offset: 2px;
+    border-radius: 2px;
 }
 
 /* Detail pane layout (is-flex is-flex-wrap-wrap is-justify-content-space-between

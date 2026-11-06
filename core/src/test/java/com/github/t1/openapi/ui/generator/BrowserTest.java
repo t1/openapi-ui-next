@@ -725,37 +725,32 @@ class BrowserTest {
         }
 
         // Tag filter tests
-        @Test void shouldShowFilterIconInPathView() {
+        @Test void shouldShowFilterPanelInPathView() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
 
-            then(app.hasFilterIcon()).isTrue();
-        }
-
-        @Test void shouldHideFilterIconInTagView() {
-            // filter icon should only be visible in path view, not tag view
             then(app.hasFilterIcon()).isFalse();
+            then(app.isFilterPanelVisible()).isTrue();
         }
 
-        @Test void shouldTogglePillPanelOnFilterIconClick() {
+        @Test void shouldWrapFilterPillsInNarrowPane() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
+            app.setViewportSize(900, 800); // narrow window → narrow left pane
 
-            then(app.isFilterPanelVisible()).isFalse();
+            // Bulma's .tags wraps natively; the pill row must wrap too, not overflow
+            then(app.filterPillsWrap()).isTrue();
+            app.screenshot("filter-pills-wrapped");
+        }
 
-            app.clickFilterIcon();
-
-            then(app.isFilterPanelVisible()).isTrue();
-
-            app.clickFilterIcon();
-
+        @Test void shouldHideFilterPanelInTagView() {
+            // filter pills only apply to the flat path view, not the tag-grouped view
             then(app.isFilterPanelVisible()).isFalse();
         }
 
         @Test void shouldSelectPillOnClick() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
-            app.clickFilterIcon();
 
             then(app.isFilterActive("billing")).isFalse();
 
@@ -767,7 +762,6 @@ class BrowserTest {
         @Test void shouldClearFilterOnAllClick() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
-            app.clickFilterIcon();
             app.clickPill("billing");
 
             then(app.isFilterActive("billing")).isTrue();
@@ -777,26 +771,9 @@ class BrowserTest {
             then(app.isFilterActive("billing")).isFalse();
         }
 
-        @Test void shouldShowFilterIconAsActiveWhenFilterActive() {
-            app.clickViewButton("paths");
-            app.waitForTreeContent("invoices");
-            app.clickFilterIcon();
-
-            then(app.isFilterIconActive()).isFalse();
-
-            app.clickPill("billing");
-
-            then(app.isFilterIconActive()).isTrue();
-
-            app.clickPill("all");
-
-            then(app.isFilterIconActive()).isFalse();
-        }
-
         @Test void shouldShowStatusLineWhenFilterActive() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
-            app.clickFilterIcon();
 
             then(app.getFilterStatusLine()).isNull();
 
@@ -808,7 +785,6 @@ class BrowserTest {
         @Test void shouldShowAllAsActiveByDefault() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
-            app.clickFilterIcon();
 
             then(app.isPillActive("all")).isTrue();
         }
@@ -816,7 +792,6 @@ class BrowserTest {
         @Test void shouldHighlightActivePill() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
-            app.clickFilterIcon();
 
             app.clickPill("billing");
 
@@ -827,7 +802,6 @@ class BrowserTest {
         @Test void shouldHighlightAllWhenCleared() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
-            app.clickFilterIcon();
             app.clickPill("billing");
 
             app.clickPill("all");
@@ -839,7 +813,6 @@ class BrowserTest {
         @Test void shouldHighlightRestoredPillOnReload() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
-            app.clickFilterIcon();
             app.clickPill("billing");
 
             app.navigateHome();
@@ -848,23 +821,9 @@ class BrowserTest {
             then(app.isPillActive("billing")).isTrue();
         }
 
-        @Test void shouldPersistPanelStateAcrossReload() {
-            app.clickViewButton("paths");
-            app.waitForTreeContent("invoices");
-            app.clickFilterIcon();
-
-            then(app.isFilterPanelVisible()).isTrue();
-
-            app.navigateHome();
-            app.waitForTreeContent("invoices");
-
-            then(app.isFilterPanelVisible()).isTrue();
-        }
-
         @Test void shouldPersistSelectedTagAcrossReload() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
-            app.clickFilterIcon();
             app.clickPill("billing");
 
             then(app.isFilterActive("billing")).isTrue();
@@ -878,12 +837,11 @@ class BrowserTest {
         @Test void shouldHideFilterPanelWhenSwitchingToTagView() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
-            app.clickFilterIcon();
 
             then(app.isFilterPanelVisible()).isTrue();
 
             app.clickViewButton("tags");
-            app.waitForFilterPanelHidden();
+            app.waitForTreeContent("billing");
 
             // Tag view should not have filter UI at all
             then(app.isFilterPanelVisible()).isFalse();
@@ -892,7 +850,6 @@ class BrowserTest {
         @Test void shouldRestoreFilterPanelWhenSwitchingBackToPathView() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
-            app.clickFilterIcon();
 
             then(app.isFilterPanelVisible()).isTrue();
 
@@ -907,7 +864,6 @@ class BrowserTest {
         @Test void shouldClearFilterWhenNavigatingToFilteredOutItem() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
-            app.clickFilterIcon();
             app.clickPill("users");
 
             then(app.isFilterActive("users")).isTrue();
@@ -923,7 +879,6 @@ class BrowserTest {
             app.waitForTreeContent("invoices");
             app.clickTreeNode("invoices/index.html");
             app.waitForDetailContent("List invoices");
-            app.clickFilterIcon();
 
             app.clickPill("users");
 
@@ -932,65 +887,121 @@ class BrowserTest {
         }
 
         // Keyboard navigation tests
-        @Test void shouldFocusFilterIconWithTab() {
+        @Test void shouldFocusFilterPanelWithTabFromViewToggle() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
             app.focusViewToggle();
 
             app.pressKey("Tab");
 
-            then(app.isFilterIconFocused()).isTrue();
-        }
-
-        @Test void shouldOpenPanelWithEnterOnFilterIcon() {
-            app.clickViewButton("paths");
-            app.waitForTreeContent("invoices");
-
-            then(app.isFilterPanelVisible()).isFalse();
-
-            app.pressEnterOnFilterIcon();
-
-            then(app.isFilterPanelVisible()).isTrue();
-        }
-
-        @Test void shouldFocusFilterToggleWhenOpeningPanel() {
-            app.clickViewButton("paths");
-            app.waitForTreeContent("invoices");
-
-            app.pressEnterOnFilterIcon();
-
             then(app.isFilterToggleFocused()).isTrue();
         }
 
-        @Test void shouldTogglePanelWithSpaceOnFilterIcon() {
-            app.clickViewButton("paths");
-            app.waitForTreeContent("invoices");
-
-            then(app.isFilterPanelVisible()).isFalse();
-
-            app.pressSpaceOnFilterIcon();
-
-            then(app.isFilterPanelVisible()).isTrue();
-        }
-
-        @Test void shouldFocusFilterIconOnArrowDownFromViewToggle() {
+        @Test void shouldFocusFilterPanelOnArrowDownFromViewToggle() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
             app.focusViewToggle();
 
             app.pressKey("ArrowDown");
 
-            then(app.isFilterIconFocused()).isTrue();
+            then(app.isFilterToggleFocused()).isTrue();
         }
 
-        @Test void shouldFocusFilterIconOnArrowUpFromTreeTop() {
+        @Test void shouldFocusFilterPanelOnArrowUpFromTreeTop() {
             app.clickViewButton("paths");
             app.waitForTreeContent("invoices");
             app.focusTree();
 
             app.pressKey("ArrowUp");
 
-            then(app.isFilterIconFocused()).isTrue();
+            then(app.isFilterToggleFocused()).isTrue();
+            then(app.filterToggleHasFocusRing()).isTrue();
+            app.screenshot("focus-filter-pills");
+        }
+
+        @Test void shouldFocusViewToggleOnArrowUpFromFilterPanel() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.focusTree();
+            app.pressKey("ArrowUp"); // → filter panel
+
+            app.pressKey("ArrowUp"); // → view toggle
+
+            then(app.isViewToggleFocused()).isTrue();
+            then(app.viewToggleHasFocusRing()).isTrue();
+            app.screenshot("focus-view-toggle");
+        }
+
+        @Test void shouldFocusTreeOnArrowDownFromFilterPanel() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.focusFilterToggle();
+
+            app.pressKey("ArrowDown");
+
+            then(app.isTreeFocused()).isTrue();
+        }
+
+        @Test void shouldFocusTreeOnArrowDownFromFilterPanelWithDetailLoaded() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.clickTreeNode("invoices/index.html");
+            app.waitForDetailContent("List invoices");
+            app.focusFilterToggle();
+
+            app.pressKey("ArrowDown");
+
+            then(app.isTreeFocused()).isTrue();
+            then(app.isTabFocused()).isFalse();
+        }
+
+        @Test void shouldFocusServerSelectorOnArrowUpFromViewToggle() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.clickTreeNode("invoices/index.html");
+            app.waitForDetailContent("List invoices");
+            app.focusViewToggle();
+
+            app.pressKey("ArrowUp");
+
+            // Must stay in the header row (server selector), not jump to the detail pane's tab bar
+            then(app.isTabFocused()).isFalse();
+            then(app.activeElementIsInHeader()).isTrue();
+        }
+
+        @Test void shouldSkipHiddenItemsOnArrowDownWhenFilterActive() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.clickPill("users"); // only /users visible
+            app.focusTree();
+
+            app.pressKey("ArrowDown");
+
+            then(app.selectedTreeItemText()).contains("users");
+        }
+
+        @Test void shouldSkipHiddenItemsOnArrowUpWhenFilterActive() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.clickPill("users");
+            app.focusTree();
+            app.pressKey("ArrowDown"); // select users (only visible)
+
+            app.pressKey("ArrowUp"); // at first visible → bubbles to spatial nav
+
+            // users stays selected (boundary: nothing above), focus may move up
+            then(app.selectedTreeItemText()).contains("users");
+        }
+
+        @Test void shouldSelectFirstVisibleItemWhenFilterHidesSelection() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("invoices");
+            app.clickTreeNode("invoices/index.html");
+            app.waitForDetailContent("List invoices");
+
+            app.clickPill("users"); // invoices is now hidden
+
+            then(app.selectedTreeItemText()).contains("users");
         }
     }
 
@@ -1215,7 +1226,8 @@ class BrowserTest {
 
         @Test void shouldFocusViewToggleOnArrowUpAtFirstItem() {
             app.focusTree();
-            app.pressKey("ArrowUp"); // already first item → view toggle
+            app.pressKey("ArrowUp"); // already first item → filter panel
+            app.pressKey("ArrowUp"); // → view toggle
 
             then(app.isViewToggleFocused()).isTrue();
         }
@@ -1576,6 +1588,17 @@ class BrowserTest {
 
             then(app.activeElementSelector()).contains("input")
                     .doesNotContain("data-path");
+        }
+
+        @Test void shouldShowFullFocusRingOnDescriptionToggle() {
+            app.waitForDetailContent("Get a pet");
+            app.focusDescriptionToggle();
+            then(app.activeElementSelector()).contains("desc-toggle");
+
+            // The clamped desc-toggle sits flush with the wrapper's right/bottom edge;
+            // the focus ring must be drawn inside (negative offset) so it isn't clipped.
+            then(app.descToggleFocusRingFullyVisible()).isTrue();
+            app.screenshot("desc-toggle-focus-ring");
         }
 
         @Test void shouldNotSwitchModeOnNumberKeyFromInput() {
@@ -2540,7 +2563,6 @@ class BrowserTest {
         @RegisterExtension static AppFixture app = launch("tagged-nested.yaml");
 
         @Test void shouldMoveOneStepOnArrowRight() {
-            app.clickFilterIcon();
             app.clickPill("pets");
             app.focusFilterToggle();
 
@@ -2560,6 +2582,74 @@ class BrowserTest {
             then(app.detailText()).contains("List pets");
             then(app.isViewActive("tags")).isTrue();
             then(app.isTreeItemSelected("pets/GET.html")).isTrue();
+        }
+
+        @Test void shouldShowFocusRingOnSelectedItemAfterArrowKeySelection() {
+            app.navigateTo("#[owners]owners/GET");
+            app.waitForDetailContent("List owners");
+            app.focusTree();
+
+            // up, right, right, down — ends with a newly selected tree item
+            app.pressKey("ArrowUp");
+            app.pressKey("ArrowRight");
+            app.pressKey("ArrowRight");
+            app.pressKey("ArrowDown");
+
+            then(app.isTreeFocused()).isTrue();
+            then(app.selectedItemHasFocusRing()).isTrue();
+            app.screenshot("tree-focus-ring-after-arrows");
+        }
+
+        @Test void shouldKeepFilterAndSelectionWhenLeavingTreeUpwards() {
+            // Reproduces: owners selected, filter to pets, then up/right/right/down from the tree.
+            // The pill ArrowRight keys legitimately move the pill selection (pets→admin→owners),
+            // which changes the filter — but the tree must then re-select a *visible* item
+            // (not stay on a hidden one), and that item must show the focus ring.
+            app.waitForTreeContent("owners");
+            app.clickTreeNode("owners/index.html");
+            app.waitForDetailContent("List owners");
+            app.clickPill("pets");
+
+            app.focusTree();
+            app.pressKey("ArrowUp");    // → filter panel
+            app.pressKey("ArrowRight"); // pill: pets → admin
+            app.pressKey("ArrowRight"); // pill: admin → owners
+            app.pressKey("ArrowDown");  // → back to tree
+
+            then(app.isTreeFocused()).isTrue();
+            then(app.isFilterActive("owners")).isTrue();
+            then(app.selectedItemIsVisible()).as("selected item must be visible under the owners filter").isTrue();
+            then(app.selectedItemHasFocusRing()).as("focus ring must be visible on the selected item").isTrue();
+            app.screenshot("after-up-right-right-down");
+        }
+    }
+
+    @ResourceLock("single-tag-untagged") @Nested class GivenSingleTagUntaggedApp {
+        @RegisterExtension static AppFixture app = launch("single-tag-untagged.yaml");
+
+        @Test void shouldShowFilterPanelWithOneTag() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("items");
+
+            then(app.isFilterPanelVisible()).isTrue();
+            then(app.isPillActive("all")).isTrue();
+        }
+
+        @Test void shouldFilterOutUntaggedPathsWithSingleTag() {
+            app.clickViewButton("paths");
+            app.waitForTreeContent("items");
+
+            app.clickPill("everything");
+
+            then(app.isFilterActive("everything")).isTrue();
+            then(app.isTreeItemVisible("items")).isTrue();
+            then(app.isTreeItemVisible("health")).isFalse();
+            then(app.getFilterStatusLine()).isEqualTo("Showing 1 of 2 paths");
+
+            app.clickPill("all");
+
+            then(app.isFilterActive("everything")).isFalse();
+            then(app.isTreeItemVisible("health")).isTrue();
         }
     }
 
@@ -4450,6 +4540,16 @@ class BrowserTest {
             then(app.isApiDescriptionTextVisible()).isTrue();
             then(app.apiDescriptionText()).contains("A long API description");
             app.screenshot("api-info-expanded");
+        }
+
+        @Test void shouldShowFullFocusRingOnApiDescriptionSummary() {
+            app.focusApiDescriptionSummary();
+
+            // The header level-item has overflow:hidden, so the ring must be drawn
+            // inside the summary (negative outline-offset) to not be clipped.
+            then(app.apiDescriptionSummaryHasFocusRing()).isTrue();
+            then(app.apiDescriptionSummaryFocusRingWithinHeader()).isTrue();
+            app.screenshot("api-summary-focus-ring");
         }
 
         @Test void shouldWrapLongUnbreakableDescriptionTokenLeftOfServerSelector() {

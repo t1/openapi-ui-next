@@ -1,0 +1,20 @@
+openapi: 3.0.3
+info:
+  title: Single Tag Untagged API
+  version: "1.0"
+tags:
+  - name: everything
+paths:
+  /items:
+    get:
+      summary: List items
+      tags: [everything]
+      responses:
+        "200":
+          description: OK
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: OK

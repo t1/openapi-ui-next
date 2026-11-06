@@ -206,6 +206,14 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 hxGetPath);
     }
 
+    boolean isTreeItemVisible(String text) {
+        return (Boolean) page.evaluate(
+                "text => { var items = Array.from(document.querySelectorAll('[role=treeitem]'));"
+                + " var el = items.find(function(i) { return i.textContent.trim().startsWith(text); });"
+                + " return el ? getComputedStyle(el).display !== 'none' : false; }",
+                text);
+    }
+
     boolean isTextVisible(String text) {return page.locator(":text('" + text + "')").isVisible();}
 
     double treeToggleRotation() {
@@ -891,6 +899,12 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
                 + " return label && getComputedStyle(label).boxShadow !== 'none'; }");
     }
 
+    boolean selectedItemIsVisible() {
+        return (Boolean) page.evaluate(
+                "() => { var el = document.querySelector('[role=tree] [aria-selected=\"true\"]');"
+                + " return el ? getComputedStyle(el).display !== 'none' : false; }");
+    }
+
     boolean isTreeInBox() {
         return page.locator(".box [role='tree']").count() == 1;
     }
@@ -1432,6 +1446,30 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return true;
     }
 
+    boolean descToggleFocusRingFullyVisible() {
+        return (Boolean) page.evaluate(
+                "() => { var t = document.querySelector('#detail .desc-toggle');"
+                + " if (!t || t !== document.activeElement) return false;"
+                + " var cs = getComputedStyle(t);"
+                + " if (cs.outlineStyle === 'none') return false;"
+                + " var off = parseFloat(cs.outlineOffset) || 0;"
+                + " var r = t.getBoundingClientRect(); var w = t.parentElement.getBoundingClientRect();"
+                + " return r.left - off >= w.left && r.right + off <= w.right"
+                + " && r.top - off >= w.top && r.bottom + off <= w.bottom; }");
+    }
+
+    boolean isServerSelectorFocused() {
+        return (Boolean) page.evaluate(
+                "() => document.activeElement === document.querySelector('.server-dropdown-trigger')"
+                + " || (document.activeElement && document.activeElement.closest('#server-selector') !== null)");
+    }
+
+    boolean activeElementIsInHeader() {
+        return (Boolean) page.evaluate(
+                "() => { var h = document.querySelector('.detail-header');"
+                + " return !!(h && document.activeElement && h.contains(document.activeElement)); }");
+    }
+
     boolean isTabFocused() {
         return (Boolean) page.evaluate("() => document.activeElement.closest('.tabs') !== null");
     }
@@ -1535,26 +1573,16 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator("#tree-container .fa-filter").count() > 0;
     }
 
-    boolean isFilterIconFocused() {
-        var filterIcon = page.locator(".filter-icon");
-        return filterIcon.evaluate("el => el === document.activeElement").toString().equals("true");
+    boolean filterToggleHasFocusRing() {
+        return (Boolean) page.evaluate(
+                "() => { var el = document.querySelector('.filter-pill-panel');"
+                + " return el && el === document.activeElement && getComputedStyle(el).outlineStyle !== 'none'; }");
     }
 
-    void pressEnterOnFilterIcon() {
-        page.evaluate("() => {" +
-                      "const icon = document.querySelector('.filter-icon');" +
-                      "const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });" +
-                      "icon.dispatchEvent(event);" +
-                      "}");
-    }
-
-    void pressSpaceOnFilterIcon() {
-        // Dispatch Space keydown event directly to the filter icon
-        page.evaluate("() => {" +
-                      "const icon = document.querySelector('.filter-icon');" +
-                      "const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true });" +
-                      "icon.dispatchEvent(event);" +
-                      "}");
+    boolean viewToggleHasFocusRing() {
+        return (Boolean) page.evaluate(
+                "() => { var el = document.querySelector('[data-toggle=view]');"
+                + " return el && el === document.activeElement && getComputedStyle(el).outlineStyle !== 'none'; }");
     }
 
     void focusFilterToggle() {
@@ -1574,13 +1602,14 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
         return page.locator(".filter-pill-panel").isVisible();
     }
 
-    void waitForFilterPanelHidden() {
-        lastWaitContext = "waitForFilterPanelHidden()";
-        page.waitForSelector(".filter-pill-panel", new Page.WaitForSelectorOptions().setState(HIDDEN));
-    }
-
-    void clickFilterIcon() {
-        page.locator(".filter-icon").click();
+    boolean filterPillsWrap() {
+        return (Boolean) page.evaluate(
+                "() => { var p = document.querySelector('.filter-pill-panel'); if (!p) return false;"
+                + " var cs = getComputedStyle(p);"
+                + " if (cs.flexWrap !== 'wrap') return false;"
+                + " var box = document.querySelector('.split-first > .box');"
+                + " var pr = p.getBoundingClientRect(); var br = box.getBoundingClientRect();"
+                + " return pr.right <= br.right + 1; }");
     }
 
     void clickPill(String tagName) {
@@ -1590,11 +1619,6 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     boolean isFilterActive(String tagName) {
         var tree = page.locator("[role=\"tree\"]");
         return tree.evaluate("el => el.classList.contains('filter-" + sanitizeTagName(tagName) + "')").toString().equals("true");
-    }
-
-    boolean isFilterIconActive() {
-        var icon = page.locator(".filter-icon");
-        return icon.evaluate("el => el.classList.contains('is-active')").toString().equals("true");
     }
 
     String getFilterStatusLine() {
@@ -1833,6 +1857,25 @@ class AppFixture implements BeforeAllCallback, BeforeEachCallback, AfterEachCall
     String apiDescriptionText() {return page.locator("details.api-description .api-description-text").textContent();}
 
     void clickApiDescriptionSummary() {page.locator("details.api-description summary").click();}
+
+    void focusApiDescriptionSummary() {page.locator("details.api-description summary").focus();}
+
+    boolean apiDescriptionSummaryHasFocusRing() {
+        return (Boolean) page.evaluate(
+                "() => { var el = document.querySelector('details.api-description summary');"
+                + " return el && el === document.activeElement && getComputedStyle(el).outlineStyle !== 'none'; }");
+    }
+
+    boolean apiDescriptionSummaryFocusRingWithinHeader() {
+        return (Boolean) page.evaluate(
+                "() => { var el = document.querySelector('details.api-description summary');"
+                + " if (!el || el !== document.activeElement) return false;"
+                + " var cs = getComputedStyle(el);"
+                + " var off = parseFloat(cs.outlineOffset) || 0;"
+                + " var r = el.getBoundingClientRect(); var h = document.querySelector('.detail-header').getBoundingClientRect();"
+                + " return r.left - off >= h.left && r.right + off <= h.right"
+                + " && r.top - off >= h.top && r.bottom + off <= h.bottom; }");
+    }
 
     String locationHash() {return (String) page.evaluate("() => location.hash");}
 

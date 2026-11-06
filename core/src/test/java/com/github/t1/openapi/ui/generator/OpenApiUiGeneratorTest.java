@@ -1147,6 +1147,16 @@ class OpenApiUiGeneratorTest {
         then(pathTree).contains("role=\"treeitem\"");
     }
 
+    @Test void shouldAddAncestorTagClassWhenOnlyDescendantIsTagged() throws Exception {
+        generate("/tagged-nested.yaml");
+
+        var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
+        // The root "pets" node itself has no operations, but /pets/{petId} etc. are
+        // tagged [pets] — the parent must carry tag-pets so the filter CSS's
+        // :not(:has(.tag-pets)) keeps it visible when filtering by pets.
+        then(pathTree).contains("class=\"tag-pets");
+    }
+
     @Test void shouldNotAddTagClassToTreeItemsWithNoTaggedOperations() throws Exception {
         var specYaml = """
                 openapi: 3.0.3
@@ -1197,11 +1207,12 @@ class OpenApiUiGeneratorTest {
         then(css).contains(".filter-admin .tags > :not(.tag-admin) {");
         then(css).contains(".filter-owners .tags > :not(.tag-owners) {");
     }
-    @Test void shouldRenderFilterIconWhenApiHasTwoOrMoreTags() throws Exception {
+    @Test void shouldRenderFilterPillPanelWhenApiHasTwoOrMoreTags() throws Exception {
         generate("/tagged-nested.yaml");
 
         var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
-        then(pathTree).contains("<i class=\"fa-solid fa-filter filter-icon\"");
+        then(pathTree).contains("filter-pill-panel");
+        then(pathTree).doesNotContain("fa-filter");
     }
 
     @Test void shouldRenderFilterStatusLineAsHelpText() throws Exception {
@@ -1211,7 +1222,7 @@ class OpenApiUiGeneratorTest {
         then(pathTree).contains("<p class=\"help filter-status-line\">");
     }
 
-    @Test void shouldNotRenderFilterIconWhenApiHasOneTag() throws Exception {
+    @Test void shouldRenderFilterPanelWithAllAndSingleTagWhenApiHasOneTag() throws Exception {
         var specYaml = """
                 openapi: 3.0.3
                 info:
@@ -1225,16 +1236,26 @@ class OpenApiUiGeneratorTest {
                       responses:
                         "200":
                           description: OK
+                  /other:
+                    get:
+                      summary: Untagged operation
+                      responses:
+                        "200":
+                          description: OK
                 """;
         var specPath = outputDir.resolve("test-spec.yaml");
         Files.writeString(specPath, specYaml);
         new OpenApiUiFileGenerator(specPath, outputDir).generate();
 
         var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
-        then(pathTree).doesNotContain("fa-filter");
+        then(pathTree).contains("filter-pill-panel");
+        then(pathTree).contains("data-toggle-value=\"all\"");
+        then(pathTree).contains("data-toggle-value=\"single-tag\"");
+        var css = Files.readString(outputDir.resolve("openapi-ui.css"));
+        then(css).contains(".filter-single-tag");
     }
 
-    @Test void shouldNotRenderFilterIconWhenApiHasZeroTags() throws Exception {
+    @Test void shouldNotRenderFilterPanelWhenApiHasZeroTags() throws Exception {
         var specYaml = """
                 openapi: 3.0.3
                 info:
@@ -1253,7 +1274,7 @@ class OpenApiUiGeneratorTest {
         new OpenApiUiFileGenerator(specPath, outputDir).generate();
 
         var pathTree = Files.readString(outputDir.resolve("path-tree.html"));
-        then(pathTree).doesNotContain("fa-filter");
+        then(pathTree).doesNotContain("filter-pill-panel");
     }
 
     @Test void shouldRenderAllOptionAsFirstActivePill() throws Exception {

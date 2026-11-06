@@ -336,6 +336,13 @@ Initial MVP release
     - Enter/Space on custom header delete
     - focus restore races after HTMX swaps
 
+### 1.3 - 2026-11-04
+
+- Show version (also OpenAPI version), summary, and description
+- remove filter icon & improve focus/nav
+- **Bug fixes**:
+  - improve server popup and fix usage of the selected server
+
 ## Contributing
 
 Even just using the project and leaving a star helps a lot -- it shows there's interest

@@ -159,7 +159,9 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
             [role="tree"]:focus {
                 outline: none;
             }
-            [role="tree"]:focus [role="treeitem"][aria-selected="true"] > .tree-label {
+            /* Visible focus ring on the selected item whenever the tree itself has focus,
+               including when focus arrives via selectItem() without an explicit focus() call */
+            [role="tree"]:focus-within [role="treeitem"][aria-selected="true"] > .tree-label {
                 box-shadow: inset 0 0 0 2px var(--bulma-link);
             }
             .tree-segment {
@@ -220,11 +222,24 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                     return true;
                 }
             
+                // Mirrors the generated filter CSS: `.filter-x [role=treeitem]:not(.tag-x):not(:has(.tag-x)) { display:none }`.
+                // Class-based (not getComputedStyle) because style recalc of :has() rules is not
+                // reliable immediately after the filter-* class is toggled.
+                function activeFilterTagClass(tree) {
+                    var m = (tree.className || '').match(/\\bfilter-(\\S+)/);
+                    return m ? 'tag-' + m[1] : null;
+                }
+                function matchesFilter(item, tagClass) {
+                    return !tagClass || item.classList.contains(tagClass) || !!item.querySelector('.' + tagClass);
+                }
                 function getVisibleItems() {
                     var tree = getTree();
                     if (!tree) return [];
+                    var tagClass = activeFilterTagClass(tree);
                     return Array.from(tree.querySelectorAll('[role="treeitem"]')).filter(function(item) {
-                        return isGroupVisible(item);
+                        if (!isGroupVisible(item)) return false;
+                        if (tagClass) return matchesFilter(item, tagClass);
+                        return getComputedStyle(item).display !== 'none';
                     });
                 }
             
@@ -404,6 +419,17 @@ public class Tree extends AbstractElement<Tree> implements TreeContainer {
                         if (window._hashNavPending) return;
                         var t = getTree();
                         var selected = t ? t.querySelector('[aria-selected="true"]') : null;
+                        // If the active tag filter hides the selected item (e.g. the filter was
+                        // changed via the pill panel while focus was there), re-select the first
+                        // visible item so focus always lands on something visible.
+                        var tagClass = activeFilterTagClass(t);
+                        if (selected && tagClass && !matchesFilter(selected, tagClass)) {
+                            var firstVisible = getVisibleItems()[0];
+                            if (firstVisible && firstVisible !== selected) {
+                                selectItem(firstVisible);
+                                return;
+                            }
+                        }
                         if (!selected) return;
                         var hxEl = selected.querySelector('[hx-get]') || selected;
                         var hxGet = hxEl.getAttribute('hx-get');

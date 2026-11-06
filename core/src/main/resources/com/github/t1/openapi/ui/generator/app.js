@@ -1135,7 +1135,7 @@ document.addEventListener('DOMContentLoaded', function() {
         viewToggle.addEventListener('toggle', function(e) {
             const btn = viewToggle.querySelector('[data-toggle-value=' + e.detail.value + ']');
             htmx.ajax('GET', btn.getAttribute('hx-get'), {target: '#tree-container', swap: 'innerHTML'}).then(function() {
-                initFilterIcon();
+                initFilterPanel();
                 viewToggle.focus();
             });
         });
@@ -1147,9 +1147,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     const modeToggle = document.querySelector('[data-toggle="mode"]');
                     if (modeToggle) modeToggle.focus();
                 } else {
-                    const filterIcon = document.querySelector('.filter-icon');
-                    if (filterIcon) {
-                        filterIcon.focus();
+                    const filterPanel = document.querySelector('.filter-pill-panel');
+                    if (filterPanel) {
+                        filterPanel.focus();
                     } else {
                         const tree = document.querySelector('[role="tree"]');
                         if (tree) tree.focus();
@@ -1220,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (srcEl && srcEl.getAttribute('hx-get')) st.setAttribute('data-swap-url', srcEl.getAttribute('hx-get'));
         }
         if (e.detail.ctx.target && e.detail.ctx.target.id === 'tree-container') {
-            initFilterIcon();
+            initFilterPanel();
             if (window._hashNavPending) {
                 window._hashNavPending = false;
                 navigateFromHash();
@@ -2147,9 +2147,23 @@ document.addEventListener('DOMContentLoaded', function() {
             return true;
         });
 
+        // Pane scoping: when moving up/down from inside the left pane (tree area),
+        // don't jump across into the detail pane — collect same-pane/header candidates
+        // first; only if none qualify do we consider detail-pane candidates.
+        const pageSplitFirst = document.querySelector('section > .container > .split-layout > .split-first');
+        const inLeftPane = pageSplitFirst && el.closest && el.closest('section > .container > .split-layout > .split-first');
+        const header = document.querySelector('.detail-header');
+        function paneRank(c) {
+            if (!inLeftPane) return 0;
+            if (pageSplitFirst.contains(c)) return 0;
+            if (header && header.contains(c)) return 1;
+            return 2;
+        }
+
         let best = null;
         let bestDist = Infinity;
         let bestCorridor = false;
+        let bestRank = 3;
 
         candidates.forEach(function(c) {
             const candidateRect = c.getBoundingClientRect();
@@ -2177,6 +2191,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 dist = Math.sqrt(
                     (candidateCenterX - centerX) * (candidateCenterX - centerX)
                     + (candidateCenterY - centerY) * (candidateCenterY - centerY));
+            }
+
+            const rank = paneRank(c);
+            if (rank > bestRank) return;             // worse pane than current best
+            if (rank < bestRank) {                   // better pane: reset
+                best = null; bestDist = Infinity; bestCorridor = false; bestRank = rank;
             }
 
             if (corridor && !bestCorridor) {
@@ -2780,19 +2800,18 @@ document.addEventListener('DOMContentLoaded', function() {
         statusLine.textContent = 'Showing ' + visibleCount + ' of ' + allItems.length + ' paths';
     }
     
-    function initFilterIcon() {
-        const filterIcon = document.querySelector('.filter-icon');
-        if (!filterIcon) return;
-        if (filterIcon.dataset.initialized) return;
-        filterIcon.dataset.initialized = 'true';
-        
+    function initFilterPanel() {
         const filterPanel = document.querySelector('.filter-pill-panel');
+        if (!filterPanel) return;
+        if (filterPanel.dataset.initialized) return;
+        filterPanel.dataset.initialized = 'true';
+
         const tree = document.querySelector('[role="tree"]');
-        if (!filterPanel || !tree) return;
-        
+        if (!tree) return;
+
         // Initialize Toggle component for dynamically loaded filter panel
         if (window.initToggle) window.initToggle(filterPanel);
-        
+
         // React to toggle events
         filterPanel.addEventListener('toggle', function(e) {
             var tagName = e.detail.value;
@@ -2800,72 +2819,62 @@ document.addEventListener('DOMContentLoaded', function() {
             tree.className = tree.className.replace(/\bfilter-\S+/g, '').trim();
             if (isFiltering) {
                 tree.classList.add('filter-' + tagName);
-                filterIcon.classList.add('is-active');
-                // Clear detail panel if the selected item is now filtered out
+                // Clear detail panel if the selected item is now filtered out, and re-select
+                // the first still-visible item so the tree always has a selection.
+                // The filter-* class was just added; force a style/layout flush so
+                // getComputedStyle() sees the new display:none immediately.
                 var selected = tree.querySelector('[aria-selected="true"]');
-                if (selected && getComputedStyle(selected).display === 'none') {
-                    selected.removeAttribute('aria-selected');
-                    htmx.ajax('GET', 'empty-detail.html', {target: '#detail', swap: 'innerHTML'});
+                // Class-based visibility check (mirrors the generated filter CSS
+                // `.filter-x [role=treeitem]:not(.tag-x):not(:has(.tag-x))`), because
+                // getComputedStyle of :has() rules is not reliable right after the
+                // filter-* class is toggled.
+                var tagClass = 'tag-' + tagName;
+                function visibleUnderFilter(item) {
+                    return item.classList.contains(tagClass) || !!item.querySelector('.' + tagClass);
                 }
-            } else {
-                filterIcon.classList.remove('is-active');
+                if (selected && !visibleUnderFilter(selected)) {
+                    selected.removeAttribute('aria-selected');
+                    // Clear the detail synchronously; don't fire an htmx request that would
+                    // race the re-select's swap below
+                    detail.innerHTML = '';
+                    var firstVisible = Array.from(tree.querySelectorAll('[role="treeitem"]'))
+                        .find(visibleUnderFilter);
+                    if (firstVisible && tree._selectItem) tree._selectItem(firstVisible);
+                }
             }
             updateFilterStatusLine();
         });
-        
-        // Restore panel open/closed state from localStorage
-        const panelOpen = localStorage.getItem('openapi-ui-tag-filter-open') === 'true';
-        if (panelOpen) {
-            filterPanel.classList.add('is-active');
-        }
-        
+
         // Restore selected tag via Toggle's _select (triggers toggle event above)
         const savedTag = localStorage.getItem('openapi-ui-tag-filter');
         if (savedTag && filterPanel._select) {
             filterPanel._select(savedTag);
         }
-        
-        filterIcon.addEventListener('click', function() {
-            filterPanel.classList.toggle('is-active');
-            localStorage.setItem('openapi-ui-tag-filter-open', filterPanel.classList.contains('is-active'));
-        });
-        
-        filterIcon.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                e.stopPropagation();
-                var wasOpen = filterPanel.classList.contains('is-active');
-                filterPanel.classList.toggle('is-active');
-                localStorage.setItem('openapi-ui-tag-filter-open', filterPanel.classList.contains('is-active'));
-                if (!wasOpen && filterPanel.classList.contains('is-active')) {
-                    filterPanel.focus();
-                }
-            }
-        });
-        
+
         // Filter-specific keyboard handlers on the toggle container
         filterPanel.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                e.stopPropagation();
-                filterPanel.classList.remove('is-active');
-                localStorage.setItem('openapi-ui-tag-filter-open', 'false');
-                filterIcon.focus();
-            } else if (e.key === 'Tab') {
+            if (e.key === 'Tab') {
                 e.preventDefault();
                 e.stopPropagation();
                 if (e.shiftKey) {
-                    filterIcon.focus();
+                    var viewToggle2 = document.querySelector('[data-toggle="view"]');
+                    if (viewToggle2) viewToggle2.focus();
                 } else {
                     var treeEl = document.querySelector('[role="tree"]');
                     if (treeEl) treeEl.focus();
                 }
+            } else if (e.key === 'ArrowDown') {
+                // Jump straight into the tree, not across into the detail pane
+                e.preventDefault();
+                e.stopPropagation();
+                var treeEl2 = document.querySelector('[role="tree"]');
+                if (treeEl2) treeEl2.focus();
             }
-            // ArrowUp/ArrowDown: let bubble to spatial nav
+            // ArrowUp: let bubble to spatial nav
         });
     }
 
-    initFilterIcon();
+    initFilterPanel();
 
     function restoreCustomHeaders() {
         const swapForm = document.querySelector('#detail form[data-path]');

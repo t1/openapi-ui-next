@@ -433,15 +433,12 @@ public class OpenApiUiGenerator {
         addTreeItems(t, root, ApiPath.ROOT);
         
         var tags = collectUniqueTags();
-        if (tags.size() < 2) {
+        if (tags.isEmpty()) {
             return t;
         }
         
-        // Filter icon + pill panel + tree
+        // Pill panel (always visible) + tree
         var wrapper = div();
-        var filterIcon = element("i").classes("fa-solid", "fa-filter", "filter-icon").attr("role", "button").attr("tabindex", "0");
-        wrapper.content(filterIcon);
-        
         var pillPanel = toggle("tag-filter").persistAs("openapi-ui-tag-filter");
         pillPanel.classes("filter-pill-panel");
         pillPanel.activeOption("all", "all");
@@ -510,13 +507,21 @@ public class OpenApiUiGenerator {
     }
 
     private List<String> collectTagClasses(PathNode node) {
-        return node.operations().values().stream()
+        // A node matches a tag filter if the node itself OR any descendant operation
+        // carries the tag — otherwise parents of matching children would be hidden
+        // by the filter CSS (which uses :not(:has(.tag-x))).
+        var tags = new java.util.LinkedHashSet<String>();
+        collectTagClasses(node, tags);
+        return tags.stream().map(tag -> "tag-" + tag).toList();
+    }
+
+    private void collectTagClasses(PathNode node, java.util.Set<String> acc) {
+        node.operations().values().stream()
                 .filter(op -> op.getTags() != null)
                 .flatMap(op -> op.getTags().stream())
-                .distinct()
                 .map(this::sanitizeTagName)
-                .map(tag -> "tag-" + tag)
-                .toList();
+                .forEach(acc::add);
+        node.children().values().forEach(child -> collectTagClasses(child, acc));
     }
 
     private String sanitizeTagName(String tagName) {
