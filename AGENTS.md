@@ -38,7 +38,7 @@ We work **trunk-based** — all commits go directly to `trunk`.
 
 ### Plan Execution
 
-When completing a step from a plan file (e.g. in `docs/superpowers/plans/`), tick its checkbox
+When completing a step from a plan file (e.g. in `docs/plans/`), tick its checkbox
 (`- [ ]` → `- [x]`) immediately.
 
 ### UI Review
