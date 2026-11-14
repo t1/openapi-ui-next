@@ -1635,13 +1635,13 @@ class BrowserTest {
             app.focusInput("petId");
             app.pressKey(MOD + "+p");
 
-            then(app.pinIconRotationAfterTransition("petId")).isEqualTo(0);
+            then(app.pinIconRotationAfterTransition("petId", 0)).isEqualTo(0);
         }
 
         @Test void shouldShowPinTiltedWhenUnpinned() {
             app.waitForDetailContent("Get a pet");
 
-            then(app.pinIconRotationAfterTransition("petId")).isEqualTo(45);
+            then(app.pinIconRotationAfterTransition("petId", 45)).isEqualTo(45);
         }
 
         @Test void shouldPersistSelectQueryParam() {
