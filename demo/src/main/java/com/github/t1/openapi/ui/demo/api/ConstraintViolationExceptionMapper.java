@@ -1,4 +1,4 @@
-package com.github.t1.openapi.ui.demo;
+package com.github.t1.openapi.ui.demo.api;
 
 import java.util.Comparator;
 

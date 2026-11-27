@@ -1,4 +1,4 @@
-package com.github.t1.openapi.ui.demo;
+package com.github.t1.openapi.ui.demo.pet;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 

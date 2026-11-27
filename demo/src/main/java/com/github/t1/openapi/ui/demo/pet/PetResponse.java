@@ -1,5 +1,7 @@
-package com.github.t1.openapi.ui.demo;
+package com.github.t1.openapi.ui.demo.pet;
 
+import com.github.t1.openapi.ui.demo.owner.OwnerSummary;
+import com.github.t1.openapi.ui.demo.visit.VisitSummary;
 import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlElementWrapper;
 import jakarta.xml.bind.annotation.XmlRootElement;

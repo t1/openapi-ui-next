@@ -1,5 +1,10 @@
-package com.github.t1.openapi.ui.demo;
+package com.github.t1.openapi.ui.demo.pet;
 
+import com.github.t1.openapi.ui.demo.api.ProblemDetails;
+import com.github.t1.openapi.ui.demo.owner.OwnerResource;
+import com.github.t1.openapi.ui.demo.owner.OwnerSummary;
+import com.github.t1.openapi.ui.demo.visit.VisitResource;
+import com.github.t1.openapi.ui.demo.visit.VisitSummary;
 import io.vertx.core.http.HttpServerResponse;
 import jakarta.json.JsonObject;
 import jakarta.validation.Valid;
@@ -38,8 +43,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.github.t1.openapi.ui.demo.PetStatus.adopted;
-import static com.github.t1.openapi.ui.demo.PetStatus.available;
+import static com.github.t1.openapi.ui.demo.pet.PetStatus.adopted;
+import static com.github.t1.openapi.ui.demo.pet.PetStatus.available;
 import static io.vertx.core.http.Cookie.cookie;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_XML;
@@ -48,7 +53,7 @@ import static jakarta.ws.rs.core.Response.Status.CREATED;
 @Path("/pets")
 @Tag(name = "pets")
 public class PetResource {
-    static final List<Pet> PETS = new ArrayList<>(List.of(
+    public static final List<Pet> PETS = new ArrayList<>(List.of(
             new Pet(1, "Max", available, 1),
             new Pet(2, "Bella", adopted, 1),
             new Pet(3, "Charlie", available, 2)
@@ -153,7 +158,7 @@ public class PetResource {
         return updated;
     }
 
-    static Pet findById(long id) {
+    public static Pet findById(long id) {
         return PETS.stream()
                 .filter(p -> p.id == id).findFirst()
                 .orElseThrow(() -> new PetNotFoundException(id));

@@ -1,18 +1,17 @@
-package com.github.t1.openapi.ui.demo;
-
-import java.io.IOException;
-import java.net.URI;
+package com.github.t1.openapi.ui.demo.api;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 
+import java.net.URI;
+
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 
 @Provider
 class DelayResponseFilter implements ContainerRequestFilter {
-    @Override public void filter(ContainerRequestContext request) throws IOException {
+    @Override public void filter(ContainerRequestContext request) {
         var delay = request.getHeaderString("X-Delay-Response");
         if (delay == null) return;
         try {

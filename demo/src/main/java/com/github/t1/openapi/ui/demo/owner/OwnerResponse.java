@@ -1,5 +1,6 @@
-package com.github.t1.openapi.ui.demo;
+package com.github.t1.openapi.ui.demo.owner;
 
+import com.github.t1.openapi.ui.demo.pet.PetSummary;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.util.List;

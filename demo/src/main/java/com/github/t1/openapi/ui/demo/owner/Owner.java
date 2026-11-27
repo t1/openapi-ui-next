@@ -1,4 +1,4 @@
-package com.github.t1.openapi.ui.demo;
+package com.github.t1.openapi.ui.demo.owner;
 
 import jakarta.validation.constraints.NotBlank;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;

@@ -1,5 +1,6 @@
-package com.github.t1.openapi.ui.demo;
+package com.github.t1.openapi.ui.demo.visit;
 
+import com.github.t1.openapi.ui.demo.pet.PetResource;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -19,7 +20,7 @@ import java.util.List;
 @Path("/pets/{petId}/visits")
 @Tag(name = "visits")
 public class VisitResource {
-    static final List<Visit> VISITS = new ArrayList<>(List.of(
+    public static final List<Visit> VISITS = new ArrayList<>(List.of(
             new Visit(1, 1, "2024-01-15", "Annual checkup"),
             new Visit(2, 1, "2024-06-20", "Vaccination"),
             new Visit(3, 2, "2024-03-10", "Dental cleaning")

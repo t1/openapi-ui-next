@@ -1,4 +1,4 @@
-package com.github.t1.openapi.ui.demo;
+package com.github.t1.openapi.ui.demo.pet;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,7 +13,7 @@ public class Pet {
     @NotNull @Schema(description = "Current adoption status", examples = "available") public PetStatus status;
     @Schema(description = "ID of the owning customer", examples = "42") public long ownerId;
 
-    public Pet() {}
+    @SuppressWarnings("unused") public Pet() {}
 
     public Pet(long id, String name, PetStatus status, long ownerId) {
         this.id = id;

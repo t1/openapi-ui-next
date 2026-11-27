@@ -1,11 +1,11 @@
-package com.github.t1.openapi.ui.demo;
+package com.github.t1.openapi.ui.demo.api;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.net.URI;
 
 @Schema(description = "Error response following RFC 9457 Problem Details")
-record ProblemDetails(
+public record ProblemDetails(
         @Schema(description = "Problem type URI", examples = "urn:problem-type:pet-not-found")
         URI type,
 
@@ -20,5 +20,5 @@ record ProblemDetails(
 
         @Schema(description = "URI identifying the specific occurrence", examples = "/pets/99")
         URI instance) {
-    static final String MEDIA_TYPE = "application/problem+json";
+    public static final String MEDIA_TYPE = "application/problem+json";
 }

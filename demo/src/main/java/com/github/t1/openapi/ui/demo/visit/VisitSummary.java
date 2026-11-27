@@ -1,4 +1,4 @@
-package com.github.t1.openapi.ui.demo;
+package com.github.t1.openapi.ui.demo.visit;
 
 import jakarta.xml.bind.annotation.XmlRootElement;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;

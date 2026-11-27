@@ -1,5 +1,8 @@
-package com.github.t1.openapi.ui.demo;
+package com.github.t1.openapi.ui.demo.owner;
 
+import com.github.t1.openapi.ui.demo.pet.Pet;
+import com.github.t1.openapi.ui.demo.pet.PetResource;
+import com.github.t1.openapi.ui.demo.pet.PetSummary;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -20,7 +23,7 @@ import static org.eclipse.microprofile.openapi.annotations.enums.SchemaType.ARRA
 @Path("/owners")
 @Tag(name = "owners")
 public class OwnerResource {
-    static final List<Owner> OWNERS = new ArrayList<>(List.of(
+    public static final List<Owner> OWNERS = new ArrayList<>(List.of(
             new Owner(1, "Alice", "alice@example.com"),
             new Owner(2, "Bob", "bob@example.com")
     ));
@@ -30,7 +33,7 @@ public class OwnerResource {
         return OWNERS;
     }
 
-    static Owner findById(long id) {
+    public static Owner findById(long id) {
         return OWNERS.stream()
                 .filter(o -> o.id() == id).findFirst()
                 .orElseThrow(() -> new OwnerNotFoundException(id));
