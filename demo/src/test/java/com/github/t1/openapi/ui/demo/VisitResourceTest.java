@@ -3,6 +3,7 @@ package com.github.t1.openapi.ui.demo;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
+import static com.github.t1.openapi.ui.demo.App.APPLICATION_PROBLEM_JSON;
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.hamcrest.Matchers.is;
@@ -35,10 +36,10 @@ class VisitResourceTest {
                 .when().post("/pets/1/visits")
                 .then()
                 .statusCode(400)
-                .contentType("application/problem+json")
-                .body("type", is("urn:problem-type:constraint-violation"))
+                .contentType(APPLICATION_PROBLEM_JSON)
                 .body("violations.size()", is(1))
-                .body("violations[0].field", is("reason"));
+                .body("violations[0].field", is("reason"))
+                .body("violations[0].in", is("body"));
     }
 
     @Test void shouldReturnProblemDetailsForVisitOnNonexistentPet() {
@@ -48,7 +49,7 @@ class VisitResourceTest {
                 .when().post("/pets/999/visits")
                 .then()
                 .statusCode(400)
-                .contentType("application/problem+json")
+                .contentType(APPLICATION_PROBLEM_JSON)
                 .body("type", is("urn:problem-type:pet-not-found"))
                 .body("detail", is("Pet with ID 999 not found"));
     }
@@ -58,7 +59,7 @@ class VisitResourceTest {
                 .when().get("/pets/1/visits/999")
                 .then()
                 .statusCode(400)
-                .contentType("application/problem+json")
+                .contentType(APPLICATION_PROBLEM_JSON)
                 .body("type", is("urn:problem-type:visit-not-found"))
                 .body("detail", is("Visit with ID 999 not found"));
     }

@@ -1,10 +1,10 @@
 package com.github.t1.openapi.ui.demo.pet;
 
-import com.github.t1.openapi.ui.demo.api.ProblemDetails;
 import com.github.t1.openapi.ui.demo.owner.OwnerResource;
 import com.github.t1.openapi.ui.demo.owner.OwnerSummary;
 import com.github.t1.openapi.ui.demo.visit.VisitResource;
 import com.github.t1.openapi.ui.demo.visit.VisitSummary;
+import io.quarkiverse.httpproblem.HttpProblem;
 import io.vertx.core.http.HttpServerResponse;
 import jakarta.json.JsonObject;
 import jakarta.validation.Valid;
@@ -43,6 +43,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.github.t1.openapi.ui.demo.App.APPLICATION_PROBLEM_JSON;
 import static com.github.t1.openapi.ui.demo.pet.PetStatus.adopted;
 import static com.github.t1.openapi.ui.demo.pet.PetStatus.available;
 import static io.vertx.core.http.Cookie.cookie;
@@ -100,11 +101,11 @@ public class PetResource {
                             + "\"description\":\"Get details of this visit\","
                             + "\"parameters\":{\"visitId\":\"$response.body#/visits[*]/id\"}}}"))
     @APIResponse(responseCode = "400", description = "Business error",
-            content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
+            content = @Content(mediaType = APPLICATION_PROBLEM_JSON, schema = @Schema(implementation = HttpProblem.class)))
     @APIResponse(responseCode = "500", description = "Internal server error",
-            content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
+            content = @Content(mediaType = APPLICATION_PROBLEM_JSON, schema = @Schema(implementation = HttpProblem.class)))
     @APIResponse(responseCode = "default", description = "Unexpected error",
-            content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
+            content = @Content(mediaType = APPLICATION_PROBLEM_JSON, schema = @Schema(implementation = HttpProblem.class)))
     public PetResponse get(@PathParam("id") long id, @QueryParam("showVisits") boolean showVisits) {
         var pet = findById(id);
         var owner = OwnerResource.OWNERS.stream()
@@ -181,14 +182,17 @@ public class PetResource {
     @Operation(summary = "Delete a pet")
     @Tag(name = "admin")
     @APIResponse(responseCode = "401", description = "Unauthorized",
-            content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = ProblemDetails.class)))
+            content = @Content(mediaType = APPLICATION_PROBLEM_JSON, schema = @Schema(implementation = HttpProblem.class)))
     public Response delete(@PathParam("id") long id,
                            @HeaderParam("Authorization") String authorization) {
         if (authorization == null || !authorization.equals("Bearer demo-token"))
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .type(ProblemDetails.MEDIA_TYPE)
-                    .entity(new ProblemDetails(URI.create("urn:problem-type:unauthorized"), "Unauthorized", 401, "Use `demo-token` as the bearer token", null))
-                    .build();
+            return HttpProblem.builder()
+                    .withType(URI.create("urn:problem-type:unauthorized"))
+                    .withTitle("Unauthorized")
+                    .withStatus(401)
+                    .withDetail("Use `demo-token` as the bearer token")
+                    .build()
+                    .toResponse();
         var removed = PETS.removeIf(p -> p.id == id);
         if (!removed) throw new PetNotFoundException(id);
         return Response.noContent().build();

@@ -3,6 +3,7 @@ package com.github.t1.openapi.ui.demo;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
+import static com.github.t1.openapi.ui.demo.App.APPLICATION_PROBLEM_JSON;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.hamcrest.Matchers.containsString;
@@ -39,7 +40,7 @@ class DelayResponseFilterTest {
                 .when().get("/pets")
                 .then()
                 .statusCode(400)
-                .contentType("application/problem+json")
+                .contentType(APPLICATION_PROBLEM_JSON)
                 .body("title", is("Bad Request"))
                 .body("status", is(400))
                 .body("detail", containsString("abc"));

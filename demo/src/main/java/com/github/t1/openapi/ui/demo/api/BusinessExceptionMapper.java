@@ -6,6 +6,8 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
+import io.quarkiverse.httpproblem.HttpProblem;
+
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 
 /// Maps all [BusinessException]s to `400 Bad Request`.
@@ -14,10 +16,13 @@ import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 @Provider
 class BusinessExceptionMapper implements ExceptionMapper<BusinessException> {
     @Override public Response toResponse(BusinessException exception) {
-        return Response.status(BAD_REQUEST)
-                .type(ProblemDetails.MEDIA_TYPE)
-                .entity(new ProblemDetails(typeUrn(exception), BAD_REQUEST.getReasonPhrase(), BAD_REQUEST.getStatusCode(), exception.getMessage(), null))
-                .build();
+        return HttpProblem.builder()
+                .withType(typeUrn(exception))
+                .withTitle(BAD_REQUEST.getReasonPhrase())
+                .withStatus(BAD_REQUEST)
+                .withDetail(exception.getMessage())
+                .build()
+                .toResponse();
     }
 
     static URI typeUrn(BusinessException exception) {

@@ -3,6 +3,7 @@ package com.github.t1.openapi.ui.demo;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
+import static com.github.t1.openapi.ui.demo.App.APPLICATION_PROBLEM_JSON;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 
@@ -33,7 +34,7 @@ class OwnerResourceTest {
                 .when().get("/owners/999")
                 .then()
                 .statusCode(400)
-                .contentType("application/problem+json")
+                .contentType(APPLICATION_PROBLEM_JSON)
                 .body("type", is("urn:problem-type:owner-not-found"))
                 .body("detail", is("Owner with ID 999 not found"));
     }

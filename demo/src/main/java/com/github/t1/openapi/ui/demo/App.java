@@ -43,4 +43,6 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
         in = SecuritySchemeIn.HEADER,
         apiKeyName = "X-API-Key",
         description = "API Key authentication")
-public class App extends Application {}
+public class App extends Application {
+    public static final String APPLICATION_PROBLEM_JSON = "application/problem+json";
+}

@@ -51,6 +51,10 @@
             <artifactId>quarkus-smallrye-openapi</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkiverse.httpproblem</groupId>
+            <artifactId>quarkus-http-problem</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.github.t1</groupId>
             <artifactId>openapi-ui-quarkus</artifactId>
             <version>${project.version}</version>
