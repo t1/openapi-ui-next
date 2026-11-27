@@ -13,49 +13,36 @@
     <name>OpenAPI UI Quarkus Extension - Deployment</name>
 
     <dependencies>
-        <!-- Runtime dependency -->
         <dependency>
             <groupId>com.github.t1</groupId>
             <artifactId>openapi-ui-quarkus</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-        <!-- Quarkus core deployment -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
-
-        <!-- SmallRye OpenAPI SPI for consuming OpenApiDocumentBuildItem -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-openapi-spi</artifactId>
         </dependency>
-
-        <!-- Dev UI SPI for extension card -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devui-deployment-spi</artifactId>
         </dependency>
-
-        <!-- Static resource SPI to serve the generated UI -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-http-deployment-spi</artifactId>
         </dependency>
 
-        <!-- OpenAPI UI core generator -->
         <dependency>
             <groupId>com.github.t1</groupId>
             <artifactId>openapi-ui-core</artifactId>
             <version>${project.version}</version>
-        </dependency>
-
-        <!-- Test dependencies -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-internal</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

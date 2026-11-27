@@ -27,6 +27,7 @@ class VisitResourceTest {
                 .body("reason", is("Annual checkup"))
                 .body("date", is("2024-01-15"));
     }
+
     @Test void shouldReturnConstraintViolationForBlankVisitReason() {
         given()
                 .contentType(APPLICATION_JSON)

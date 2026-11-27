@@ -34,9 +34,9 @@ public class VisitResource {
     }
 
     @POST @Operation(summary = "Record a visit")
-    public Visit create(@PathParam("petId") long petId, @RequestBody @Valid Visit visit) {
+    public Visit create(@PathParam("petId") long petId, @RequestBody @Valid VisitInput input) {
         PetResource.findById(petId);
-        var created = new Visit(nextId++, petId, visit.date(), visit.reason());
+        var created = new Visit(nextId++, petId, input.date(), input.reason());
         VISITS.add(created);
         return created;
     }
